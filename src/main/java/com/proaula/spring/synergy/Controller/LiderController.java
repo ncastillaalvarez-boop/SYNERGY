@@ -140,8 +140,9 @@ public String asignarTareas(HttpSession session, Model model) {
     if (lider == null)
         return "redirect:/login";
     // Obtener proyectos del líder
-    List<Proyecto> proyectos = proyectoService.obtenerProyectosDeLider(null);
+    List<Proyecto> proyectos = proyectoService.obtenerProyectosDeLider(lider.getId());
     model.addAttribute("proyectos", proyectos);
+    
     return "Lider_Asignar_Tareas";
 }
 
