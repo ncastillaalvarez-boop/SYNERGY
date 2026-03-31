@@ -2,11 +2,15 @@ package com.proaula.spring.synergy.Repository;
 
 import java.util.List;
 
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.stereotype.Repository;
 
 import com.proaula.spring.synergy.Model.Comentario;
 
-public interface ComentarioRepository extends JpaRepository<Comentario, Long> {
-List<Comentario> findByProyectoId(Long proyectoId);
-
+@Repository
+public interface ComentarioRepository extends MongoRepository<Comentario, String> {
+    List<Comentario> findByIdProyecto(String idProyecto);
+    List<Comentario> findByIdUsuario(String idUsuario);
+    List<Comentario> findByIdTarea(String idTarea);
 }
+

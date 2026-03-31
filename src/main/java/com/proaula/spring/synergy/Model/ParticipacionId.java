@@ -1,26 +1,24 @@
 package com.proaula.spring.synergy.Model;
 
 import java.io.Serializable;
-import jakarta.persistence.Embeddable;
 
-@Embeddable
 public class ParticipacionId implements Serializable {
 
-    private Long usuarioId;
-    private Long proyectoId;
+    private String usuarioId;
+    private String proyectoId;
 
     public ParticipacionId() {}
 
-    public ParticipacionId(Long usuarioId, Long proyectoId) {
+    public ParticipacionId(String usuarioId, String proyectoId) {
         this.usuarioId = usuarioId;
         this.proyectoId = proyectoId;
     }
 
-    public Long getUsuarioId() { return usuarioId; }
-    public void setUsuarioId(Long usuarioId) { this.usuarioId = usuarioId; }
+    public String getUsuarioId() { return usuarioId; }
+    public void setUsuarioId(String usuarioId) { this.usuarioId = usuarioId; }
 
-    public Long getProyectoId() { return proyectoId; }
-    public void setProyectoId(Long proyectoId) { this.proyectoId = proyectoId; }
+    public String getProyectoId() { return proyectoId; }
+    public void setProyectoId(String proyectoId) { this.proyectoId = proyectoId; }
 
     // equals y hashCode SON OBLIGATORIOS
     @Override

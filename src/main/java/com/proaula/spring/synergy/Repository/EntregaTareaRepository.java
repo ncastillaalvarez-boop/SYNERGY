@@ -1,14 +1,17 @@
 package com.proaula.spring.synergy.Repository;
 
 import com.proaula.spring.synergy.Model.EntregaTarea;
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface EntregaTareaRepository extends JpaRepository<EntregaTarea, Long> {
+public interface EntregaTareaRepository extends MongoRepository<EntregaTarea, String> {
 
-    List<EntregaTarea> findByTareaId(Long tareaId);   // Obtener entregas de una tarea
+    List<EntregaTarea> findByIdTarea(String idTarea);
 
-    boolean existsByTareaId(Long tareaId);            // Para verificar si ya entregó
+    List<EntregaTarea> findByIdUsuario(String idUsuario);
+
+    boolean existsByIdTarea(String idTarea);
 }
+

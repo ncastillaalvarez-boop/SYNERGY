@@ -1,72 +1,66 @@
 package com.proaula.spring.synergy.Model;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.index.Indexed;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
-
-@Entity
-@Table(name = "proyectos")
+@Document(collection = "proyectos")
 public class Proyecto {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
 
     private String nombre;
 
     private String descripcion;
 
-    @Column(name = "fecha_inicio")
     private LocalDate fechaInicio;
 
-    @Column(name = "fecha_fin")
     private LocalDate fechaFin;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_lider")
-    private Usuarios lider;
+    @Indexed
+    private String idLider;
 
-    @JsonIgnore
-    @OneToMany(mappedBy = "proyecto", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<Comentario> comentarios = new ArrayList<>();
+    @Indexed
+    private List<String> participantes = new ArrayList<>();
 
-    public Proyecto() {}
+    @Indexed
+    private String estado; // ACTIVO, COMPLETADO, CANCELADO
 
-    public Proyecto(String nombre, String descripcion, LocalDate fechaInicio, LocalDate fechaFin, Usuarios lider) {
+    private List<String> comentarios = new ArrayList<>();
+    private List<String> tareas = new ArrayList<>();
+
+    private LocalDateTime fechaCreacion;
+    private LocalDateTime fechaActualizacion;
+
+    public Proyecto() {
+        this.fechaCreacion = LocalDateTime.now();
+        this.fechaActualizacion = LocalDateTime.now();
+        this.estado = "ACTIVO";
+    }
+
+    public Proyecto(String nombre, String descripcion, LocalDate fechaInicio, 
+                    LocalDate fechaFin, String idLider) {
+        this();
         this.nombre = nombre;
         this.descripcion = descripcion;
         this.fechaInicio = fechaInicio;
         this.fechaFin = fechaFin;
-        this.lider = lider;
+        this.idLider = idLider;
+        this.participantes.add(idLider);
     }
 
-    public Usuarios getLider() {
-        return lider;
-    }
-
-    public void setLider(Usuarios lider) {
-        this.lider = lider;
-    }
-
-    public Long getId() {
+    // Getters y Setters
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 
@@ -102,12 +96,82 @@ public class Proyecto {
         this.fechaFin = fechaFin;
     }
 
-    public List<Comentario> getComentarios() {
+    public String getIdLider() {
+        return idLider;
+    }
+
+    public void setIdLider(String idLider) {
+        this.idLider = idLider;
+    }
+
+    public List<String> getParticipantes() {
+        return participantes;
+    }
+
+    public void setParticipantes(List<String> participantes) {
+        this.participantes = participantes;
+    }
+
+    public String getEstado() {
+        return estado;
+    }
+
+    public void setEstado(String estado) {
+        this.estado = estado;
+    }
+
+    public List<String> getComentarios() {
         return comentarios;
     }
 
-    public void setComentarios(List<Comentario> comentarios) {
+    public void setComentarios(List<String> comentarios) {
         this.comentarios = comentarios;
     }
 
+    public List<String> getTareas() {
+        return tareas;
+    }
+
+    public void setTareas(List<String> tareas) {
+        this.tareas = tareas;
+    }
+
+    public LocalDateTime getFechaCreacion() {
+        return fechaCreacion;
+    }
+
+    public void setFechaCreacion(LocalDateTime fechaCreacion) {
+        this.fechaCreacion = fechaCreacion;
+    }
+
+    public LocalDateTime getFechaActualizacion() {
+        return fechaActualizacion;
+    }
+
+    public void setFechaActualizacion(LocalDateTime fechaActualizacion) {
+        this.fechaActualizacion = fechaActualizacion;
+    }
+
+    // Métodos de utilidad
+    public void addParticipante(String usuarioId) {
+        if (!this.participantes.contains(usuarioId)) {
+            this.participantes.add(usuarioId);
+        }
+    }
+
+    public void removeParticipante(String usuarioId) {
+        this.participantes.remove(usuarioId);
+    }
+
+    public void addTarea(String tareaId) {
+        if (!this.tareas.contains(tareaId)) {
+            this.tareas.add(tareaId);
+        }
+    }
+
+    public void addComentario(String comentarioId) {
+        if (!this.comentarios.contains(comentarioId)) {
+            this.comentarios.add(comentarioId);
+        }
+    }
 }

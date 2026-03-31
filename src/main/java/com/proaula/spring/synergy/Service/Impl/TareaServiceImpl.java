@@ -1,78 +1,66 @@
 package com.proaula.spring.synergy.Service.Impl;
 
 import java.util.List;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.proaula.spring.synergy.Model.Tarea;
-import com.proaula.spring.synergy.Model.Usuarios;
 import com.proaula.spring.synergy.Repository.TareaRepository;
-import com.proaula.spring.synergy.Repository.UsuarioRepository;
-import com.proaula.spring.synergy.Service.TareaService;
 
 @Service
-public class TareaServiceImpl implements TareaService {
+public class TareaServiceImpl {
 
     @Autowired
     private TareaRepository tareaRepository;
 
-    @Autowired
-    private UsuarioRepository usuariosRepo;
-
-    @Override
-    public Tarea guardarTarea(Tarea tarea, List<Long> usuariosIds) {
-
+    public Tarea guardarTarea(Tarea tarea, List<String> usuariosIds) {
         if (usuariosIds != null && !usuariosIds.isEmpty()) {
-
-            Set<Usuarios> usuariosAsignados = usuariosIds.stream()
-                    .map(id -> usuariosRepo.findById(id)
-                            .orElseThrow(() -> new RuntimeException("Usuario no encontrado: " + id)))
-                    .collect(Collectors.toSet());
-
-            tarea.setUsuarios(usuariosAsignados);
-
-        } else {
-            tarea.setUsuarios(new HashSet<>()); // <-- CORREGIDO
+            tarea.setUsuariosAsignados(usuariosIds);
         }
-
         return tareaRepository.save(tarea);
     }
 
-    @Override
-    public List<Tarea> obtenerTareasPorUsuario(Long usuarioId) {
-        return tareaRepository.findByUsuarios_Id(usuarioId);
+    public List<Tarea> obtenerTareasPorUsuario(String usuarioId) {
+        return tareaRepository.findByUsuariosAsignadosContains(usuarioId);
     }
 
-@Override
-public List<Tarea> obtenerTareasPorProyecto(Long idProyecto) {
-    return tareaRepository.findByProyectoIdConUsuarios(idProyecto);
-}
+    public List<Tarea> obtenerTareasPorProyecto(String idProyecto) {
+        return tareaRepository.findByIdProyecto(idProyecto);
+    }
 
-    @Override
-    public Tarea obtenerTareaPorId(Long id) {
+    public Tarea obtenerTareaPorId(String id) {
         return tareaRepository.findById(id).orElse(null);
     }
 
-    @Override
-    public void cambiarEstado(Long tareaId, String nuevoEstado) {
-        Tarea tarea = tareaRepository.findById(tareaId).orElse(null);
-
-        if (tarea != null) {
+    public void cambiarEstado(String tareaId, String nuevoEstado) {
+        Optional<Tarea> tareaOpt = tareaRepository.findById(tareaId);
+        if (tareaOpt.isPresent()) {
+            Tarea tarea = tareaOpt.get();
             tarea.setEstado(nuevoEstado);
             tareaRepository.save(tarea);
         }
     }
-        @Override
-public void marcarComoCompletada(Long idTarea) {
-    Tarea tarea = tareaRepository.findById(idTarea)
-            .orElseThrow(() -> new RuntimeException("Tarea no encontrada"));
 
-    tarea.setEstado("Completada");
-    tareaRepository.save(tarea);
-}
-    
+    public void marcarComoCompletada(String idTarea) {
+        Optional<Tarea> tareaOpt = tareaRepository.findById(idTarea);
+        if (tareaOpt.isPresent()) {
+            Tarea tarea = tareaOpt.get();
+            tarea.setEstado("Completada");
+            tareaRepository.save(tarea);
+        }
+    }
+
+    public List<Tarea> listar() {
+        return tareaRepository.findAll();
+    }
+
+    public Tarea guardar(Tarea tarea) {
+        return tareaRepository.save(tarea);
+    }
+
+    public void eliminar(String id) {
+        tareaRepository.deleteById(id);
+    }
 }

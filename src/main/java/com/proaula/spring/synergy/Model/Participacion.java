@@ -1,38 +1,77 @@
 package com.proaula.spring.synergy.Model;
 
-import jakarta.persistence.*;
+import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "participacion")
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.index.Indexed;
+
+@Document(collection = "participaciones")
 public class Participacion {
 
-    @EmbeddedId
-    private ParticipacionId id;
+    @Id
+    private String id;
 
-    @ManyToOne
-    @MapsId("usuarioId")
-    @JoinColumn(name = "usuario_id")
-    private Usuarios usuario;
+    @Indexed
+    private String idUsuario;
 
-    @ManyToOne
-    @MapsId("proyectoId")
-    @JoinColumn(name = "proyecto_id")
-    private Proyecto proyecto;
+    @Indexed
+    private String idProyecto;
 
-    public Participacion() {}
+    private String rol; // LIDER, PARTICIPANTE
 
-    public Participacion(Usuarios usuario, Proyecto proyecto) {
-        this.usuario = usuario;
-        this.proyecto = proyecto;
-        this.id = new ParticipacionId(usuario.getId(), proyecto.getId());
+    private LocalDateTime fechaUnion;
+
+    public Participacion() {
+        this.fechaUnion = LocalDateTime.now();
     }
 
-    public ParticipacionId getId() { return id; }
-    public void setId(ParticipacionId id) { this.id = id; }
+    public Participacion(String idUsuario, String idProyecto, String rol) {
+        this();
+        this.idUsuario = idUsuario;
+        this.idProyecto = idProyecto;
+        this.rol = rol;
+    }
 
-    public Usuarios getUsuario() { return usuario; }
-    public void setUsuario(Usuarios usuario) { this.usuario = usuario; }
+    // Getters y Setters
+    public String getId() {
+        return id;
+    }
 
-    public Proyecto getProyecto() { return proyecto; }
-    public void setProyecto(Proyecto proyecto) { this.proyecto = proyecto; }
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getIdUsuario() {
+        return idUsuario;
+    }
+
+    public void setIdUsuario(String idUsuario) {
+        this.idUsuario = idUsuario;
+    }
+
+    public String getIdProyecto() {
+        return idProyecto;
+    }
+
+    public void setIdProyecto(String idProyecto) {
+        this.idProyecto = idProyecto;
+    }
+
+    public String getRol() {
+        return rol;
+    }
+
+    public void setRol(String rol) {
+        this.rol = rol;
+    }
+
+    public LocalDateTime getFechaUnion() {
+        return fechaUnion;
+    }
+
+    public void setFechaUnion(LocalDateTime fechaUnion) {
+        this.fechaUnion = fechaUnion;
+    }
 }
+

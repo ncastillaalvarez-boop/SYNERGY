@@ -1,17 +1,21 @@
 package com.proaula.spring.synergy.Repository;
 
 import java.util.List;
-import java.util.Optional;
 
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
 import com.proaula.spring.synergy.Model.Usuarios;
 
 @Repository
-public interface UsuarioRepository extends JpaRepository<Usuarios, Long> {
+public interface UsuarioRepository extends MongoRepository<Usuarios, String> {
 
-    Optional<Usuarios> findByCorreo(String correo);
+    Usuarios findByCorreo(String correo);
 
-    List<Usuarios> findByRol(Usuarios.Rol rol);  // ← IMPORTANTE
+    List<Usuarios> findByRol(String rol);
+
+    List<Usuarios> findByActivo(Boolean activo);
+
+    List<Usuarios> findByEstado(String estado);
 }
+

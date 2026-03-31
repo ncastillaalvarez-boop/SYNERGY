@@ -37,13 +37,16 @@ public class ParticipacionController {
     //  VER PROYECTOS DONDE PARTICIPA EL USUARIO (CORREGIDO)
     // =====================================================
     @GetMapping("/mis-proyectos/{usuarioId}")
-    public String mostrarProyectosUsuario(@PathVariable Long usuarioId, Model model) {
+    public String mostrarProyectosUsuario(@PathVariable String usuarioId, Model model) {
 
         // Obtener los proyectos donde participa
         List<Proyecto> proyectos = participacionService.listarProyectosPorUsuario(usuarioId);
 
         // Obtener información completa del usuario
-        Usuarios usuario = usuarioService.buscarPorId(usuarioId).orElse(null);
+        Usuarios usuario = null;
+        try {
+            usuario = usuarioService.obtenerUsuarioPorId(usuarioId);
+        } catch (Exception e) {}
 
         model.addAttribute("proyectosParticipando", proyectos);
         model.addAttribute("usuario", usuario);
@@ -55,7 +58,7 @@ public class ParticipacionController {
     //  LISTAR PARTICIPANTES DE UN PROYECTO
     // =====================================================
     @GetMapping("/listar/{proyectoId}")
-    public ResponseEntity<List<Participacion>> listar(@PathVariable Long proyectoId) {
+    public ResponseEntity<List<Participacion>> listar(@PathVariable String proyectoId) {
         return ResponseEntity.ok(participacionService.listarParticipantes(proyectoId));
     }
 
@@ -64,8 +67,8 @@ public class ParticipacionController {
     // =====================================================
     @GetMapping("/inscrito/{proyectoId}/{usuarioId}")
     public ResponseEntity<Boolean> estaInscrito(
-            @PathVariable Long proyectoId,
-            @PathVariable Long usuarioId) {
+            @PathVariable String proyectoId,
+            @PathVariable String usuarioId) {
 
         return ResponseEntity.ok(participacionService.yaInscrito(proyectoId, usuarioId));
     }
@@ -75,8 +78,8 @@ public class ParticipacionController {
     // =====================================================
     @DeleteMapping("/eliminar/{proyectoId}/{usuarioId}")
     public ResponseEntity<?> eliminar(
-            @PathVariable Long proyectoId,
-            @PathVariable Long usuarioId) {
+            @PathVariable String proyectoId,
+            @PathVariable String usuarioId) {
 
         participacionService.eliminarParticipacion(proyectoId, usuarioId);
 

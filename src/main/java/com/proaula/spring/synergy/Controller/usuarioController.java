@@ -18,14 +18,17 @@ public class usuarioController {
 
     @GetMapping
     public List<Usuarios> listar() {
-        return usuarioService.listarUsuarios();
+        return usuarioService.obtenerTodosUsuarios();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Usuarios> obtener(@PathVariable Long id) {
-        return usuarioService.buscarPorId(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<Usuarios> obtener(@PathVariable String id) {
+        try {
+            Usuarios usuario = usuarioService.obtenerUsuarioPorId(id);
+            return ResponseEntity.ok(usuario);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @PostMapping
@@ -34,12 +37,14 @@ public class usuarioController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> eliminar(@PathVariable Long id) {
-        if (usuarioService.buscarPorId(id).isPresent()) {
+    public ResponseEntity<Void> eliminar(@PathVariable String id) {
+        try {
+            usuarioService.obtenerUsuarioPorId(id);
             usuarioService.eliminarUsuario(id);
             return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.notFound().build();
     }
 
     

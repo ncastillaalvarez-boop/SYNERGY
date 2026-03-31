@@ -64,15 +64,15 @@ public String guardarProyecto(
         HttpSession session,
         Model model) {
 
-    Long usuarioId = (Long) session.getAttribute("usuarioId");
+    String usuarioId = (String) session.getAttribute("usuarioId");
 
     if (usuarioId == null) {
         return "redirect:/login";
     }
 
     // Asignar líder correctamente
-    Usuarios lider = usuarioService.buscarPorId(usuarioId).orElse(null);
-    proyecto.setLider(lider);
+    Usuarios lider = usuarioService.obtenerUsuarioPorId(usuarioId);
+    proyecto.setIdLider(lider.getId());
 
     try {
         proyectoService.guardar(proyecto, archivo);
@@ -110,8 +110,8 @@ public String guardarProyecto(
     // INSCRIBIR A UN PROYECTO
     // ==============================
     @PostMapping("/participacion/inscribir/{proyectoId}/{usuarioId}")
-    public String inscribir(@PathVariable Long proyectoId,
-            @PathVariable Long usuarioId,
+    public String inscribir(@PathVariable String proyectoId,
+            @PathVariable String usuarioId,
             RedirectAttributes redirectAttributes) {
 
         boolean inscrito = participacionService.inscribirUsuario(proyectoId, usuarioId);
@@ -131,8 +131,8 @@ public String guardarProyecto(
     // SALIR DEL PROYECTO
     // ==============================
     @PostMapping("/participacion/eliminar/{proyectoId}/{usuarioId}")
-    public String salirDelProyecto(@PathVariable Long proyectoId,
-            @PathVariable Long usuarioId,
+    public String salirDelProyecto(@PathVariable String proyectoId,
+            @PathVariable String usuarioId,
             RedirectAttributes redirectAttributes) {
 
         participacionService.eliminarParticipacion(proyectoId, usuarioId);
@@ -153,8 +153,7 @@ public String guardarProyecto(
             return "redirect:/login";
         }
 
-        Usuarios usuario = usuarioService.buscarPorCorreo(principal.getName())
-                .orElse(null);
+        Usuarios usuario = usuarioService.buscarPorCorreo(principal.getName());
 
         if (usuario == null) {
             return "redirect:/login";
@@ -169,12 +168,11 @@ public String guardarProyecto(
 
     @GetMapping("/mis_proyectos/{idUsuario}")
     public String listarMisProyectos(
-            @PathVariable Long idUsuario,
+            @PathVariable String idUsuario,
             Model model) {
 
         // Obtener usuario por ID
-        Usuarios usuario = usuarioService.buscarPorId(idUsuario)
-                .orElse(null);
+        Usuarios usuario = usuarioService.obtenerUsuarioPorId(idUsuario);
 
         // Proyectos donde el usuario es líder
         List<Proyecto> proyectos = proyectoService.obtenerProyectosDeLider(idUsuario);

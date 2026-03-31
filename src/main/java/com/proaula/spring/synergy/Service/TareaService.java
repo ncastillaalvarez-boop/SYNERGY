@@ -5,16 +5,16 @@ import com.proaula.spring.synergy.Model.Tarea;
 
 public interface TareaService {
 
-    Tarea guardarTarea(Tarea tarea, List<Long> usuariosIds);
+    Tarea guardarTarea(Tarea tarea, List<String> usuariosIds);
 
-    List<Tarea> obtenerTareasPorUsuario(Long usuarioId);
+    List<Tarea> obtenerTareasPorUsuario(String usuarioId);
 
-    List<Tarea> obtenerTareasPorProyecto(Long proyectoId);
+    List<Tarea> obtenerTareasPorProyecto(String proyectoId);
 
-    Tarea obtenerTareaPorId(Long id);
+    Tarea obtenerTareaPorId(String id);
 
-    void cambiarEstado(Long tareaId, String nuevoEstado);
+    void cambiarEstado(String tareaId, String nuevoEstado);
 
-    void marcarComoCompletada(Long idTarea);
+    void marcarComoCompletada(String idTarea);
 
 }

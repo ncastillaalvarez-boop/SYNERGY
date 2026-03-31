@@ -1,65 +1,227 @@
 package com.proaula.spring.synergy.Model;
 
-import java.util.HashSet;
-import java.util.Set;
-import jakarta.persistence.*;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
-@Entity
-@Table(name = "usuarios")
-public class Usuarios {
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
+@Document(collection = "usuarios")
+public class Usuarios implements UserDetails {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
 
-    @Column(nullable = false, length = 45)
     private String nombre;
 
-    @Column(nullable = false, unique = true, length = 45)
+    @Indexed(unique = true)
     private String correo;
 
-    @Column(nullable = false, length = 100)
     private String contrasena;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private Rol rol;
+    private String salt;
 
-    public enum Rol {
-        Administrador,
-        Participante,
-        Lider
+    @Indexed
+    private String rol; // ADMINISTRADOR, LIDER, PARTICIPANTE
+
+    @Indexed
+    private String estado; // ACTIVO, INACTIVO
+
+    @Indexed
+    private Boolean activo;
+
+    private List<String> privilegios = new ArrayList<>();
+    private List<String> proyectos = new ArrayList<>();
+    private List<String> tareasAsignadas = new ArrayList<>();
+
+    private LocalDateTime fechaCreacion;
+    private LocalDateTime ultimoAcceso;
+    private LocalDateTime ultimaCambioContrasena;
+
+    public Usuarios() {
+        this.activo = true;
+        this.estado = "ACTIVO";
+        this.fechaCreacion = LocalDateTime.now();
+        this.ultimaCambioContrasena = LocalDateTime.now();
     }
 
-    // Relación inversa ManyToMany (NO toca tu tabla, NO cambia nada)
-    @ManyToMany(mappedBy = "usuarios", fetch = FetchType.LAZY)
-    private Set<Tarea> tareas = new HashSet<>();
-
-    public Usuarios() {}
-
-    public Usuarios(String nombre, String correo, String contrasena, Rol rol) {
+    public Usuarios(String nombre, String correo, String contrasena, String salt, String rol) {
+        this();
         this.nombre = nombre;
         this.correo = correo;
         this.contrasena = contrasena;
+        this.salt = salt;
         this.rol = rol;
     }
 
+    // UserDetails implementation
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        List<GrantedAuthority> authorities = new ArrayList<>();
+        authorities.add(new SimpleGrantedAuthority("ROLE_" + this.rol));
+        return authorities;
+    }
+
+    @Override
+    public String getPassword() {
+        return this.contrasena;
+    }
+
+    @Override
+    public String getUsername() {
+        return this.correo;
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return this.activo;
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return this.activo && "ACTIVO".equals(this.estado);
+    }
+
     // Getters y Setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public String getId() {
+        return id;
+    }
 
-    public String getNombre() { return nombre; }
-    public void setNombre(String nombre) { this.nombre = nombre; }
+    public void setId(String id) {
+        this.id = id;
+    }
 
-    public String getCorreo() { return correo; }
-    public void setCorreo(String correo) { this.correo = correo; }
+    public String getNombre() {
+        return nombre;
+    }
 
-    public String getContrasena() { return contrasena; }
-    public void setContrasena(String contrasena) { this.contrasena = contrasena; }
+    public void setNombre(String nombre) {
+        this.nombre = nombre;
+    }
 
-    public Rol getRol() { return rol; }
-    public void setRol(Rol rol) { this.rol = rol; }
+    public String getCorreo() {
+        return correo;
+    }
 
-    public Set<Tarea> getTareas() { return tareas; }
-    public void setTareas(Set<Tarea> tareas) { this.tareas = tareas; }
+    public void setCorreo(String correo) {
+        this.correo = correo;
+    }
+
+    public String getContrasena() {
+        return contrasena;
+    }
+
+    public void setContrasena(String contrasena) {
+        this.contrasena = contrasena;
+        this.ultimaCambioContrasena = LocalDateTime.now();
+    }
+
+    public String getSalt() {
+        return salt;
+    }
+
+    public void setSalt(String salt) {
+        this.salt = salt;
+    }
+
+    public String getRol() {
+        return rol;
+    }
+
+    public void setRol(String rol) {
+        this.rol = rol;
+    }
+
+    public String getEstado() {
+        return estado;
+    }
+
+    public void setEstado(String estado) {
+        this.estado = estado;
+    }
+
+    public Boolean getActivo() {
+        return activo;
+    }
+
+    public void setActivo(Boolean activo) {
+        this.activo = activo;
+    }
+
+    public List<String> getPrivilegios() {
+        return privilegios;
+    }
+
+    public void setPrivilegios(List<String> privilegios) {
+        this.privilegios = privilegios;
+    }
+
+    public List<String> getProyectos() {
+        return proyectos;
+    }
+
+    public void setProyectos(List<String> proyectos) {
+        this.proyectos = proyectos;
+    }
+
+    public List<String> getTareasAsignadas() {
+        return tareasAsignadas;
+    }
+
+    public void setTareasAsignadas(List<String> tareasAsignadas) {
+        this.tareasAsignadas = tareasAsignadas;
+    }
+
+    public LocalDateTime getFechaCreacion() {
+        return fechaCreacion;
+    }
+
+    public void setFechaCreacion(LocalDateTime fechaCreacion) {
+        this.fechaCreacion = fechaCreacion;
+    }
+
+    public LocalDateTime getUltimoAcceso() {
+        return ultimoAcceso;
+    }
+
+    public void setUltimoAcceso(LocalDateTime ultimoAcceso) {
+        this.ultimoAcceso = ultimoAcceso;
+    }
+
+    public LocalDateTime getUltimaCambioContrasena() {
+        return ultimaCambioContrasena;
+    }
+
+    public void setUltimaCambioContrasena(LocalDateTime ultimaCambioContrasena) {
+        this.ultimaCambioContrasena = ultimaCambioContrasena;
+    }
+
+    // Métodos de utilidad
+    public void addProyecto(String idProyecto) {
+        if (!this.proyectos.contains(idProyecto)) {
+            this.proyectos.add(idProyecto);
+        }
+    }
+
+    public void addTareaAsignada(String idTarea) {
+        if (!this.tareasAsignadas.contains(idTarea)) {
+            this.tareasAsignadas.add(idTarea);
+        }
+    }
 }

@@ -13,7 +13,6 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.proaula.spring.synergy.Model.Tarea;
 import com.proaula.spring.synergy.Model.Usuarios;
-import com.proaula.spring.synergy.Model.Usuarios.Rol;
 import com.proaula.spring.synergy.Service.TareaService;
 import com.proaula.spring.synergy.Service.UsuarioService;
 
@@ -50,7 +49,6 @@ public class UsuarioWebController {
         return "Registro";
     }
 
-
     // ============================================
     // ASIGNAR ROL AUTOMÁTICO POR DOMINIO
     // ============================================
@@ -61,26 +59,26 @@ public class UsuarioWebController {
              HttpSession session,
              RedirectAttributes ra) {
 
-    // Si no viene rol del formulario, asignar Participante por defecto
-    if (usuario.getRol() == null) {
-        usuario.setRol(Rol.Participante);
+        // Si no viene rol del formulario, asignar Participante por defecto
+        if (usuario.getRol() == null) {
+            usuario.setRol("PARTICIPANTE");
+        }
+
+        // Guardar en BD
+        usuarioService.guardarUsuario(usuario);
+
+        // Guardar en sesión
+        session.setAttribute("usuario", usuario);
+        session.setAttribute("usuarioId", usuario.getId());
+
+        // Redirigir según el rol
+        return switch (usuario.getRol()) {
+            case "ADMINISTRADOR" -> "redirect:/admin/proyectos";
+            case "LIDER" -> "redirect:/lider/dashboard";
+            case "PARTICIPANTE" -> "redirect:/dashboard";
+            default -> "redirect:/login";
+        };
     }
-
-    // Guardar en BD
-    usuarioService.guardarUsuario(usuario);
-
-    // Guardar en sesión
-    session.setAttribute("usuario", usuario);
-    session.setAttribute("usuarioId", usuario.getId());
-
-    // Redirigir según el rol
-    return switch (usuario.getRol()) {
-        case Administrador -> "redirect:/admin/proyectos";
-        case Lider        -> "redirect:/lider/dashboard";
-        case Participante -> "redirect:/dashboard";
-        default           -> "redirect:/login";
-    };
-}
 
     // ============================================
     // LOGIN
@@ -98,7 +96,7 @@ public class UsuarioWebController {
             HttpSession session,
             Model model) {
 
-        Usuarios usuario = usuarioService.buscarPorCorreo(correo).orElse(null);
+        Usuarios usuario = usuarioService.buscarPorCorreo(correo);
 
         if (usuario == null || !usuario.getContrasena().equals(contrasena)) {
             model.addAttribute("error", "Correo o contraseña incorrectos");
@@ -109,12 +107,12 @@ public class UsuarioWebController {
         session.setAttribute("usuario", usuario);
         session.setAttribute("usuarioId", usuario.getId());
 
-        Rol rol = usuario.getRol();
+        String rol = usuario.getRol();
 
         return switch (rol) {
-            case Administrador -> "redirect:/admin/proyectos";
-            case Lider -> "redirect:/lider/dashboard";
-            case Participante -> "redirect:/dashboard";
+            case "ADMINISTRADOR" -> "redirect:/admin/proyectos";
+            case "LIDER" -> "redirect:/lider/dashboard";
+            case "PARTICIPANTE" -> "redirect:/dashboard";
             default -> "redirect:/login?error";
         };
     }
@@ -218,7 +216,8 @@ public class UsuarioWebController {
 
         // Actualizar correo si se proporciona y no existe
         if (correo != null && !correo.trim().isEmpty() && !correo.equals(usuario.getCorreo())) {
-            if (usuarioService.buscarPorCorreo(correo).isPresent()) {
+            Usuarios usuarioExistente = usuarioService.buscarPorCorreo(correo.trim());
+            if (usuarioExistente != null) {
                 redirectAttributes.addFlashAttribute("error", "El correo ya está en uso");
                 return "redirect:/usuario/credenciales";
             }
@@ -273,7 +272,7 @@ public class UsuarioWebController {
         }
 
         // Validar que sea líder
-        if (!usuario.getRol().equals(Rol.Lider)) {
+        if (!"LIDER".equals(usuario.getRol())) {
             return "redirect:/dashboard";
         }
 
@@ -298,5 +297,4 @@ public class UsuarioWebController {
         model.addAttribute("usuario", new Usuarios());
         return "Registro";
     }
-
 }

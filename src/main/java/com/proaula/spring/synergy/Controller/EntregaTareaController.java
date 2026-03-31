@@ -33,7 +33,7 @@ public class EntregaTareaController {
      */
     @GetMapping("/entregar/{id}")
     public String mostrarFormularioEntrega(
-            @PathVariable Long id,
+            @PathVariable String id,
             HttpSession session,
             Model model) {
 
@@ -59,7 +59,7 @@ public class EntregaTareaController {
      */
     @PostMapping("/entregar/{id}")
     public String procesarEntrega(
-            @PathVariable Long id,
+            @PathVariable String id,
             @RequestParam("archivo") MultipartFile archivo,
             Model model) {
 

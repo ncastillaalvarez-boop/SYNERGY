@@ -1,21 +1,25 @@
 package com.proaula.spring.synergy.Repository;
 
 import com.proaula.spring.synergy.Model.Participacion;
-import com.proaula.spring.synergy.Model.ParticipacionId;
 import java.util.List;
-import java.util.Optional;
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.stereotype.Repository;
 
-public interface ParticipacionRepository extends JpaRepository<Participacion, ParticipacionId> {
+@Repository
+public interface ParticipacionRepository extends MongoRepository<Participacion, String> {
 
     // Verificar si ya está inscrito
-    boolean existsByUsuario_IdAndProyecto_Id(Long usuarioId, Long proyectoId);
+    boolean existsByIdUsuarioAndIdProyecto(String idUsuario, String idProyecto);
 
     // Listar todos los participantes de un proyecto
-    List<Participacion> findByProyecto_Id(Long proyectoId);
+    List<Participacion> findByIdProyecto(String idProyecto);
 
     // Buscar participación específica
-    Optional<Participacion> findByProyecto_IdAndUsuario_Id(Long proyectoId, Long usuarioId);
+    Participacion findByIdProyectoAndIdUsuario(String idProyecto, String idUsuario);
 
-        List<Participacion> findByUsuario_Id(Long usuarioId);
+    // Buscar participación por usuario y proyecto (orden inversa)
+    Participacion findByIdUsuarioAndIdProyecto(String idUsuario, String idProyecto);
+
+    // Listar participaciones de un usuario
+    List<Participacion> findByIdUsuario(String idUsuario);
 }

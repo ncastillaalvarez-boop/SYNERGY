@@ -1,21 +1,142 @@
 package com.proaula.spring.synergy.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
 
 import com.proaula.spring.synergy.Model.Usuarios;
+import com.proaula.spring.synergy.Repository.UsuarioRepository;
 
-public interface UsuarioService {
+@Service
+public class UsuarioService {
 
-    List<Usuarios> listarUsuarios();
+    @Autowired
+    private UsuarioRepository usuarioRepository;
 
-    Usuarios guardarUsuario(Usuarios usuario);
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
-    Optional<Usuarios> buscarPorId(Long id);
+    @Autowired
+    private RolPrivilegioService rolPrivilegioService;
 
-    Optional<Usuarios> buscarPorCorreo(String correo);
+    public List<Usuarios> obtenerTodosUsuarios() {
+        return usuarioRepository.findAll();
+    }
 
-    void eliminarUsuario(Long id);
+    public Usuarios obtenerUsuarioPorId(String id) {
+        return usuarioRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+    }
 
-    List<Usuarios> listarLideres();
+    public Usuarios obtenerUsuarioPorCorreo(String correo) {
+        Usuarios usuario = usuarioRepository.findByCorreo(correo);
+        if (usuario == null) {
+            throw new RuntimeException("Usuario no encontrado");
+        }
+        return usuario;
+    }
+
+    public Usuarios crearUsuario(Usuarios usuario) {
+        if (usuarioRepository.findByCorreo(usuario.getCorreo()) != null) {
+            throw new RuntimeException("El correo ya está registrado");
+        }
+
+        usuario.setContrasena(passwordEncoder.encode(usuario.getContrasena()));
+        usuario.setActivo(true);
+        usuario.setEstado("ACTIVO");
+        usuario.setFechaCreacion(LocalDateTime.now());
+        usuario.setUltimaCambioContrasena(LocalDateTime.now());
+
+        return usuarioRepository.save(usuario);
+    }
+
+    public Usuarios actualizarUsuario(String id, Usuarios usuarioActualizado) {
+        Usuarios usuario = obtenerUsuarioPorId(id);
+        usuario.setNombre(usuarioActualizado.getNombre());
+        if (!usuario.getCorreo().equals(usuarioActualizado.getCorreo())) {
+            if (usuarioRepository.findByCorreo(usuarioActualizado.getCorreo()) != null) {
+                throw new RuntimeException("El correo ya está registrado");
+            }
+            usuario.setCorreo(usuarioActualizado.getCorreo());
+        }
+        usuario.setEstado(usuarioActualizado.getEstado());
+        usuario.setActivo(usuarioActualizado.getActivo());
+        return usuarioRepository.save(usuario);
+    }
+
+    public void cambiarRolUsuario(String usuarioId, String nuevoRol) {
+        Usuarios usuario = obtenerUsuarioPorId(usuarioId);
+        
+        // Validar que el rol exista
+        rolPrivilegioService.obtenerRolPorNombre(nuevoRol);
+        
+        usuario.setRol(nuevoRol);
+        usuarioRepository.save(usuario);
+    }
+
+    public void desactivarUsuario(String usuarioId) {
+        Usuarios usuario = obtenerUsuarioPorId(usuarioId);
+        usuario.setActivo(false);
+        usuario.setEstado("INACTIVO");
+        usuarioRepository.save(usuario);
+    }
+
+    public void activarUsuario(String usuarioId) {
+        Usuarios usuario = obtenerUsuarioPorId(usuarioId);
+        usuario.setActivo(true);
+        usuario.setEstado("ACTIVO");
+        usuarioRepository.save(usuario);
+    }
+
+    public void eliminarUsuario(String usuarioId) {
+        usuarioRepository.deleteById(usuarioId);
+    }
+
+    public List<Usuarios> obtenerUsuariosPorRol(String rol) {
+        return usuarioRepository.findByRol(rol);
+    }
+
+    public List<Usuarios> obtenerUsuariosActivos() {
+        return usuarioRepository.findByActivo(true);
+    }
+
+    public List<Usuarios> obtenerUsuariosPorEstado(String estado) {
+        return usuarioRepository.findByEstado(estado);
+    }
+
+    public void agregarPrivilegioAlUsuario(String usuarioId, String privilegioId) {
+        Usuarios usuario = obtenerUsuarioPorId(usuarioId);
+        if (!usuario.getPrivilegios().contains(privilegioId)) {
+            usuario.getPrivilegios().add(privilegioId);
+            usuarioRepository.save(usuario);
+        }
+    }
+
+    public void removerPrivilegioDelUsuario(String usuarioId, String privilegioId) {
+        Usuarios usuario = obtenerUsuarioPorId(usuarioId);
+        usuario.getPrivilegios().remove(privilegioId);
+        usuarioRepository.save(usuario);
+    }
+
+    public boolean usuarioTienePrivilegio(String usuarioId, String nombrePrivilegio) {
+        Usuarios usuario = obtenerUsuarioPorId(usuarioId);
+        return rolPrivilegioService.usuarioTienePrivilegio(usuario.getRol(), nombrePrivilegio);
+    }
+
+    public void actualizarUltimoAcceso(String usuarioId) {
+        Usuarios usuario = obtenerUsuarioPorId(usuarioId);
+        usuario.setUltimoAcceso(LocalDateTime.now());
+        usuarioRepository.save(usuario);
+    }
+
+    public Usuarios buscarPorCorreo(String correo) {
+        return usuarioRepository.findByCorreo(correo);
+    }
+
+    public Usuarios guardarUsuario(Usuarios usuario) {
+        return usuarioRepository.save(usuario);
+    }
 }

@@ -1,20 +1,20 @@
 package com.proaula.spring.synergy.Service.Impl;
 
 import java.util.List;
+import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.proaula.spring.synergy.Model.Participacion;
-import com.proaula.spring.synergy.Model.ParticipacionId;
-import com.proaula.spring.synergy.Repository.ParticipacionRepository;
-import com.proaula.spring.synergy.Service.ParticipacionService;
 import com.proaula.spring.synergy.Model.Proyecto;
 import com.proaula.spring.synergy.Model.Usuarios;
-import com.proaula.spring.synergy.Repository.UsuarioRepository;
+import com.proaula.spring.synergy.Repository.ParticipacionRepository;
 import com.proaula.spring.synergy.Repository.ProyectoRepository;
+import com.proaula.spring.synergy.Repository.UsuarioRepository;
 
 @Service
-public class ParticipacionServiceImpl implements ParticipacionService {
+public class ParticipacionServiceImpl {
 
     @Autowired
     private ParticipacionRepository participacionRepository;
@@ -25,61 +25,74 @@ public class ParticipacionServiceImpl implements ParticipacionService {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
-    @Override
-    public boolean inscribirUsuario(Long proyectoId, Long usuarioId) {
+    public boolean inscribirUsuario(String proyectoId, String usuarioId) {
+        // Validar que usuario y proyecto existan
+        if (!usuarioRepository.existsById(usuarioId)) {
+            throw new RuntimeException("Usuario no existe");
+        }
 
-        Proyecto proyecto = proyectoRepository.findById(proyectoId)
-                .orElseThrow(() -> new RuntimeException("Proyecto no existe"));
+        if (!proyectoRepository.existsById(proyectoId)) {
+            throw new RuntimeException("Proyecto no existe");
+        }
 
-        Usuarios usuario = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new RuntimeException("Usuario no existe"));
+        // Evitar duplicados
+        Participacion participacionExistente = participacionRepository
+                .findByIdUsuarioAndIdProyecto(usuarioId, proyectoId);
 
-        ParticipacionId id = new ParticipacionId(usuarioId, proyectoId);
-
-        // evitar duplicados
-        if (participacionRepository.existsById(id)) {
+        if (participacionExistente != null) {
             return false; // YA ESTABA INSCRITO
         }
 
-        // crear participación
-        Participacion participacion = new Participacion(usuario, proyecto);
+        // Crear participación
+        Participacion participacion = new Participacion();
+        participacion.setIdUsuario(usuarioId);
+        participacion.setIdProyecto(proyectoId);
         participacionRepository.save(participacion);
 
         return true; // INSCRIPCIÓN EXITOSA
     }
 
-    @Override
-    public List<Participacion> listarParticipantes(Long proyectoId) {
-        return participacionRepository.findByProyecto_Id(proyectoId);
+    public List<Participacion> listarParticipantes(String proyectoId) {
+        return participacionRepository.findByIdProyecto(proyectoId);
     }
 
-    @Override
-    public boolean yaInscrito(Long proyectoId, Long usuarioId) {
-        return participacionRepository.existsByUsuario_IdAndProyecto_Id(usuarioId, proyectoId);
+    public boolean yaInscrito(String proyectoId, String usuarioId) {
+        return participacionRepository.findByIdUsuarioAndIdProyecto(usuarioId, proyectoId) != null;
     }
 
-    @Override
-    public void eliminarParticipacion(Long proyectoId, Long usuarioId) {
-        participacionRepository
-                .findByProyecto_IdAndUsuario_Id(proyectoId, usuarioId)
-                .ifPresent(participacionRepository::delete);
+    public void eliminarParticipacion(String proyectoId, String usuarioId) {
+        Participacion participacion = participacionRepository
+                .findByIdUsuarioAndIdProyecto(usuarioId, proyectoId);
+        if (participacion != null) {
+            participacionRepository.delete(participacion);
+        }
     }
 
-    @Override
-    public List<Proyecto> listarProyectosPorUsuario(Long usuarioId) {
-        List<Participacion> participaciones = participacionRepository.findByUsuario_Id(usuarioId);
-
+    public List<Proyecto> listarProyectosPorUsuario(String usuarioId) {
+        List<Participacion> participaciones = participacionRepository.findByIdUsuario(usuarioId);
         return participaciones.stream()
-                .map(Participacion::getProyecto)
-                .toList();
+                .map(p -> proyectoRepository.findById(p.getIdProyecto()).orElse(null))
+                .filter(p -> p != null)
+                .collect(Collectors.toList());
     }
 
-    @Override
-public List<Usuarios> listarUsuariosPorProyecto(Long proyectoId) {
-    return participacionRepository.findByProyecto_Id(proyectoId)
-            .stream()
-            .map(Participacion::getUsuario)
-            .toList();
-}
+    public List<Usuarios> listarUsuariosPorProyecto(String proyectoId) {
+        List<Participacion> participaciones = participacionRepository.findByIdProyecto(proyectoId);
+        return participaciones.stream()
+                .map(p -> usuarioRepository.findById(p.getIdUsuario()).orElse(null))
+                .filter(u -> u != null)
+                .collect(Collectors.toList());
+    }
 
+    public List<Participacion> listar() {
+        return participacionRepository.findAll();
+    }
+
+    public Participacion guardar(Participacion participacion) {
+        return participacionRepository.save(participacion);
+    }
+
+    public void eliminar(String id) {
+        participacionRepository.deleteById(id);
+    }
 }

@@ -1,9 +1,9 @@
 package com.proaula.spring.synergy.Service.Impl;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -11,10 +11,9 @@ import com.proaula.spring.synergy.Model.Proyecto;
 import com.proaula.spring.synergy.Model.Usuarios;
 import com.proaula.spring.synergy.Repository.ProyectoRepository;
 import com.proaula.spring.synergy.Repository.UsuarioRepository;
-import com.proaula.spring.synergy.Service.ProyectoService;
 
 @Service
-public class ProyectoServiceImpl implements ProyectoService {
+public class ProyectoServiceImpl {
 
     @Autowired
     private ProyectoRepository proyectoRepository;
@@ -22,61 +21,51 @@ public class ProyectoServiceImpl implements ProyectoService {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
-    @Override
     public List<Proyecto> listar() {
         return proyectoRepository.findAll();
     }
 
-    @Override
-public Proyecto guardar(Proyecto proyecto, MultipartFile archivo) {
-    try {
-        // Validar archivo (si viene)
-        if (archivo != null && !archivo.isEmpty()) {
-            System.out.println("Archivo recibido: " + archivo.getOriginalFilename());
+    public Proyecto guardar(Proyecto proyecto, MultipartFile archivo) {
+        try {
+            if (archivo != null && !archivo.isEmpty()) {
+                System.out.println("Archivo recibido: " + archivo.getOriginalFilename());
+            }
+
+            if (proyecto.getIdLider() == null) {
+                throw new RuntimeException("El proyecto debe tener un líder asignado");
+            }
+
+            Usuarios lider = usuarioRepository.findById(proyecto.getIdLider())
+                    .orElseThrow(() -> new RuntimeException("El líder asignado no existe"));
+
+            if (!"LIDER".equals(lider.getRol())) {
+                lider.setRol("LIDER");
+                usuarioRepository.save(lider);
+            }
+
+            proyecto.setFechaActualizacion(LocalDateTime.now());
+            return proyectoRepository.save(proyecto);
+
+        } catch (Exception e) {
+            System.out.println("❌ Error guardando proyecto: " + e.getMessage());
+            throw e;
         }
-
-        // Validar líder
-        if (proyecto.getLider() == null) {
-            throw new RuntimeException("El proyecto debe tener un líder asignado");
-        }
-
-        // Buscar líder por su id (no por el id del proyecto)
-        Usuarios lider = usuarioRepository.findById(proyecto.getLider().getId())
-                .orElseThrow(() -> new RuntimeException("El líder asignado no existe"));
-
-        // Si deseas obligar que el usuario sea líder:
-        if (!Usuarios.Rol.Lider.equals(lider.getRol())) {
-            lider.setRol(Usuarios.Rol.Lider);
-            usuarioRepository.save(lider);
-            System.out.println("🔄 El usuario fue actualizado a rol LIDER");
-        }
-
-        // Guardar el proyecto
-        return proyectoRepository.save(proyecto);
-
-    } catch (DataAccessException e) {
-        System.out.println("❌ Error guardando proyecto: " + e.getMessage());
-        throw e;
     }
-}
 
-    @Override
-    public Proyecto buscarPorId(Long id) {
+    public Proyecto buscarPorId(String id) {
         return proyectoRepository.findById(id).orElse(null);
     }
 
-    @Override
-    public void eliminar(Long id) {
+    public void eliminar(String id) {
         proyectoRepository.deleteById(id);
     }
 
-    @Override
-    public List<Proyecto> obtenerProyectosDeLider(Long idLider) {
-        return proyectoRepository.findByLider_Id(idLider);
+    public List<Proyecto> obtenerProyectosDeLider(String idLider) {
+        return proyectoRepository.findByIdLider(idLider);
     }
 
     public List<Proyecto> listarProyectos() {
         return proyectoRepository.findAll();
     }
-
 }
+

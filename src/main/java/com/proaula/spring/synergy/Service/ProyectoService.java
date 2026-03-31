@@ -11,10 +11,10 @@ public interface ProyectoService {
 
     Proyecto guardar(Proyecto proyecto, MultipartFile archivo);
 
-    Proyecto buscarPorId(Long id);
+    Proyecto buscarPorId(String id);
 
-    void eliminar(Long id);
+    void eliminar(String id);
 
-    List<Proyecto> obtenerProyectosDeLider(Long idLider);
+    List<Proyecto> obtenerProyectosDeLider(String idLider);
 
 }

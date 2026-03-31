@@ -33,7 +33,7 @@ public class LiderController {
         if (usuario == null)
             return null;
 
-        if (!Usuarios.Rol.Lider.equals(usuario.getRol()))
+        if (!"LIDER".equals(usuario.getRol()))
             return null;
 
         return usuario;
@@ -82,7 +82,7 @@ public class LiderController {
         if (lider == null)
             return "redirect:/login";
 
-        proyecto.setLider(lider);
+        proyecto.setIdLider(lider.getId());
         proyectoService.guardar(proyecto, null);
 
         return "redirect:/lider/dashboard";
@@ -92,7 +92,7 @@ public class LiderController {
     // EDITAR PROYECTO
     // =======================================================
     @GetMapping("/proyecto/{id}/editar")
-    public String editarProyecto(@PathVariable Long id,
+    public String editarProyecto(@PathVariable String id,
                                  HttpSession session,
                                  Model model) {
 
@@ -101,7 +101,7 @@ public class LiderController {
             return "redirect:/login";
 
         Proyecto proyecto = proyectoService.buscarPorId(id);
-        if (proyecto == null || !proyecto.getLider().equals(lider))
+        if (proyecto == null || !proyecto.getIdLider().equals(lider.getId()))
             return "redirect:/lider/dashboard";
 
         model.addAttribute("proyecto", proyecto);
@@ -113,7 +113,7 @@ public class LiderController {
     // ACTUALIZAR PROYECTO
     // =======================================================
     @PostMapping("/proyecto/{id}/actualizar")
-    public String actualizarProyecto(@PathVariable Long id,
+    public String actualizarProyecto(@PathVariable String id,
                                      @ModelAttribute Proyecto proyecto,
                                      HttpSession session) {
 
@@ -122,7 +122,7 @@ public class LiderController {
             return "redirect:/login";
 
         proyecto.setId(id);
-        proyecto.setLider(lider);
+        proyecto.setIdLider(lider.getId());
 
         proyectoService.guardar(proyecto, null);
 

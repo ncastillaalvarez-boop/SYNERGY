@@ -1,19 +1,13 @@
 package com.proaula.spring.synergy.Service;
 
-
 import java.time.LocalDateTime;
-
-import com.proaula.spring.synergy.Model.Comentario;
-import com.proaula.spring.synergy.Repository.ComentarioRepository;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-
-import org.springframework.web.multipart.MultipartFile;
-
-import com.proaula.spring.synergy.Model.Proyecto;
+import com.proaula.spring.synergy.Model.Comentario;
+import com.proaula.spring.synergy.Repository.ComentarioRepository;
 import com.proaula.spring.synergy.Repository.ProyectoRepository;
 
 @Service
@@ -25,39 +19,38 @@ public class ComentarioService {
     @Autowired
     private ProyectoRepository proyectoRepository;
 
-    public List<Comentario> listarPorProyecto(Long proyectoId) {
-        return comentarioRepository.findByProyectoId(proyectoId);
+    public List<Comentario> listarPorProyecto(String proyectoId) {
+        return comentarioRepository.findByIdProyecto(proyectoId);
     }
 
-    public void guardar(Long proyectoId, String texto, MultipartFile archivo) {
-
-        Proyecto proyecto = proyectoRepository.findById(proyectoId)
-                .orElseThrow(() -> new RuntimeException("Proyecto no encontrado"));
+    public void guardar(String proyectoId, String texto, String idUsuario) {
+        // Validar que proyecto exista
+        if (!proyectoRepository.existsById(proyectoId)) {
+            throw new RuntimeException("Proyecto no encontrado");
+        }
 
         Comentario c = new Comentario();
         c.setContenido(texto);
         c.setFecha(LocalDateTime.now());
-        c.setProyecto(proyecto);
+        c.setIdProyecto(proyectoId);
+        c.setIdUsuario(idUsuario);
 
         comentarioRepository.save(c);
     }
-    // Guardar
+
     public Comentario guardarComentario(Comentario comentario) {
         return comentarioRepository.save(comentario);
     }
 
-    // Listar todos
     public List<Comentario> listarComentarios() {
         return comentarioRepository.findAll();
     }
 
-    // Buscar por ID
-    public Comentario obtenerPorId(Long id) {
+    public Comentario obtenerPorId(String id) {
         return comentarioRepository.findById(id).orElse(null);
     }
 
-    // Eliminar
-    public void eliminarComentario(Long id) {
+    public void eliminarComentario(String id) {
         comentarioRepository.deleteById(id);
     }
 }

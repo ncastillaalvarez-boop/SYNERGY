@@ -1,10 +1,7 @@
 package com.proaula.spring.synergy.Service.Impl;
 
 import com.proaula.spring.synergy.Model.EntregaTarea;
-import com.proaula.spring.synergy.Model.Tarea;
 import com.proaula.spring.synergy.Repository.EntregaTareaRepository;
-import com.proaula.spring.synergy.Repository.TareaRepository;
-import com.proaula.spring.synergy.Service.EntregaTareaService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -14,22 +11,14 @@ import java.io.IOException;
 import java.util.List;
 
 @Service
-public class EntregaTareaServiceImpl implements EntregaTareaService {
+public class EntregaTareaServiceImpl {
 
     @Autowired
     private EntregaTareaRepository entregaTareaRepository;
 
-    @Autowired
-    private TareaRepository tareaRepository;
-
-    @Override
-    public void guardarEntrega(Long idTarea, MultipartFile archivo) throws IOException {
-
-        Tarea tarea = tareaRepository.findById(idTarea)
-                .orElseThrow(() -> new RuntimeException("Tarea no encontrada"));
-
+    public void guardarEntrega(String idTarea, MultipartFile archivo) throws IOException {
         EntregaTarea entrega = new EntregaTarea();
-        entrega.setTarea(tarea);
+        entrega.setIdTarea(idTarea);
         entrega.setNombreArchivo(archivo.getOriginalFilename());
         entrega.setTipoArchivo(archivo.getContentType());
         entrega.setDatos(archivo.getBytes());
@@ -37,16 +26,23 @@ public class EntregaTareaServiceImpl implements EntregaTareaService {
         entregaTareaRepository.save(entrega);
     }
 
-    @Override
-    public List<EntregaTarea> obtenerEntregasPorTarea(Long idTarea) {
-        return entregaTareaRepository.findByTareaId(idTarea);
+    public List<EntregaTarea> obtenerEntregasPorTarea(String idTarea) {
+        return entregaTareaRepository.findByIdTarea(idTarea);
     }
 
-    @Override
-    public boolean tareaYaEntregada(Long idTarea) {
-        return entregaTareaRepository.existsByTareaId(idTarea);
+    public boolean tareaYaEntregada(String idTarea) {
+        return entregaTareaRepository.existsByIdTarea(idTarea);
     }
 
+    public List<EntregaTarea> listar() {
+        return entregaTareaRepository.findAll();
+    }
 
+    public EntregaTarea guardar(EntregaTarea entrega) {
+        return entregaTareaRepository.save(entrega);
+    }
 
+    public void eliminar(String id) {
+        entregaTareaRepository.deleteById(id);
+    }
 }

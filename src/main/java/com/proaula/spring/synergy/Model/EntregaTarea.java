@@ -1,55 +1,74 @@
 package com.proaula.spring.synergy.Model;
 
-import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "entregas_tareas")
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.index.Indexed;
+
+@Document(collection = "entregas_tareas")
 public class EntregaTarea {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
 
-    // Relación con la tarea
-    @ManyToOne
-    @JoinColumn(name = "id_tarea", nullable = false)
-    private Tarea tarea;
+    @Indexed
+    private String idTarea;
 
-    @Column(name = "nombre_archivo", length = 255)
+    @Indexed
+    private String idUsuario;
+
     private String nombreArchivo;
 
-    @Column(name = "tipo_archivo", length = 100)
     private String tipoArchivo;
 
-    @Lob
-    @Column(name = "datos")
     private byte[] datos;
 
-    @Column(name = "fecha_entrega")
+    @Indexed
     private LocalDateTime fechaEntrega;
 
-    @PrePersist
-    public void prePersist() {
+    private String estado; // ENTREGADO, REVISADO, CALIFICADO, RECHAZADO
+    private String calificacion;
+    private String comentariosRevisor;
+
+    public EntregaTarea() {
         this.fechaEntrega = LocalDateTime.now();
+        this.estado = "ENTREGADO";
     }
 
-    // Getters & Setters
+    public EntregaTarea(String idTarea, String idUsuario, String nombreArchivo, 
+                        String tipoArchivo, byte[] datos) {
+        this();
+        this.idTarea = idTarea;
+        this.idUsuario = idUsuario;
+        this.nombreArchivo = nombreArchivo;
+        this.tipoArchivo = tipoArchivo;
+        this.datos = datos;
+    }
 
-    public Long getId() {
+    // Getters y Setters
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 
-    public Tarea getTarea() {
-        return tarea;
+    public String getIdTarea() {
+        return idTarea;
     }
 
-    public void setTarea(Tarea tarea) {
-        this.tarea = tarea;
+    public void setIdTarea(String idTarea) {
+        this.idTarea = idTarea;
+    }
+
+    public String getIdUsuario() {
+        return idUsuario;
+    }
+
+    public void setIdUsuario(String idUsuario) {
+        this.idUsuario = idUsuario;
     }
 
     public String getNombreArchivo() {
@@ -82,5 +101,29 @@ public class EntregaTarea {
 
     public void setFechaEntrega(LocalDateTime fechaEntrega) {
         this.fechaEntrega = fechaEntrega;
+    }
+
+    public String getEstado() {
+        return estado;
+    }
+
+    public void setEstado(String estado) {
+        this.estado = estado;
+    }
+
+    public String getCalificacion() {
+        return calificacion;
+    }
+
+    public void setCalificacion(String calificacion) {
+        this.calificacion = calificacion;
+    }
+
+    public String getComentariosRevisor() {
+        return comentariosRevisor;
+    }
+
+    public void setComentariosRevisor(String comentariosRevisor) {
+        this.comentariosRevisor = comentariosRevisor;
     }
 }

@@ -6,16 +6,16 @@ import com.proaula.spring.synergy.Model.Usuarios;
 
 public interface ParticipacionService {
 
-    boolean inscribirUsuario(Long proyectoId, Long usuarioId);
+    boolean inscribirUsuario(String proyectoId, String usuarioId);
 
-    List<com.proaula.spring.synergy.Model.Participacion> listarParticipantes(Long proyectoId);
+    List<com.proaula.spring.synergy.Model.Participacion> listarParticipantes(String proyectoId);
 
-    boolean yaInscrito(Long proyectoId, Long usuarioId);
+    boolean yaInscrito(String proyectoId, String usuarioId);
 
-    void eliminarParticipacion(Long proyectoId, Long usuarioId);
+    void eliminarParticipacion(String proyectoId, String usuarioId);
 
-    List<Proyecto> listarProyectosPorUsuario(Long usuarioId);
+    List<Proyecto> listarProyectosPorUsuario(String usuarioId);
 
-    List<Usuarios> listarUsuariosPorProyecto(Long proyectoId);
+    List<Usuarios> listarUsuariosPorProyecto(String proyectoId);
 
 }

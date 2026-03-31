@@ -30,7 +30,7 @@ public class ComentarioController {
     // VER comentarios de un proyecto
 
     @GetMapping("/{id}/comentarios")
-    public String verComentarios(@PathVariable Long id, Model model) {
+    public String verComentarios(@PathVariable String id, Model model) {
 
         Proyecto proyecto = proyectoService.buscarPorId(id);
 
@@ -49,21 +49,25 @@ public class ComentarioController {
 
     @PostMapping("/enviar-comentario")
     public String enviarComentario(@ModelAttribute Comentario comentario,
-            @RequestParam Long proyectoId,
-            @RequestParam Long usuarioId) {
+            @RequestParam String proyectoId,
+            @RequestParam String usuarioId) {
 
         Proyecto proyecto = proyectoService.buscarPorId(proyectoId);
-        Optional<Usuarios> usuario = usuarioService.buscarPorId(usuarioId);
+        Usuarios usuario = usuarioService.obtenerUsuarioPorId(usuarioId);
 
         if (proyecto == null || usuario == null) {
             return "redirect:/proyectos/mis-proyectos";
         }
 
-        comentario.setProyecto(proyecto);
-        comentario.setProyecto(proyecto);
-        usuario.ifPresent(comentario::setUsuario);
+        comentario.setIdProyecto(proyecto.getId());
+        comentario.setIdUsuario(usuario.getId());
 
-        comentarioService.guardarComentario(comentario);
+        Comentario comentarioGuardado = comentarioService.guardarComentario(comentario);
+        
+        // Asignar el comentario al proyecto (assuming there's a reference list, check if it works or will need manual add via service)
+        // Since we are referencing by ID in Comentario and Proyecto, we should probably add the ID to Proyecto and save it.
+        proyecto.getComentarios().add(comentarioGuardado.getId());
+        proyectoService.guardar(proyecto, null);
 
         return "redirect:/proyectos/" + proyectoId + "/comentarios";
     }
@@ -71,10 +75,17 @@ public class ComentarioController {
     // ELIMINAR comentario (opcional)
 
     @PostMapping("/comentarios/eliminar/{id}")
-    public String eliminarComentario(@PathVariable Long id,
-            @RequestParam Long proyectoId) {
+    public String eliminarComentario(@PathVariable String id,
+            @RequestParam String proyectoId) {
 
         comentarioService.eliminarComentario(id);
+        
+        // Opcional: remover id de comentario de la lista del proyecto
+        Proyecto proyecto = proyectoService.buscarPorId(proyectoId);
+        if (proyecto != null) {
+            proyecto.getComentarios().remove(id);
+            proyectoService.guardar(proyecto, null);
+        }
 
         return "redirect:/proyectos/" + proyectoId + "/comentarios";
     }
