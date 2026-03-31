@@ -185,4 +185,12 @@ public String guardarProyecto(
         return "Dashboard_MisProyectos";
     }
 
+    //vista publica para los invitados
+    @GetMapping("/publico")
+    public String verProyectosPublico(Model model) {
+        model.addAttribute("proyectos", proyectoService.listar());
+        return "Participacion_Proyecto_Usuario";
+    }
+    
+
 }

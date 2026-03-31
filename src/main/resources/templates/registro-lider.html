@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registro Líder – Synergy</title>
+  <link rel="stylesheet" th:href="@{/css/Registro.css}">
+  <link rel="stylesheet" th:href="@{/css/RegistroLider.css}">
+</head>
+<body>
+
+<section class="hero">
+  <div class="overlay"></div>
+
+  <a th:href="@{/seleccionar-rol}" class="btn-small"
+     style="position:absolute; top:20px; left:20px; z-index:9999;">
+    ←
+  </a>
+
+  <div class="container">
+    <div class="card">
+
+      <img th:src="@{/img/logo.png}" alt="Logo Synergy" class="Logo">
+
+      <div class="rol-badge">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+          <path d="M12 3l2.2 4.4 4.8.7-3.5 3.4.8 4.8L12 14l-4.3 2.3.8-4.8L5 8.1l4.8-.7z"
+                stroke="#0F6E56" stroke-width="1.5" stroke-linejoin="round"/>
+        </svg>
+        Líder de proyecto
+      </div>
+
+      <h1>Regístrate</h1>
+      <p class="subtitle">Crea tu cuenta como líder en Synergy</p>
+
+      <p th:if="${error}" th:text="${error}" class="error-msg"></p>
+
+      <form th:action="@{/registrarse}" th:object="${usuario}" method="post">
+
+        <input type="hidden" th:field="*{id}">
+
+        <!-- Rol fijo como Lider -->
+        <input type="hidden" name="rol" value="Lider">
+
+        <div class="input-group">
+          <input type="text" th:field="*{nombre}" required placeholder=" ">
+          <label>Nombre completo</label>
+        </div>
+
+        <div class="input-group">
+          <input type="email" th:field="*{correo}" required placeholder=" ">
+          <label>Correo electrónico</label>
+        </div>
+
+        <div class="input-group">
+          <input type="password" th:field="*{contrasena}" required placeholder=" ">
+          <label>Contraseña</label>
+        </div>
+
+        <div class="input-group">
+          <input type="password" name="confirmarContrasena" required placeholder=" ">
+          <label>Confirmar contraseña</label>
+        </div>
+
+        <button type="submit" class="btn-comenzar">Crear cuenta como líder</button>
+
+        <p class="login-text">
+          ¿Ya tienes una cuenta? <a th:href="@{/login}">Inicia sesión</a>
+        </p>
+
+      </form>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>

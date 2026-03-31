@@ -10,7 +10,8 @@
   <header>
     <h1>Synergy</h1>
     <nav>
-      <a th:href="@{/registrarse}">Registrarse</a>
+      <a th:href="@{/publico/proyectos}" class="btn-invitado">Ver como invitado</a>
+      <a th:href="@{/seleccionar-rol}">Registrarse</a>
       <a th:href="@{/login}">Login</a>
     </nav>
   </header>
@@ -20,7 +21,7 @@
     <div class="hero-content">
       <h2>Bienvenido a Synergy</h2>
       <p>Un espacio para la colaboración ecológica y comunitaria</p>
-      <a th:href="@{/registrarse}" class="btn-comenzar">Comenzar</a>
+      <a th:href="@{/seleccionar-rol}" class="btn-comenzar">Comenzar</a>
     </div>
   </section>
 

@@ -38,9 +38,16 @@
       </div>
 
       <button type="submit" class="btn-comenzar">Iniciar sesión</button>
+      <div class="divider">
+        <hr><span>o continúa sin cuenta</span><hr>
+     </div>
+
+     <a th:href="@{/proyectos/publico}" class="btn-invitado">
+       Ver proyectos como invitado
+     </a>
       
       <p class="login-text">
-        ¿No tienes una cuenta? <a th:href="@{/registrarse}">Regístrate</a>
+        ¿No tienes una cuenta? <a th:href="@{/seleccionar-rol}">Regístrate</a>
       </p>
 
     </form>

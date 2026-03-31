@@ -201,3 +201,36 @@ button:hover {
   transform: scale(1.05);
 }
 
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0;
+  color: rgba(255,255,255,0.3);
+  font-size: 12px;
+}
+
+.divider hr {
+  flex: 1;
+  border: none;
+  border-top: 0.5px solid rgba(255,255,255,0.15);
+}
+
+.btn-invitado {
+  display: block;
+  width: 100%;
+  padding: 11px;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 8px;
+  color: rgba(255,255,255,0.6);
+  text-align: center;
+  text-decoration: none;
+  font-size: 14px;
+  transition: all 0.15s;
+}
+
+.btn-invitado:hover {
+  border-color: #1D9E75;
+  color: #9FE1CB;
+}

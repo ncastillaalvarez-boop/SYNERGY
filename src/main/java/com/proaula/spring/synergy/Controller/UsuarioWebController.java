@@ -50,35 +50,37 @@ public class UsuarioWebController {
         return "Registro";
     }
 
-    @PostMapping("/registrarse")
-    public String registrar(
-            @ModelAttribute Usuarios usuario,
-            RedirectAttributes ra) {
-
-        // Asignar rol automáticamente por el correo
-        asignarRolPorCorreo(usuario);
-
-        // Guardar en BD
-        usuarioService.guardarUsuario(usuario);
-
-        ra.addFlashAttribute("mensaje", "Usuario registrado correctamente");
-        return "redirect:/login";
-    }
 
     // ============================================
     // ASIGNAR ROL AUTOMÁTICO POR DOMINIO
     // ============================================
-    private void asignarRolPorCorreo(Usuarios usuario) {
-        String correo = usuario.getCorreo();
+    @PostMapping("/registrarse")
+    public String registrar(
+             @ModelAttribute Usuarios usuario,
+             @RequestParam(required = false) String confirmarContrasena,
+             HttpSession session,
+             RedirectAttributes ra) {
 
-        if (correo.endsWith("@admin.com")) {
-            usuario.setRol(Rol.Administrador);
-        } else if (correo.endsWith("@lider.com")) {
-            usuario.setRol(Rol.Lider);
-        } else {
-            usuario.setRol(Rol.Participante);
-        }
+    // Si no viene rol del formulario, asignar Participante por defecto
+    if (usuario.getRol() == null) {
+        usuario.setRol(Rol.Participante);
     }
+
+    // Guardar en BD
+    usuarioService.guardarUsuario(usuario);
+
+    // Guardar en sesión
+    session.setAttribute("usuario", usuario);
+    session.setAttribute("usuarioId", usuario.getId());
+
+    // Redirigir según el rol
+    return switch (usuario.getRol()) {
+        case Administrador -> "redirect:/admin/proyectos";
+        case Lider        -> "redirect:/lider/dashboard";
+        case Participante -> "redirect:/dashboard";
+        default           -> "redirect:/login";
+    };
+}
 
     // ============================================
     // LOGIN
@@ -277,4 +279,24 @@ public class UsuarioWebController {
 
         return "Lider_AsignarTareas";
     }
+
+    //seleccionar-rol
+    @GetMapping("/seleccionar-rol")
+    public String seleccionarRol() {
+        return "seleccionar-rol";
+    }
+
+    //Registro Lider
+    @GetMapping("/registro/lider")
+    public String registroLider(Model model) {
+        model.addAttribute("usuario", new Usuarios());
+        return "registro-lider";
+    }
+
+    @GetMapping("/registro/voluntario")
+    public String registroVoluntario(Model model) {
+        model.addAttribute("usuario", new Usuarios());
+        return "Registro";
+    }
+
 }

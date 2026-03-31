@@ -1,0 +1,277 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Segoe UI', sans-serif;
+  min-height: 100vh;
+  background: #0a1a10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  position: relative;
+  overflow: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(29,158,117,0.15) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 20%, rgba(15,110,86,0.12) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+/* ── Botón volver ── */
+.btn-volver {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 99;
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.7);
+  border: 0.5px solid rgba(255,255,255,0.15);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 14px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.15s;
+}
+
+.btn-volver:hover {
+  background: rgba(255,255,255,0.14);
+}
+
+/* ── Card principal ── */
+.card {
+  position: relative;
+  z-index: 2;
+  background: rgba(10, 26, 16, 0.85);
+  border: 0.5px solid rgba(29,158,117,0.25);
+  border-radius: 20px;
+  padding: 2.5rem 2rem;
+  width: 100%;
+  max-width: 460px;
+  backdrop-filter: blur(12px);
+  animation: fadeUp 0.4s ease both;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Logo ── */
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 0.3rem;
+}
+
+.logo-icon {
+  width: 34px;
+  height: 34px;
+  background: #1D9E75;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logo-text {
+  font-size: 20px;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: -0.5px;
+}
+
+.logo-sub {
+  font-size: 12px;
+  color: rgba(255,255,255,0.35);
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+/* ── Indicador de pasos ── */
+.steps {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 1.8rem;
+}
+
+.step-dot {
+  width: 28px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255,255,255,0.12);
+}
+
+.step-dot.done   { background: rgba(29,158,117,0.5); }
+.step-dot.active { background: #1D9E75; }
+
+/* ── Textos ── */
+.title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 5px;
+  text-align: center;
+}
+
+.subtitle {
+  font-size: 13px;
+  color: rgba(255,255,255,0.45);
+  text-align: center;
+  margin-bottom: 2rem;
+  line-height: 1.5;
+}
+
+/* ── Tarjetas de rol ── */
+.roles-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 1.5rem;
+}
+
+.rol-card {
+  border: 1.5px solid rgba(255,255,255,0.1);
+  border-radius: 14px;
+  padding: 1.3rem 1rem;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  display: block;
+  transition: border-color 0.15s, background 0.15s, transform 0.1s;
+  background: rgba(255,255,255,0.03);
+}
+
+.rol-card:hover {
+  border-color: #1D9E75;
+  background: rgba(29,158,117,0.08);
+  transform: translateY(-2px);
+}
+
+.rol-card.recomendado {
+  border-color: rgba(29,158,117,0.4);
+}
+
+.badge-rec {
+  display: inline-block;
+  font-size: 10px;
+  background: rgba(29,158,117,0.2);
+  color: #9FE1CB;
+  padding: 2px 8px;
+  border-radius: 20px;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.rol-icono {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 10px;
+}
+
+.icono-voluntario { background: rgba(29,158,117,0.15); }
+.icono-lider      { background: rgba(99,153,34,0.15); }
+
+.rol-nombre {
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+.rol-desc {
+  font-size: 11px;
+  color: rgba(255,255,255,0.4);
+  line-height: 1.4;
+}
+
+/* ── Caja de información ── */
+.info-box {
+  background: rgba(29,158,117,0.08);
+  border-left: 3px solid #1D9E75;
+  border-radius: 0 8px 8px 0;
+  padding: 10px 14px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.55);
+  line-height: 1.5;
+  margin-bottom: 1.5rem;
+  min-height: 48px;
+  transition: opacity 0.2s;
+}
+
+/* ── Divisor ── */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0.5rem 0 1rem;
+}
+
+.divider-line {
+  flex: 1;
+  height: 0.5px;
+  background: rgba(255,255,255,0.1);
+}
+
+.divider-text {
+  font-size: 11px;
+  color: rgba(255,255,255,0.25);
+}
+
+/* ── Botón invitado ── */
+.btn-invitado {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  background: transparent;
+  border: 0.5px solid rgba(255,255,255,0.15);
+  border-radius: 10px;
+  color: rgba(255,255,255,0.5);
+  font-size: 14px;
+  text-align: center;
+  text-decoration: none;
+  transition: border-color 0.15s, color 0.15s;
+  cursor: pointer;
+}
+
+.btn-invitado:hover {
+  border-color: rgba(29,158,117,0.5);
+  color: #9FE1CB;
+}
+
+/* ── Link login ── */
+.login-link {
+  text-align: center;
+  font-size: 13px;
+  color: rgba(255,255,255,0.3);
+  margin-top: 1.2rem;
+}
+
+.login-link a {
+  color: #1D9E75;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.login-link a:hover {
+  text-decoration: underline;
+}
