@@ -6,7 +6,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
-import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -20,7 +20,7 @@ import com.proaula.spring.synergy.Security.UserDetailsServiceImpl;
 
 @Configuration
 @EnableWebSecurity
-@EnableGlobalMethodSecurity(
+@EnableMethodSecurity(
     securedEnabled = true,
     jsr250Enabled = true,
     prePostEnabled = true
@@ -56,25 +56,54 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .cors().and()
-            .csrf().disable()
-            .sessionManagement()
+            .csrf(csrf -> csrf.disable())
+            .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                .and()
+            )
             .authorizeHttpRequests(authz -> authz
-                .requestMatchers("/api/auth/**", "/", "/index.html", "/css/**", "/js/**", "/IMG/**").permitAll()
-                .requestMatchers("/api/admin/**").hasRole("ADMINISTRADOR")
-                .requestMatchers("/api/lider/**").hasAnyRole("ADMINISTRADOR", "LIDER")
-                .requestMatchers("/api/usuarios/**").hasAnyRole("ADMINISTRADOR", "LIDER", "PARTICIPANTE")
+
+                // ── Rutas públicas (INVITADO sin login) ──
+                .requestMatchers(
+                    "/", "/index", "/login", "/logout",
+                    "/seleccionar-rol",
+                    "/registro/voluntario",
+                    "/registro/lider",
+                    "/registrarse",
+                    "/proyectos/publico",
+                    "/api/auth/login",
+                    "/api/auth/registrar",
+                    "/error",
+                    "/css/**", "/js/**", "/img/**", "/IMG/**", "/images/**"
+                ).permitAll()
+
+                // ── Rutas de ADMINISTRADOR ──
+                .requestMatchers("/admin/**", "/api/admin/**").hasRole("ADMINISTRADOR")
+
+                // ── Rutas de LÍDER ──
+                .requestMatchers("/lider/**", "/api/lider/**")
+                    .hasAnyRole("ADMINISTRADOR", "LIDER")
+
+                // ── Rutas de PARTICIPANTE/VOLUNTARIO ──
+                .requestMatchers(
+                    "/dashboard",
+                    "/proyectos/participar",
+                    "/proyectos/dashboard",
+                    "/tareas/buzon",
+                    "/usuario/credenciales",
+                    "/api/usuarios/**"
+                ).hasAnyRole("ADMINISTRADOR", "LIDER", "PARTICIPANTE")
+
+                // ── Cualquier otra ruta requiere autenticación ──
                 .anyRequest().authenticated()
             )
             .authenticationProvider(authenticationProvider())
             .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
-            .logout()
-                .logoutUrl("/api/auth/logout")
+            .logout(logout -> logout
+                .logoutUrl("/logout")
                 .invalidateHttpSession(true)
                 .deleteCookies("JSESSIONID")
-                .permitAll();
+                .permitAll()
+            );
 
         return http.build();
     }

@@ -12,9 +12,10 @@ import com.proaula.spring.synergy.Model.Usuarios;
 import com.proaula.spring.synergy.Repository.ParticipacionRepository;
 import com.proaula.spring.synergy.Repository.ProyectoRepository;
 import com.proaula.spring.synergy.Repository.UsuarioRepository;
+import com.proaula.spring.synergy.Service.ParticipacionService;
 
 @Service
-public class ParticipacionServiceImpl {
+public class ParticipacionServiceImpl implements ParticipacionService {
 
     @Autowired
     private ParticipacionRepository participacionRepository;

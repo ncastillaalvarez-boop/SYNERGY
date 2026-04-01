@@ -8,9 +8,10 @@ import org.springframework.stereotype.Service;
 
 import com.proaula.spring.synergy.Model.Tarea;
 import com.proaula.spring.synergy.Repository.TareaRepository;
+import com.proaula.spring.synergy.Service.TareaService;
 
 @Service
-public class TareaServiceImpl {
+public class TareaServiceImpl implements TareaService{
 
     @Autowired
     private TareaRepository tareaRepository;

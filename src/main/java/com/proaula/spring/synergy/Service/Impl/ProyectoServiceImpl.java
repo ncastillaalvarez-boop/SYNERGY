@@ -11,9 +11,10 @@ import com.proaula.spring.synergy.Model.Proyecto;
 import com.proaula.spring.synergy.Model.Usuarios;
 import com.proaula.spring.synergy.Repository.ProyectoRepository;
 import com.proaula.spring.synergy.Repository.UsuarioRepository;
+import com.proaula.spring.synergy.Service.ProyectoService;
 
 @Service
-public class ProyectoServiceImpl {
+public class ProyectoServiceImpl implements ProyectoService {
 
     @Autowired
     private ProyectoRepository proyectoRepository;

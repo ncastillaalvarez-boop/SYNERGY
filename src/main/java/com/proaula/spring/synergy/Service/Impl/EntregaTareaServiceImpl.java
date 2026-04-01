@@ -2,6 +2,7 @@ package com.proaula.spring.synergy.Service.Impl;
 
 import com.proaula.spring.synergy.Model.EntregaTarea;
 import com.proaula.spring.synergy.Repository.EntregaTareaRepository;
+import com.proaula.spring.synergy.Service.EntregaTareaService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -11,7 +12,7 @@ import java.io.IOException;
 import java.util.List;
 
 @Service
-public class EntregaTareaServiceImpl {
+public class EntregaTareaServiceImpl implements EntregaTareaService {
 
     @Autowired
     private EntregaTareaRepository entregaTareaRepository;
