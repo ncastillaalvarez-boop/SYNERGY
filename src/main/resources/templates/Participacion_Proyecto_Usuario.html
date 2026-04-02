@@ -16,7 +16,7 @@
 
         <!-- ENCABEZADO -->
         <div class="header">
-          <button class="btn-inicio" onclick="location.href='/dashboard'">🏠 Volver al inicio</button>
+          <button class="btn-inicio" onclick="location.href='/'">🏠 Volver al inicio</button>
           <h1>Proyectos Disponibles</h1>
           <p class="subtitle">Participa en cualquiera de los proyectos publicados.</p>
         </div>
@@ -35,20 +35,30 @@
 
           <tbody>
             <tr th:each="p : ${proyectos}">
-              <td th:text="${p.id}"></td>
-              <td th:text="${p.nombre}"></td>
+              <td th:text="${pStat.index + 1}"></td>
+              <td th:text="${#strings.substring(p.id, p.id.length() - 8)}"></td>
               <td th:text="${p.descripcion}"></td>
 
               <!-- Fecha -->
-              <td th:text="${#temporals.format(p.fechaInicio, 'dd/MM/yyyy')}"></td>
+              <td th:text="${p.fechaInicio}"></td>
 
               <td>
                 <div class="acciones">
 
-                  <!-- SOLO BOTÓN PARTICIPAR -->
-                  <form th:action="@{'/proyectos/participacion/inscribir/' + ${p.id} + '/' + ${usuario.id}}" method="post">
+                  <!-- SI HAY USUARIO LOGUEADO PUEDE PARTICIPAR -->
+                  <form th:if="${usuario != null}"
+                        th:action="@{'/proyectos/participacion/inscribir/' + ${p.id} + '/' + ${usuario.id}}" 
+                        method="post">
                     <button type="submit" class="btn-participar">Participar</button>
                   </form>
+
+                  <!--SI ES INVITADO LO REDIRIGE A RESGISTRARSE-->
+                   <a th:if="${usuario == null}" 
+                      th:href="@{/seleccionar-rol}" 
+                      class="btn-participar">
+                      Participar
+                   </a>
+
 
                 </div>
               </td>

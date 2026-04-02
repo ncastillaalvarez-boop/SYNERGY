@@ -58,7 +58,7 @@ public class SecurityConfig {
         http
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
             )
             .authorizeHttpRequests(authz -> authz
 
@@ -66,35 +66,21 @@ public class SecurityConfig {
                 .requestMatchers(
                     "/", "/index", "/login", "/logout",
                     "/seleccionar-rol",
-                    "/registro/voluntario",
-                    "/registro/lider",
+                    "/registro/**",
                     "/registrarse",
+                    "/publico/**",
                     "/proyectos/publico",
-                    "/api/auth/login",
-                    "/api/auth/registrar",
                     "/error",
                     "/css/**", "/js/**", "/img/**", "/IMG/**", "/images/**"
                 ).permitAll()
 
-                // ── Rutas de ADMINISTRADOR ──
-                .requestMatchers("/admin/**", "/api/admin/**").hasRole("ADMINISTRADOR")
+                // ── Solo JWT para API ──
+                .requestMatchers("/api/admin/**").hasRole("ADMINISTRADOR")
+                .requestMatchers("/api/lider/**").hasAnyRole("ADMINISTRADOR", "LIDER")
+                .requestMatchers("/api/**").authenticated()
 
-                // ── Rutas de LÍDER ──
-                .requestMatchers("/lider/**", "/api/lider/**")
-                    .hasAnyRole("ADMINISTRADOR", "LIDER")
-
-                // ── Rutas de PARTICIPANTE/VOLUNTARIO ──
-                .requestMatchers(
-                    "/dashboard",
-                    "/proyectos/participar",
-                    "/proyectos/dashboard",
-                    "/tareas/buzon",
-                    "/usuario/credenciales",
-                    "/api/usuarios/**"
-                ).hasAnyRole("ADMINISTRADOR", "LIDER", "PARTICIPANTE")
-
-                // ── Cualquier otra ruta requiere autenticación ──
-                .anyRequest().authenticated()
+                // ── Rutas Thymeleaf controladas por sesión ──
+                .anyRequest().permitAll()
             )
             .authenticationProvider(authenticationProvider())
             .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
@@ -104,7 +90,7 @@ public class SecurityConfig {
                 .deleteCookies("JSESSIONID")
                 .permitAll()
             );
-
+      
         return http.build();
     }
 }

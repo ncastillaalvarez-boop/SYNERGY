@@ -3,6 +3,7 @@ package com.proaula.spring.synergy.Controller;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,6 +14,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.proaula.spring.synergy.Model.Tarea;
 import com.proaula.spring.synergy.Model.Usuarios;
+import com.proaula.spring.synergy.Service.ProyectoService;
 import com.proaula.spring.synergy.Service.TareaService;
 import com.proaula.spring.synergy.Service.UsuarioService;
 
@@ -20,6 +22,12 @@ import jakarta.servlet.http.HttpSession;
 
 @Controller
 public class UsuarioWebController {
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private ProyectoService proyectoService;
 
     @Autowired
     private UsuarioService usuarioService;
@@ -48,37 +56,43 @@ public class UsuarioWebController {
         model.addAttribute("usuario", new Usuarios());
         return "Registro";
     }
-
-    // ============================================
-    // ASIGNAR ROL AUTOMÁTICO POR DOMINIO
-    // ============================================
     @PostMapping("/registrarse")
     public String registrar(
-             @ModelAttribute Usuarios usuario,
-             @RequestParam(required = false) String confirmarContrasena,
-             HttpSession session,
-             RedirectAttributes ra) {
+            @ModelAttribute Usuarios usuario,
+            @RequestParam(required = false) String confirmarContrasena,
+            HttpSession session,
+            RedirectAttributes ra) {
 
-        // Si no viene rol del formulario, asignar Participante por defecto
-        if (usuario.getRol() == null) {
-            usuario.setRol("PARTICIPANTE");
-        }
+        // Encriptar contraseña antes de guardar
+        String contrasenaEncriptada = passwordEncoder.encode(usuario.getContrasena());
+        usuario.setContrasena(contrasenaEncriptada);
 
-        // Guardar en BD
-        usuarioService.guardarUsuario(usuario);
+       // Si no viene rol del formulario, asignar Participante por defecto
+       if (usuario.getRol() == null || usuario.getRol().isEmpty()) {
+           usuario.setRol("PARTICIPANTE");
+       }
 
-        // Guardar en sesión
-        session.setAttribute("usuario", usuario);
-        session.setAttribute("usuarioId", usuario.getId());
+       // Campos requeridos por MongoDB
+       usuario.setActivo(true);
+       usuario.setEstado("ACTIVO");
 
-        // Redirigir según el rol
-        return switch (usuario.getRol()) {
-            case "ADMINISTRADOR" -> "redirect:/admin/proyectos";
-            case "LIDER" -> "redirect:/lider/dashboard";
-            case "PARTICIPANTE" -> "redirect:/dashboard";
-            default -> "redirect:/login";
-        };
+       // Guardar en BD
+       usuarioService.guardarUsuario(usuario);
+
+      // Guardar en sesión
+      session.setAttribute("usuario", usuario);
+      session.setAttribute("usuarioId", usuario.getId());
+
+      // Redirigir según el rol
+      return switch (usuario.getRol()) {
+          case "ADMINISTRADOR" -> "redirect:/admin/proyectos";
+          case "LIDER"         -> "redirect:/lider/dashboard";
+          case "PARTICIPANTE"  -> "redirect:/dashboard";
+          default              -> "redirect:/login";
+      };
     }
+
+   
 
     // ============================================
     // LOGIN
@@ -98,7 +112,7 @@ public class UsuarioWebController {
 
         Usuarios usuario = usuarioService.buscarPorCorreo(correo);
 
-        if (usuario == null || !usuario.getContrasena().equals(contrasena)) {
+        if (usuario == null || !passwordEncoder.matches(contrasena, usuario.getContrasena())) {
             model.addAttribute("error", "Correo o contraseña incorrectos");
             return "Login";
         }
@@ -296,5 +310,13 @@ public class UsuarioWebController {
     public String registroVoluntario(Model model) {
         model.addAttribute("usuario", new Usuarios());
         return "Registro";
+    }
+
+    @GetMapping("/publico/proyectos")
+    public String verProyectosPublico(Model model, HttpSession session) {
+        model.addAttribute("proyectos", proyectoService.listar());
+        Usuarios usuario = (Usuarios) session.getAttribute("usuario");
+        model.addAttribute("usuario", usuario);
+       return "Participacion_Proyecto_Usuario";
     }
 }
