@@ -10,10 +10,12 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.proaula.spring.synergy.Model.Proyecto;
 import com.proaula.spring.synergy.Model.Usuarios;
 import com.proaula.spring.synergy.Service.ProyectoService;
+import com.proaula.spring.synergy.Service.UsuarioService;
 
 import jakarta.servlet.http.HttpSession;
 
@@ -23,6 +25,9 @@ public class LiderController {
 
     @Autowired
     private ProyectoService proyectoService;
+
+    @Autowired
+    private UsuarioService usuarioService;
 
     // =======================================================
     // VALIDAR QUE EL USUARIO SEA LÍDER
@@ -130,11 +135,11 @@ public class LiderController {
     }
 
     // =======================================================
-    // PÁGINAS NUEVAS QUE PEDISTE
+    // ASIGNAR TAREAS
     // =======================================================
 
     @GetMapping("/tareas/asignar")
-public String asignarTareas(HttpSession session, Model model) {
+    public String asignarTareas(HttpSession session, Model model) {
 
     Usuarios lider = validarLider(session);
     if (lider == null)
@@ -142,6 +147,9 @@ public String asignarTareas(HttpSession session, Model model) {
     // Obtener proyectos del líder
     List<Proyecto> proyectos = proyectoService.obtenerProyectosDeLider(lider.getId());
     model.addAttribute("proyectos", proyectos);
+
+    List<Usuarios> usuarios = usuarioService.obtenerTodosUsuarios();
+    model.addAttribute("usuarios", usuarios);
     
     return "Lider_Asignar_Tareas";
 }
@@ -166,6 +174,30 @@ public String asignarTareas(HttpSession session, Model model) {
             return "redirect:/login";
 
         return "Lider_Tareas_Recibidas";
+    }
+
+     // =======================================================
+    // ELIMINAR PROYECTO
+    // =======================================================
+    @PostMapping("/proyecto/{id}/eliminar")
+     public String eliminarProyecto(@PathVariable String id,
+                                HttpSession session,
+                                RedirectAttributes redirectAttributes) {
+
+        Usuarios lider = validarLider(session);
+        if (lider == null)
+            return "redirect:/login";
+
+        Proyecto proyecto = proyectoService.buscarPorId(id);
+        if (proyecto == null || !proyecto.getIdLider().equals(lider.getId()))
+            return "redirect:/lider/dashboard";
+
+        proyectoService.eliminar(id);
+
+        redirectAttributes.addFlashAttribute("popup", "success");
+        redirectAttributes.addFlashAttribute("mensaje", "Proyecto eliminado correctamente.");
+
+        return "redirect:/lider/dashboard";
     }
 
 }

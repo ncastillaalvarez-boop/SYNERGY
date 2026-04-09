@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -13,52 +13,62 @@
 
     <div class="container">
       <div class="card">
+
         <!-- Encabezado -->
         <div class="header">
           <div class="top-buttons">
-          <button class="btn-inicio" onclick="window.location.href='/Logout'">⬅ Volver</button>
-            <button class="btn-usuarios" onclick="location.href='usuarios'">👥 Ver Usuarios</button>
+            <a th:href="@{/index}" class="btn-inicio">⬅ Volver</a>
+            <a th:href="@{/admin/usuarios}" class="btn-usuarios">👥 Ver Usuarios</a>
           </div>
           <h1>Panel de Administración</h1>
           <p class="subtitle">Gestiona los proyectos enviados por los usuarios.</p>
         </div>
 
+        <!-- Mensaje de éxito o error -->
+        <div th:if="${mensaje}" class="alert-success" th:text="${mensaje}"></div>
+
         <!-- Tabla de proyectos -->
         <table class="project-table">
           <thead>
             <tr>
-              <th>ID</th>
               <th>Nombre del Proyecto</th>
-              <th>Autor</th>
-              <th>Fecha</th>
+              <th>Estado</th>
+              <th>Fecha Inicio</th>
               <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td>1</td>
-              <td>Reforestación Urbana</td>
-              <td>María López</td>
-              <td>2025-11-08</td>
+            <tr th:each="proyecto : ${proyectos}">
+              <td th:text="${proyecto.nombre}">Nombre</td>
+              <td th:text="${proyecto.estado}">Estado</td>
+              <td th:text="${proyecto.fechaInicio}">Fecha</td>
               <td class="actions">
-                <button class="btn-ver">Ver</button>
-                <button class="btn-aceptar">Aceptar</button>
-                <button class="btn-eliminar">Eliminar</button>
+
+                <!-- Ver -->
+                <a th:href="@{/admin/proyecto/{id}(id=${proyecto.id})}" class="btn-ver">Ver</a>
+
+                <!-- Aceptar -->
+                <form th:action="@{/admin/proyecto/{id}/aceptar(id=${proyecto.id})}" method="post" style="display:inline">
+                  <button type="submit" class="btn-aceptar">Aceptar</button>
+                </form>
+
+                <!-- Eliminar -->
+                <form th:action="@{/admin/proyecto/{id}/eliminar(id=${proyecto.id})}" method="post" style="display:inline">
+                  <button type="submit" class="btn-eliminar"
+                    onclick="return confirm('¿Seguro que deseas eliminar este proyecto?')">Eliminar</button>
+                </form>
+
               </td>
             </tr>
-            <tr>
-              <td>2</td>
-              <td>Reciclaje en Comunidades</td>
-              <td>Carlos Pérez</td>
-              <td>2025-11-07</td>
-              <td class="actions">
-                <button class="btn-ver">Ver</button>
-                <button class="btn-aceptar">Aceptar</button>
-                <button class="btn-eliminar">Eliminar</button>
-              </td>
+
+            <!-- Si no hay proyectos -->
+            <tr th:if="${#lists.isEmpty(proyectos)}">
+              <td colspan="4">No hay proyectos registrados.</td>
             </tr>
+
           </tbody>
         </table>
+
       </div>
     </div>
   </div>

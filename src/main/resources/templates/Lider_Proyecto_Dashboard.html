@@ -48,8 +48,37 @@
             📥 Ver tareas recibidas
           </a>
 
+          <a th:href="@{/lider/proyecto/nuevo}" class="menu-btn">
+            ➕ Crear nuevo proyecto
+          </a>
 
         </div>
+        <!-- MIS PROYECTOS -->
+        <div class="proyectos-lista">
+          <h2>Mis proyectos</h2>
+
+        <div th:if="${#lists.isEmpty(proyectos)}">
+          <p>No tienes proyectos creados aún.</p>
+       </div>
+
+        <div th:each="proyecto : ${proyectos}" class="proyecto-card">
+          <h3 th:text="${proyecto.nombre}">Nombre del proyecto</h3>
+          <p th:text="${proyecto.descripcion}">Descripción</p>
+
+        <div class="proyecto-acciones">
+
+          <!-- Editar -->
+          <a th:href="@{/lider/proyecto/{id}/editar(id=${proyecto.id})}" class="btn-editar">
+             ✏️ Editar
+          </a>
+
+          <!-- Eliminar -->
+          <form th:action="@{/lider/proyecto/{id}/eliminar(id=${proyecto.id})}" method="post">
+            <button type="submit" class="btn-eliminar"
+              onclick="return confirm('¿Estás seguro de eliminar este proyecto?')">
+              🗑️ Eliminar
+            </button>
+          </form>
 
       </div>
     </div>
