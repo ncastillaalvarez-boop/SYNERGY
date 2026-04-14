@@ -27,6 +27,7 @@ public class ParticipacionServiceImpl implements ParticipacionService {
     private UsuarioRepository usuarioRepository;
 
     public boolean inscribirUsuario(String proyectoId, String usuarioId) {
+        
         // Validar que usuario y proyecto existan
         if (!usuarioRepository.existsById(usuarioId)) {
             throw new RuntimeException("Usuario no existe");

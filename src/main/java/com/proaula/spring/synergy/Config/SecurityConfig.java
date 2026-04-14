@@ -59,6 +59,11 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                 // Tiempo máximo de inactividad: 30 minutos
+                .invalidSessionUrl("/login?sessionExpirada=true")
+                 // Solo permitir una sesión activa por usuario
+                 .maximumSessions(1)
+                 .expiredUrl("/login?sessionExpirada=true")
             )
             .authorizeHttpRequests(authz -> authz
 
@@ -93,4 +98,5 @@ public class SecurityConfig {
       
         return http.build();
     }
+   
 }
