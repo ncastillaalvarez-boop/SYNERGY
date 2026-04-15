@@ -37,7 +37,7 @@ public class AdminController {
 
         if (usuario == null)
             return null;
-        if (!"ADMINISTRADOR".equals(usuario.getRol()))
+        if (!"ADMINISTRADOR".equalsIgnoreCase(usuario.getRol()))
             return null;
 
         return usuario;
@@ -50,7 +50,7 @@ public class AdminController {
     public String verUsuarios(Model model, HttpSession session) {
 
         Usuarios usuario = (Usuarios) session.getAttribute("usuario");
-        if (usuario == null || !"ADMINISTRADOR".equals(usuario.getRol())) {
+        if (usuario == null || !"ADMINISTRADOR".equalsIgnoreCase(usuario.getRol())) {
             return "redirect:/login";
         }
         model.addAttribute("usuario", usuario);

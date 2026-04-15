@@ -1,9 +1,16 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 /* ===== Estilo general ===== */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: "Roboto", Arial, sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+body {
+  background-color: #0B0E14;
+  color: #F8FAFC;
 }
 
 /* ===== Fondo principal ===== */
@@ -11,226 +18,204 @@
   position: relative;
   width: 100%;
   height: 100vh;
-  background-image: url("/IMG/Background_Login.jpg"); 
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
   display: flex;
   justify-content: center;
   align-items: center;
+  background: radial-gradient(circle at top right, rgba(16,185,129,0.1), transparent 40%),
+              radial-gradient(circle at bottom left, rgba(59,130,246,0.1), transparent 40%);
   overflow: hidden;
 }
 
-/* ===== Capa de transparencia y blur ===== */
 .overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(6px);
   z-index: 1;
-  transition: all 0.5s ease;
 }
 
-/* ===== Tarjeta principal ===== */
+/* ===== Tarjeta principal (Glassmorphism Profesional) ===== */
 .card {
   position: relative;
   z-index: 2;
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(15px);
-  width: 400px;
-  padding: 45px 35px;
-  border-radius: 25px;
+  background: rgba(17, 24, 39, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  width: 100%;
+  max-width: 420px;
+  padding: 48px 40px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
   text-align: center;
-  color: #fff;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
-  animation: fadeIn 0.8s ease;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* ===== Logo ===== */
 .Logo {
-  width: 180px;
-  margin-bottom: 15px;
-  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.4));
+  width: 140px;
+  margin-bottom: 24px;
 }
 
 /* ===== Títulos ===== */
 h1 {
-  font-size: 1.8rem;
-  color: #fff;
-  margin-bottom: 10px;
-  font-weight: 600;
+  font-size: 1.75rem;
+  color: #F8FAFC;
+  margin-bottom: 8px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
 }
 
 .subtitle {
   font-size: 0.95rem;
-  color: #e0e0e0;
-  margin-bottom: 25px;
+  color: #94A3B8;
+  margin-bottom: 32px;
 }
 
 /* ===== Campos de entrada ===== */
 .input-group {
   position: relative;
-  margin-bottom: 25px;
+  margin-bottom: 20px;
+  text-align: left;
 }
 
 .input-group input {
   width: 100%;
-  padding: 12px 10px;
-  font-size: 1rem;
-  border: none;
-  border-radius: 10px;
+  padding: 14px 16px;
+  font-size: 0.95rem;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #F8FAFC;
   outline: none;
-  background: rgba(255, 255, 255, 0.15);
-  color: #fff;
-  transition: background 0.3s ease, box-shadow 0.3s ease;
+  transition: all 0.2s ease;
 }
 
 .input-group input:focus {
-  background: rgba(255, 255, 255, 0.25);
-  box-shadow: 0 0 10px rgba(138, 180, 255, 0.6);
+  background: rgba(15, 23, 42, 0.9);
+  border-color: #10B981;
+  box-shadow: 0 0 0 1px #10B981;
 }
 
 .input-group label {
   position: absolute;
-  top: 12px;
-  left: 12px;
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 0.9rem;
+  top: 14px;
+  left: 16px;
+  color: #64748B;
+  font-size: 0.95rem;
   pointer-events: none;
-  transition: 0.2s ease all;
+  transition: all 0.2s ease;
+  background: transparent;
 }
 
 /* Efecto al escribir */
 .input-group input:focus + label,
 .input-group input:valid + label {
-  top: -8px;
-  left: 8px;
+  top: -10px;
+  left: 12px;
   font-size: 0.75rem;
-  color: #90caf9;
-  background: rgba(0, 0, 0, 0.55);
-  padding: 0 4px;
-  border-radius: 4px;
+  color: #10B981;
+  background: #111827;
+  padding: 0 6px;
+  font-weight: 500;
 }
 
 /* ===== Botón ===== */
-button {
+button.btn-comenzar {
   width: 100%;
-  background: linear-gradient(135deg, #1a73e8, #0059ff);
-  color: white;
+  background: #10B981;
+  color: #022C22;
   font-size: 1rem;
-  font-weight: 500;
+  font-weight: 600;
   border: none;
-  border-radius: 50px;
-  padding: 12px;
+  border-radius: 8px;
+  padding: 14px;
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(0, 89, 255, 0.3);
+  transition: all 0.2s ease;
+  margin-top: 8px;
 }
 
-button:hover {
-  background: linear-gradient(135deg, #0059ff, #0037b3);
-  transform: scale(1.03);
-  box-shadow: 0 0 15px rgba(0, 115, 255, 0.6);
+button.btn-comenzar:hover {
+  background: #059669;
+  transform: translateY(-1px);
 }
 
-/* ===== Enlace inferior ===== */
-.login-text {
-  margin-top: 20px;
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 0.9rem;
-}
-
-.login-text a {
-  color: #90caf9;
-  text-decoration: none;
-  transition: color 0.2s ease;
-}
-
-.login-text a:hover {
-  color: white;
-  text-decoration: underline;
-}
-
-/* ===== Animación suave ===== */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* ===== Adaptación móvil ===== */
-@media (max-width: 768px) {
-  .card {
-    width: 90%;
-    padding: 35px 25px;
-  }
-
-  .overlay {
-    background: rgba(0, 0, 0, 0.5);
-  }
-}
-
-
-
-/* ===== Botón pequeño ===== */
-.btn-small {
-  width: auto !important;
-  padding: 8px 16px;
-  font-size: 0.85rem;
-  border-radius: 10px;
-  background: rgba(255,255,255,0.2);
-  backdrop-filter: blur(5px);
-  border: 1px solid rgba(255,255,255,0.3);
-  display: inline-block;
-  margin-top: 10px;
-}
-
-.btn-small:hover {
-  background: rgba(255,255,255,0.35);
-  transform: scale(1.05);
-}
-
+/* ===== Separador ===== */
 .divider {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin: 12px 0;
-  color: rgba(255,255,255,0.3);
-  font-size: 12px;
+  gap: 12px;
+  margin: 24px 0;
+  color: #64748B;
+  font-size: 0.85rem;
 }
 
 .divider hr {
   flex: 1;
   border: none;
-  border-top: 0.5px solid rgba(255,255,255,0.15);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
+/* ===== Botón Invitado ===== */
 .btn-invitado {
   display: block;
   width: 100%;
-  padding: 11px;
+  padding: 12px;
   background: transparent;
-  border: 1px solid rgba(255,255,255,0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
-  color: rgba(255,255,255,0.6);
+  color: #CBD5E1;
   text-align: center;
   text-decoration: none;
-  font-size: 14px;
-  transition: all 0.15s;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
 }
 
 .btn-invitado:hover {
-  border-color: #1D9E75;
-  color: #9FE1CB;
+  background: rgba(255, 255, 255, 0.05);
+  color: #F8FAFC;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* ===== Enlace inferior ===== */
+.login-text {
+  margin-top: 24px;
+  color: #94A3B8;
+  font-size: 0.9rem;
+}
+
+.login-text a {
+  color: #10B981;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.login-text a:hover {
+  color: #34D399;
+}
+
+/* ===== Botón volver ===== */
+.btn-small {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  z-index: 9999;
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  color: #64748B;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-small:hover {
+  background: rgba(255,255,255,0.05);
+  color: #F8FAFC;
 }

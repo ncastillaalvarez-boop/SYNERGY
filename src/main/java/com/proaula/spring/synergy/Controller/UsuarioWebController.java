@@ -121,13 +121,13 @@ public class UsuarioWebController {
         session.setAttribute("usuario", usuario);
         session.setAttribute("usuarioId", usuario.getId());
 
-        String rol = usuario.getRol();
+        String rol = usuario.getRol().toUpperCase();
 
         return switch (rol) {
-            case "ADMINISTRADOR" -> "redirect:/admin/proyectos";
-            case "LIDER" -> "redirect:/lider/dashboard";
-            case "PARTICIPANTE" -> "redirect:/dashboard";
-            default -> "redirect:/login?error";
+            case "ADMINISTRADOR", "ADMINISTRADOR_ROL", "ADMIN" -> "redirect:/admin/proyectos";
+            case "LIDER", "LIDER_ROL" -> "redirect:/lider/dashboard";
+            case "PARTICIPANTE", "PARTICIPANTE_ROL", "USUARIO" -> "redirect:/dashboard";
+            default -> "redirect:/login?error=RoleInvalido";
         };
     }
 
@@ -259,8 +259,8 @@ public class UsuarioWebController {
                 return "redirect:/usuario/credenciales";
             }
 
-            // TODO: Aquí deberías usar BCrypt para encriptar
-            usuario.setContrasena(contrasenaNueva);
+            // Encriptar la contraseña nueva usando BCrypt
+            usuario.setContrasena(passwordEncoder.encode(contrasenaNueva));
         }
 
         // Guardar cambios

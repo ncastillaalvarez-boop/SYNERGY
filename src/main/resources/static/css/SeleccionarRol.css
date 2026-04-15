@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -5,13 +7,14 @@
 }
 
 body {
-  font-family: 'Segoe UI', sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
   min-height: 100vh;
-  background: #0a1a10;
+  background: #0B0E14;
+  color: #F8FAFC;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2rem 1rem;
+  padding: 40px 20px;
   position: relative;
   overflow: hidden;
 }
@@ -21,51 +24,55 @@ body::before {
   position: fixed;
   inset: 0;
   background:
-    radial-gradient(ellipse at 20% 50%, rgba(29,158,117,0.15) 0%, transparent 60%),
-    radial-gradient(ellipse at 80% 20%, rgba(15,110,86,0.12) 0%, transparent 50%);
+    radial-gradient(ellipse at 20% 50%, rgba(16,185,129,0.08) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 20%, rgba(59,130,246,0.08) 0%, transparent 50%);
   pointer-events: none;
+  z-index: 0;
 }
 
 /* ── Botón volver ── */
 .btn-volver {
   position: fixed;
-  top: 20px;
-  left: 20px;
+  top: 24px;
+  left: 24px;
   z-index: 99;
-  background: rgba(255,255,255,0.08);
-  color: rgba(255,255,255,0.7);
-  border: 0.5px solid rgba(255,255,255,0.15);
-  border-radius: 8px;
-  padding: 8px 14px;
-  font-size: 14px;
+  background: transparent;
+  color: #64748B;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 0.9rem;
   cursor: pointer;
   text-decoration: none;
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  transition: background 0.15s;
+  transition: all 0.2s ease;
 }
 
 .btn-volver:hover {
-  background: rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.05);
+  color: #F8FAFC;
 }
 
 /* ── Card principal ── */
 .card {
   position: relative;
   z-index: 2;
-  background: rgba(10, 26, 16, 0.85);
-  border: 0.5px solid rgba(29,158,117,0.25);
-  border-radius: 20px;
-  padding: 2.5rem 2rem;
+  background: rgba(17, 24, 39, 0.75);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  padding: 40px 32px;
   width: 100%;
   max-width: 460px;
-  backdrop-filter: blur(12px);
-  animation: fadeUp 0.4s ease both;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(16px); }
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
@@ -73,67 +80,50 @@ body::before {
 .logo {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   justify-content: center;
-  margin-bottom: 0.3rem;
+  margin-bottom: 24px;
 }
 
 .logo-icon {
-  width: 34px;
-  height: 34px;
-  background: #1D9E75;
-  border-radius: 9px;
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, #10B981, #059669);
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .logo-text {
-  font-size: 20px;
-  font-weight: 600;
-  color: #fff;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #F8FAFC;
   letter-spacing: -0.5px;
 }
 
 .logo-sub {
-  font-size: 12px;
-  color: rgba(255,255,255,0.35);
+  font-size: 0.9rem;
+  color: #94A3B8;
   text-align: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 32px;
 }
-
-/* ── Indicador de pasos ── */
-.steps {
-  display: flex;
-  justify-content: center;
-  gap: 6px;
-  margin-bottom: 1.8rem;
-}
-
-.step-dot {
-  width: 28px;
-  height: 4px;
-  border-radius: 2px;
-  background: rgba(255,255,255,0.12);
-}
-
-.step-dot.done   { background: rgba(29,158,117,0.5); }
-.step-dot.active { background: #1D9E75; }
 
 /* ── Textos ── */
 .title {
-  font-size: 20px;
+  font-size: 1.5rem;
   font-weight: 600;
-  color: #fff;
-  margin-bottom: 5px;
+  color: #F8FAFC;
+  margin-bottom: 8px;
   text-align: center;
+  letter-spacing: -0.5px;
 }
 
 .subtitle {
-  font-size: 13px;
-  color: rgba(255,255,255,0.45);
+  font-size: 0.95rem;
+  color: #94A3B8;
   text-align: center;
-  margin-bottom: 2rem;
+  margin-bottom: 32px;
   line-height: 1.5;
 }
 
@@ -141,137 +131,128 @@ body::before {
 .roles-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-bottom: 1.5rem;
+  gap: 16px;
+  margin-bottom: 24px;
 }
 
 .rol-card {
-  border: 1.5px solid rgba(255,255,255,0.1);
-  border-radius: 14px;
-  padding: 1.3rem 1rem;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 24px 16px;
   cursor: pointer;
   text-align: center;
   text-decoration: none;
   display: block;
-  transition: border-color 0.15s, background 0.15s, transform 0.1s;
-  background: rgba(255,255,255,0.03);
+  transition: all 0.2s ease;
+  background: rgba(15, 23, 42, 0.6);
 }
 
 .rol-card:hover {
-  border-color: #1D9E75;
-  background: rgba(29,158,117,0.08);
+  border-color: #10B981;
+  background: rgba(16, 185, 129, 0.05);
   transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.1);
 }
 
 .rol-card.recomendado {
-  border-color: rgba(29,158,117,0.4);
+  border-color: rgba(16, 185, 129, 0.4);
 }
 
 .badge-rec {
   display: inline-block;
-  font-size: 10px;
-  background: rgba(29,158,117,0.2);
-  color: #9FE1CB;
-  padding: 2px 8px;
+  font-size: 0.75rem;
+  background: rgba(16, 185, 129, 0.15);
+  color: #10B981;
+  padding: 4px 10px;
   border-radius: 20px;
-  margin-bottom: 8px;
-  font-weight: 500;
+  margin-bottom: 12px;
+  font-weight: 600;
 }
 
 .rol-icono {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 10px;
+  margin: 0 auto 16px;
+  background: rgba(255, 255, 255, 0.05);
 }
 
-.icono-voluntario { background: rgba(29,158,117,0.15); }
-.icono-lider      { background: rgba(99,153,34,0.15); }
+.icono-voluntario { background: rgba(59, 130, 246, 0.1); }
+.icono-lider      { background: rgba(16, 185, 129, 0.1); }
 
 .rol-nombre {
-  font-size: 15px;
+  font-size: 1.05rem;
   font-weight: 600;
-  color: #fff;
-  margin-bottom: 4px;
+  color: #F8FAFC;
+  margin-bottom: 6px;
 }
 
 .rol-desc {
-  font-size: 11px;
-  color: rgba(255,255,255,0.4);
-  line-height: 1.4;
-}
-
-/* ── Caja de información ── */
-.info-box {
-  background: rgba(29,158,117,0.08);
-  border-left: 3px solid #1D9E75;
-  border-radius: 0 8px 8px 0;
-  padding: 10px 14px;
-  font-size: 12px;
-  color: rgba(255,255,255,0.55);
+  font-size: 0.85rem;
+  color: #64748B;
   line-height: 1.5;
-  margin-bottom: 1.5rem;
-  min-height: 48px;
-  transition: opacity 0.2s;
 }
 
 /* ── Divisor ── */
 .divider {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin: 0.5rem 0 1rem;
+  gap: 12px;
+  margin: 24px 0;
 }
 
 .divider-line {
   flex: 1;
-  height: 0.5px;
-  background: rgba(255,255,255,0.1);
+  height: 1px;
+  background: rgba(255,255,255,0.05);
 }
 
 .divider-text {
-  font-size: 11px;
-  color: rgba(255,255,255,0.25);
+  font-size: 0.85rem;
+  color: #64748B;
 }
 
 /* ── Botón invitado ── */
 .btn-invitado {
   display: block;
   width: 100%;
-  padding: 12px;
+  padding: 14px;
   background: transparent;
-  border: 0.5px solid rgba(255,255,255,0.15);
-  border-radius: 10px;
-  color: rgba(255,255,255,0.5);
-  font-size: 14px;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  color: #94A3B8;
+  font-size: 0.95rem;
+  font-weight: 500;
   text-align: center;
   text-decoration: none;
-  transition: border-color 0.15s, color 0.15s;
+  transition: all 0.2s ease;
   cursor: pointer;
 }
 
 .btn-invitado:hover {
-  border-color: rgba(29,158,117,0.5);
-  color: #9FE1CB;
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #F8FAFC;
+  background: rgba(255, 255, 255, 0.05);
 }
 
 /* ── Link login ── */
 .login-link {
   text-align: center;
-  font-size: 13px;
-  color: rgba(255,255,255,0.3);
-  margin-top: 1.2rem;
+  font-size: 0.9rem;
+  color: #94A3B8;
+  margin-top: 24px;
 }
 
 .login-link a {
-  color: #1D9E75;
+  color: #10B981;
   text-decoration: none;
   font-weight: 500;
+  transition: color 0.2s ease;
 }
 
 .login-link a:hover {
-  text-decoration: underline;
+  color: #34D399;
 }

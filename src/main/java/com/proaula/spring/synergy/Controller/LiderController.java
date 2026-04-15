@@ -38,7 +38,7 @@ public class LiderController {
         if (usuario == null)
             return null;
 
-        if (!"LIDER".equals(usuario.getRol()))
+        if (!"LIDER".equalsIgnoreCase(usuario.getRol()))
             return null;
 
         return usuario;

@@ -59,6 +59,8 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                .maximumSessions(2)
+                .maxSessionsPreventsLogin(false)
             )
             .authorizeHttpRequests(authz -> authz
 
@@ -87,7 +89,7 @@ public class SecurityConfig {
             .logout(logout -> logout
                 .logoutUrl("/logout")
                 .invalidateHttpSession(true)
-                .deleteCookies("JSESSIONID")
+                .deleteCookies("SYNERGY_SESSION")
                 .permitAll()
             );
       
