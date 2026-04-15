@@ -4,7 +4,7 @@ Este documento técnico sirve como guía y sustento de evaluación para la defen
 
 ---
 
-##  1. Autenticación y Registro de Usuarios (1 punto)
+##  1. Autenticación y Registro de Usuarios 
 
 ### a. Autenticación en Base de Datos (NoSQL - MongoDB)
 El sistema gestiona la autenticación leyendo directamente desde nuestra base de datos **MongoDB**. Para ello, se cuenta con la clase `Usuarios` (mapeada a la colección `usuarios`) que implementa la interfaz **`UserDetails`** de Spring Security. 
@@ -16,7 +16,7 @@ Contamos con lógica de controladores tanto a nivel de `Thymeleaf` como en `Auth
 
 ---
 
-##  2. Gestión de Autorizaciones y Accesos Restringidos (1 punto)
+##  2. Gestión de Autorizaciones y Accesos Restringidos 
 
 ### a. Definición de Privilegios y Reglas de Acceso
 Nuestra arquitectura utiliza un modelo donde existen "Roles" que a su vez contienen "Privilegios" (Permisos de lectura, creación, edición, etc.).
@@ -35,7 +35,7 @@ Nuestra arquitectura utiliza un modelo donde existen "Roles" que a su vez contie
 
 ---
 
-## ⏳ 3. Administración de Sesiones y Expiración (1 punto)
+## ⏳ 3. Administración de Sesiones y Expiración 
 
 La plataforma maneja con rigurosidad cómo persisten o mueren las sesiones del usuario de forma automática y controlada para prevenir ataques o mal uso de recursos:
 *   **Tiempo de Vida (Time-Out):** Configurado directamente a 13 minutos de inactividad a través del archivo de propiedades `server.servlet.session.timeout=13m` y reforzado con vencimientos JWT (`jwt.expiration=780000`). Pasado este tiempo, la sesión muere.
@@ -52,7 +52,7 @@ La robustez de la app se evidencia en su capa de presentación ante escenarios i
 
 ---
 
-## 🗄️ 5. Avance Frontend, Backend y CRUD de Entidades (1 punto)
+## 🗄️ 5. Avance Frontend, Backend y CRUD de Entidades 
 
 El desarrollo cumple metodologías cliente-servidor para presentar funcionalidades asíncronas y de renderizado:
 *   **Backend:** Todo el ciclo en Java usando anotaciones Controller/Service/Repository, acoplados a Spring Data MongoDB. Tenemos colecciones funcionales reales: `Proyectos`, `Usuarios`, `Tareas`, `Roles`.
@@ -72,7 +72,7 @@ A nivel visual, Synergy cuenta con una Arquitectura SaaS extremadamente limpia, 
 *   **Control de Resources (Case-Insensitive Automático):** La inyección de imágenes está configurada a respetar de forma milimétrica su ruta para ser a prueba de caídas en despliegues como Linux O Windows.
 
 ---
-##  Resumen de Inicialización (Seed DB)
+##  Resumen de Inicialización 
 
 El sistema cuenta con **dos mecanismos** para asegurar datos iniciales:
 1.  Un archivo interno programado en backend: `DataInitializer.java` (si la base de datos arranca vacía, Spring crea todo lo necesario en la colección, los usuarios, y hashea las contraseñas internamente).
