@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Detalle Proyecto – Synergy</title>
+    <link rel="stylesheet" href="/css/Lider_Asignar_Tareas.css" />
+    <style>
+        .card {
+            background: rgba(255,255,255,0.92);
+            border-radius: 20px;
+            padding: 30px;
+            width: 95%;
+            max-width: 960px;
+            margin: 0 auto;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+        }
+        .btn-volver {
+            background: #f0f0f0; border: none; border-radius: 8px;
+            padding: 8px 16px; cursor: pointer; font-size: 13px;
+            margin-bottom: 16px; transition: background 0.2s;
+        }
+        .btn-volver:hover { background: #ddd; }
+
+        /* Info del proyecto */
+        .proyecto-info {
+            display: flex; gap: 20px; flex-wrap: wrap;
+            background: #f9f9f9; border-radius: 12px;
+            padding: 16px 20px; margin-bottom: 24px;
+        }
+        .proyecto-info .info-item { font-size: 13px; color: #555; }
+        .proyecto-info .info-item strong { color: #1a1a2e; display: block; font-size: 11px;
+            text-transform: uppercase; margin-bottom: 2px; }
+
+        /* Integrantes */
+        .integrantes-row {
+            display: flex; gap: 10px; align-items: center;
+            margin-bottom: 24px; flex-wrap: wrap;
+        }
+        .integrante-chip {
+            display: flex; align-items: center; gap: 8px;
+            background: #e8f5f1; border-radius: 20px;
+            padding: 6px 14px; font-size: 13px; color: #0F6E56; font-weight: 600;
+        }
+        .integrante-avatar {
+            width: 28px; height: 28px; border-radius: 50%;
+            background: #0F6E56; color: white;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 11px; font-weight: 700;
+        }
+
+        /* Sección tareas */
+        .seccion-titulo {
+            font-size: 16px; color: #0F6E56; font-weight: 700;
+            margin-bottom: 12px; padding-bottom: 6px;
+            border-bottom: 2px solid #0F6E56;
+        }
+        .project-table {
+            width: 100%; border-collapse: collapse; font-size: 14px;
+        }
+        .project-table th {
+            text-align: left; padding: 10px 12px;
+            color: #888; font-weight: 600; font-size: 12px;
+            border-bottom: 1px solid #eee; text-transform: uppercase;
+        }
+        .project-table td {
+            padding: 12px; border-bottom: 1px solid #f0f0f0;
+            vertical-align: middle; color: #333;
+        }
+        .project-table tr:hover td { background: #f9f9f9; }
+
+        /* Badges estado */
+        .badge {
+            padding: 4px 10px; border-radius: 20px;
+            font-size: 11px; font-weight: 700; text-transform: uppercase;
+        }
+        .badge-pendiente { background: #fff3cd; color: #856404; }
+        .badge-progreso { background: #cce5ff; color: #004085; }
+        .badge-completada { background: #d4edda; color: #155724; }
+        .badge-cancelada { background: #f8d7da; color: #721c24; }
+
+        /* Botón nueva tarea */
+        .btn-nueva-tarea {
+            display: inline-block; margin-top: 20px;
+            background: #0F6E56; color: white; border: none;
+            padding: 10px 20px; border-radius: 10px; font-size: 14px;
+            cursor: pointer; text-decoration: none; font-weight: 600;
+            transition: background 0.2s;
+        }
+        .btn-nueva-tarea:hover { background: #0a5240; }
+
+        .empty-msg {
+            text-align: center; color: #aaa;
+            padding: 30px; font-size: 14px;
+        }
+
+        h1 { color: #1a1a2e; font-size: 24px; margin-bottom: 4px; }
+        .subtitle { color: #666; font-size: 14px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="hero">
+    <div class="overlay"></div>
+    <div class="card">
+
+        <button class="btn-volver" onclick="location.href='/lider/tareas/asignar'">⬅ Volver</button>
+
+        <!-- Nombre y descripción -->
+        <h1 th:text="${proyecto.nombre}">Nombre del Proyecto</h1>
+        <p class="subtitle" th:text="${proyecto.descripcion}">Descripción del proyecto</p>
+
+        <!-- Info general -->
+        <form th:action="@{/lider/proyecto/{id}/actualizar(id=${proyecto.id})}"
+              th:object="${proyecto}" method="post">
+
+            <div class="proyecto-info">
+                <div class="info-item">
+                    <strong>ID del Proyecto</strong>
+                    <span th:text="${proyecto.id}">id</span>
+               </div>
+               <div class="info-item">
+                    <strong>Fecha Inicio</strong>
+                    <input type="date" th:value="${proyecto.fechaInicio}" name="fechaInicio"
+                           style="border:1px solid #ccc; border-radius:6px; padding:4px 8px; font-size:13px;"/>
+               </div>
+               <div class="info-item">
+                    <strong>Fecha Fin</strong>
+                    <input type="date" th:value="${proyecto.fechaFin}" name="fechaFin"
+                           style="border:1px solid #ccc; border-radius:6px; padding:4px 8px; font-size:13px;"/>
+               </div>
+               <div class="info-item">
+                   <strong>Estado</strong>
+                   <span th:text="${proyecto.estado}">ACTIVO</span>
+               </div>
+               <div class="info-item" style="align-self:flex-end;">
+                   <button type="submit" style="background:#0F6E56; color:white; border:none;
+                           padding:7px 16px; border-radius:8px; cursor:pointer; font-size:13px;">
+                        💾 Guardar fechas
+                   </button>
+               </div>
+           </div>
+
+        </form>
+
+        <!-- Integrantes del equipo -->
+        <p class="seccion-titulo">👥 Integrantes del equipo</p>
+        <div class="integrantes-row">
+            <div th:if="${#lists.isEmpty(integrantes)}" class="empty-msg">
+                 Sin integrantes aún.
+            </div>
+            <div th:each="i : ${integrantes}" class="integrante-chip">
+                <div class="integrante-avatar"
+                     th:text="${#strings.substring(i.nombre, 0, 2).toUpperCase()}">AB</div>
+               <div style="display:flex; flex-direction:column; line-height:1.3;">
+                    <span th:text="${i.nombre}" style="font-weight:700;">Nombre</span>
+                    <span th:text="${i.rol}"
+                          style="font-size:11px; color:#888; text-transform:uppercase;">ROL</span>
+               </div>
+           </div>
+       </div>
+
+        <!-- Tabla de tareas -->
+        <p class="seccion-titulo">📝 Tareas del Proyecto</p>
+
+        <div th:if="${#lists.isEmpty(tareas)}" class="empty-msg">
+            No hay tareas asignadas aún.
+        </div>
+
+        <table th:if="${!#lists.isEmpty(tareas)}" class="project-table">
+            <thead>
+                <tr>
+                    <th>Tarea</th>
+                    <th>Descripción</th>
+                    <th>Fecha Entrega</th>
+                    <th>Asignado a</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="t : ${tareas}">
+                    <td><strong th:text="${t.titulo}">Título</strong></td>
+                    <td th:text="${t.descripcion}">Descripción</td>
+                    <td th:text="${t.fechaEntrega}">2025-01-01</td>
+                    <td>
+                        <div th:if="${#lists.isEmpty(t.usuariosAsignados)}">–</div>
+                        <div th:each="uid : ${t.usuariosAsignados}">
+                            <div th:each="i : ${integrantes}"
+                                 th:if="${i.id == uid}"
+                                 class="integrante-chip"
+                                 style="display:inline-flex; margin:2px;">
+                                <div class="integrante-avatar"
+                                     th:text="${#strings.substring(i.nombre,0,2).toUpperCase()}">AB</div>
+                                <span th:text="${i.nombre}">Nombre</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <span th:text="${t.estado}"
+                              th:classappend="${t.estado == 'PENDIENTE'} ? 'badge badge-pendiente' :
+                                              (${t.estado == 'EN_PROGRESO'} ? 'badge badge-progreso' :
+                                              (${t.estado == 'COMPLETADA'} ? 'badge badge-completada' :
+                                              'badge badge-cancelada'))"
+                              class="badge">
+                        </span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Botón nueva tarea -->
+        <a th:href="@{/lider/tareas/nueva(proyectoId=${proyecto.id})}" class="btn-nueva-tarea">
+            ➕ Asignar nueva tarea
+        </a>
+
+    </div>
+</div>
+
+</body>
+</html>

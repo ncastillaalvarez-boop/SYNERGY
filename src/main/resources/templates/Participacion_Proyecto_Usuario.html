@@ -46,18 +46,18 @@
                 <div class="acciones">
 
                   <!-- SI HAY USUARIO LOGUEADO PUEDE PARTICIPAR -->
-                  <form th:if="${usuario != null}"
+                  <form th:if="${usuario != null and usuario.getId() != null}"
                         th:action="@{'/proyectos/participacion/inscribir/' + ${p.id} + '/' + ${usuario.id}}" 
                         method="post">
                     <button type="submit" class="btn-participar">Participar</button>
                   </form>
 
                   <!--SI ES INVITADO LO REDIRIGE A RESGISTRARSE-->
-                   <a th:if="${usuario == null}" 
-                      th:href="@{/seleccionar-rol}" 
-                      class="btn-participar">
+                   <button th:if="${usuario == null or usuario.getId() == null}" 
+                      class="btn-participar"
+                      onclick="window.location.href='/seleccionar-rol'">
                       Participar
-                   </a>
+                   </button>
 
 
                 </div>

@@ -26,6 +26,10 @@
     <form th:action="@{/login}" method="post">
 
       <p th:if="${error}" th:text="${error}" style="color:red; margin-bottom:10px;"></p>
+      
+      <p th:if="${param.sessionExpirada}" style="color:orange; margin-bottom:10px; text-align:center;">
+             Tu sesión ha expirado. Por favor inicia sesión nuevamente.
+      </p>
 
       <div class="input-group">
         <input type="email" name="correo" required>

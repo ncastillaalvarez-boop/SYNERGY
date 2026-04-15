@@ -13,15 +13,22 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.proaula.spring.synergy.Model.Proyecto;
+import com.proaula.spring.synergy.Model.Tarea;
+
 import com.proaula.spring.synergy.Model.Usuarios;
 import com.proaula.spring.synergy.Service.ProyectoService;
 import com.proaula.spring.synergy.Service.UsuarioService;
+import com.proaula.spring.synergy.Service.TareaService;
+
 
 import jakarta.servlet.http.HttpSession;
 
 @Controller
 @RequestMapping("/lider")
 public class LiderController {
+
+    @Autowired
+    private TareaService tareaService;
 
     @Autowired
     private ProyectoService proyectoService;
@@ -199,5 +206,59 @@ public class LiderController {
 
         return "redirect:/lider/dashboard";
     }
+
+    // =======================================================
+    // VER DETALLE DEL PROYECTO CON TAREAS
+    // =======================================================
+    @GetMapping("/proyecto/{id}/detalle")
+     public String verDetalleProyecto(@PathVariable String id,
+                                  HttpSession session,
+                                  Model model) {
+
+        Usuarios lider = validarLider(session);
+        if (lider == null)
+            return "redirect:/login";
+
+        Proyecto proyecto = proyectoService.buscarPorId(id);
+        if (proyecto == null || !proyecto.getIdLider().equals(lider.getId()))
+        return "redirect:/lider/tareas/asignar";
+
+        // Tareas del proyecto
+        List<Tarea> tareas = tareaService.obtenerTareasPorProyecto(id);
+
+        // Nombres de integrantes
+        List<Usuarios> integrantes = proyecto.getParticipantes().stream()
+            .map(uid -> usuarioService.obtenerUsuarioPorId(uid))
+            .filter(u -> u != null)
+            .collect(java.util.stream.Collectors.toList());
+
+        model.addAttribute("proyecto", proyecto);
+        model.addAttribute("tareas", tareas);
+        model.addAttribute("integrantes", integrantes);
+        model.addAttribute("usuario", lider);
+
+        return "Lider_Detalle_Proyecto";
+    }
+
+    @PostMapping("/proyecto/{id}/aceptar")
+    public String aceptarProyecto(@PathVariable String id,
+                                  HttpSession session,
+                                  RedirectAttributes redirectAttributes) {
+
+            Usuarios lider = validarLider(session);
+            if (lider == null)
+                return "redirect:/login";
+
+            Proyecto proyecto = proyectoService.buscarPorId(id);
+            if (proyecto != null) {
+                proyecto.setEstado("COMPLETADO");
+                proyectoService.guardar(proyecto, null);
+                redirectAttributes.addFlashAttribute("mensaje", "✅ Proyecto aceptado correctamente");
+            }
+
+            return "redirect:/lider/tareas/asignar";
+    }
+
+
 
 }
