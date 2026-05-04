@@ -14,48 +14,78 @@ import io.jsonwebtoken.security.Keys;
 @Component
 public class JwtTokenProvider {
 
-    @Value("${app.jwtSecret:synergy_secret_key_2024_a_very_long_secret_key_for_jwt_encryption}")
+    @Value("${app.jwtSecret}")
     private String jwtSecret;
 
-    @Value("${app.jwtExpirationMs:86400000}") // 24 horas por defecto
+    @Value("${app.jwtExpirationMs}")
     private long jwtExpirationMs;
 
-    public String generateToken(String correo, String rol) {
-        Key key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
-        Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + jwtExpirationMs);
+    @Value("${app.jwtRefreshExpirationMs}")
+    private long jwtRefreshExpirationMs;
 
-        return Jwts.builder()
-                .setSubject(correo)
-                .claim("rol", rol)
-                .setIssuedAt(now)
-                .setExpiration(expiryDate)
-                .signWith(key, SignatureAlgorithm.HS512)
-                .compact();
+    // ============================================================
+    // ACCESS TOKEN
+    // ============================================================
+    public String generateToken(String correo, String rol) {
+        return buildToken(correo, rol, jwtExpirationMs, "access");
     }
 
-    public String getCorreoFromToken(String token) {
-        Key key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
-        Claims claims = Jwts.parser()
-                .verifyWith((javax.crypto.SecretKey) key)
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
+    // ============================================================
+    // REFRESH TOKEN
+    // ============================================================
+    public String generateRefreshToken(String correo) {
+        return buildToken(correo, null, jwtRefreshExpirationMs, "refresh");
+    }
 
-        return claims.getSubject();
+    // ============================================================
+    // CONSTRUCCIÓN INTERNA DE TOKENS
+    // ============================================================
+    private String buildToken(String correo, String rol, long expirationMs, String tipo) {
+        Key key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + expirationMs);
+
+        var builder = Jwts.builder()
+                .setSubject(correo)
+                .claim("tipo", tipo)
+                .setIssuedAt(now)
+                .setExpiration(expiryDate)
+                .signWith(key, SignatureAlgorithm.HS512);
+
+        if (rol != null) {
+            builder.claim("rol", rol);
+        }
+
+        return builder.compact();
+    }
+
+    // ============================================================
+    // EXTRAER DATOS DEL TOKEN
+    // ============================================================
+    public String getCorreoFromToken(String token) {
+        return getClaims(token).getSubject();
     }
 
     public String getRolFromToken(String token) {
+        return (String) getClaims(token).get("rol");
+    }
+
+    public String getTipoFromToken(String token) {
+        return (String) getClaims(token).get("tipo");
+    }
+
+    private Claims getClaims(String token) {
         Key key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
-        Claims claims = Jwts.parser()
+        return Jwts.parser()
                 .verifyWith((javax.crypto.SecretKey) key)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
-
-        return (String) claims.get("rol");
     }
 
+    // ============================================================
+    // VALIDACIÓN
+    // ============================================================
     public boolean validateToken(String token) {
         try {
             Key key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
@@ -71,5 +101,9 @@ public class JwtTokenProvider {
 
     public Long getExpirationTime() {
         return jwtExpirationMs;
+    }
+
+    public Long getRefreshExpirationTime() {
+        return jwtRefreshExpirationMs;
     }
 }

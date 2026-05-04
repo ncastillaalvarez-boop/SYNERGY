@@ -108,6 +108,30 @@ public class AuthService {
         usuario.setUltimaCambioContrasena(LocalDateTime.now());
         usuarioRepository.save(usuario);
     }
+    public AuthResponse refreshToken(String correo) {
+        Usuarios usuario = usuarioRepository.findByCorreo(correo);
+    
+        if (usuario == null) {
+            throw new RuntimeException("Usuario no encontrado");
+        }
+
+        if (!usuario.isEnabled()) {
+            throw new RuntimeException("Usuario inactivo");
+        }
+
+        // Generar nuevo access token
+        String nuevoToken = jwtTokenProvider.generateToken(usuario.getCorreo(), usuario.getRol());
+
+        return new AuthResponse(
+            nuevoToken,
+            usuario.getId(),
+            usuario.getNombre(),
+            usuario.getCorreo(),
+            usuario.getRol(),
+            usuario.getPrivilegios(),
+            jwtTokenProvider.getExpirationTime()
+        );
+    }
 
     public void logout(String usuarioId) {
         // En JWT no es necesario hacer logout en el servidor

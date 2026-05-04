@@ -15,6 +15,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import com.proaula.spring.synergy.Security.JwtAuthenticationEntryPoint;
 import com.proaula.spring.synergy.Security.JwtAuthenticationFilter;
 import com.proaula.spring.synergy.Security.UserDetailsServiceImpl;
 
@@ -29,6 +30,9 @@ public class SecurityConfig {
 
     @Autowired
     private UserDetailsServiceImpl userDetailsService;
+
+    @Autowired
+    private JwtAuthenticationEntryPoint unauthorizedHandler;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -57,15 +61,14 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
+            // 🚀 STATELESS — sin sesiones del lado del servidor
             .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
-                .maximumSessions(2)
-                .maxSessionsPreventsLogin(false)
-                .expiredUrl("/login?sessionExpirada=true")
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
+            // Manejo de errores de autenticación
+            .exceptionHandling(ex -> ex.authenticationEntryPoint(unauthorizedHandler))
             .authorizeHttpRequests(authz -> authz
-
-                // ── Rutas públicas (INVITADO sin login) ──
+                // ── Rutas públicas ──
                 .requestMatchers(
                     "/", "/index", "/login", "/logout",
                     "/seleccionar-rol",
@@ -74,27 +77,23 @@ public class SecurityConfig {
                     "/publico/**",
                     "/proyectos/publico",
                     "/error",
-                    "/css/**", "/js/**", "/img/**", "/IMG/**", "/images/**"
+                    "/css/**", "/js/**", "/img/**", "/IMG/**", "/images/**",
+                    "/api/auth/**"
                 ).permitAll()
 
-                // ── Solo JWT para API ──
+                // ── Rutas API protegidas por JWT ──
                 .requestMatchers("/api/admin/**").hasRole("ADMINISTRADOR")
                 .requestMatchers("/api/lider/**").hasAnyRole("ADMINISTRADOR", "LIDER")
                 .requestMatchers("/api/**").authenticated()
 
-                // ── Rutas Thymeleaf controladas por sesión ──
-                .anyRequest().permitAll()
+                // ── Rutas Thymeleaf protegidas por JWT (cookie) ──
+                .anyRequest().authenticated()
             )
             .authenticationProvider(authenticationProvider())
             .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
-            .logout(logout -> logout
-                .logoutUrl("/logout")
-                .invalidateHttpSession(true)
-                .deleteCookies("SYNERGY_SESSION")
-                .permitAll()
-            );
+            // 🚫 Logout deshabilitado (con JWT se maneja en /api/auth/logout)
+            .logout(logout -> logout.disable());
       
         return http.build();
     }
-   
 }
