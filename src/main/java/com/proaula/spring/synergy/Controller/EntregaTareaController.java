@@ -16,7 +16,7 @@ import com.proaula.spring.synergy.Model.Tarea;
 import com.proaula.spring.synergy.Service.EntregaTareaService;
 import com.proaula.spring.synergy.Service.TareaService;
 
-import jakarta.servlet.http.HttpSession;
+import com.proaula.spring.synergy.Security.SecurityUtils;
 
 @Controller
 @RequestMapping("/tareas")
@@ -34,11 +34,9 @@ public class EntregaTareaController {
     @GetMapping("/entregar/{id}")
     public String mostrarFormularioEntrega(
             @PathVariable String id,
-            HttpSession session,
             Model model) {
 
-        // Verificar sesión
-        if (session.getAttribute("usuario") == null) {
+        if (SecurityUtils.getUsuarioActual() == null) {
             return "redirect:/login";
         }
 
