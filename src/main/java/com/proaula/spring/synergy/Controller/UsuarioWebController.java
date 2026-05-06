@@ -14,17 +14,15 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.proaula.spring.synergy.Model.Tarea;
 import com.proaula.spring.synergy.Model.Usuarios;
-import com.proaula.spring.synergy.Security.AuthResponse;
-import com.proaula.spring.synergy.Security.CookieUtil;
-import com.proaula.spring.synergy.Security.JwtTokenProvider;
-import com.proaula.spring.synergy.Security.LoginRequest;
-import com.proaula.spring.synergy.Security.SecurityUtils;
-import com.proaula.spring.synergy.Service.AuthService;
 import com.proaula.spring.synergy.Service.ProyectoService;
 import com.proaula.spring.synergy.Service.TareaService;
 import com.proaula.spring.synergy.Service.UsuarioService;
 
+import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpServletResponse;
+import java.security.Principal;
+import com.proaula.spring.synergy.Security.JwtTokenProvider;
+import com.proaula.spring.synergy.Security.JwtCookieService;
 
 @Controller
 public class UsuarioWebController {
@@ -42,13 +40,10 @@ public class UsuarioWebController {
     private TareaService tareaService;
 
     @Autowired
-    private AuthService authService;
-
-    @Autowired
     private JwtTokenProvider jwtTokenProvider;
 
     @Autowired
-    private CookieUtil cookieUtil;
+    private JwtCookieService jwtCookieService;
 
     // ============================================
     // PÁGINA PRINCIPAL
@@ -71,73 +66,50 @@ public class UsuarioWebController {
         model.addAttribute("usuario", new Usuarios());
         return "Registro";
     }
-
     @PostMapping("/registrarse")
     public String registrar(
             @ModelAttribute Usuarios usuario,
             @RequestParam(required = false) String confirmarContrasena,
             HttpServletResponse response,
-            Model model,
             RedirectAttributes ra) {
 
-        try {
-            // Validar contraseñas coincidan
-            if (confirmarContrasena != null && !usuario.getContrasena().equals(confirmarContrasena)) {
-                model.addAttribute("error", "Las contraseñas no coinciden");
-                model.addAttribute("usuario", usuario);
-                return determinarVistaRegistro(usuario.getRol());
-            }
+        // Encriptar contraseña antes de guardar
+        String contrasenaEncriptada = passwordEncoder.encode(usuario.getContrasena());
+        usuario.setContrasena(contrasenaEncriptada);
 
-            // Validar correo no duplicado ANTES de intentar guardar
-            if (usuarioService.buscarPorCorreo(usuario.getCorreo()) != null) {
-                model.addAttribute("error", "El correo ya está registrado. Intenta iniciar sesión.");
-                model.addAttribute("usuario", usuario);
-                return determinarVistaRegistro(usuario.getRol());
-            }
+       // Si no viene rol del formulario, asignar Participante por defecto
+       if (usuario.getRol() == null || usuario.getRol().isEmpty()) {
+           usuario.setRol("PARTICIPANTE");
+       }
 
-            // Si no viene rol, asignar PARTICIPANTE por defecto
-            if (usuario.getRol() == null || usuario.getRol().isEmpty()) {
-                usuario.setRol("PARTICIPANTE");
-            }
+       // Campos requeridos por MongoDB
+       usuario.setActivo(true);
+       usuario.setEstado("ACTIVO");
 
-            // Registrar usando AuthService (encripta contraseña + genera JWT)
-            AuthResponse authResponse = authService.registrar(usuario);
+       // Guardar en BD
+       usuarioService.guardarUsuario(usuario);
 
-            // Generar refresh token
-            String refreshToken = jwtTokenProvider.generateRefreshToken(usuario.getCorreo());
+      // Iniciar sesión automáticamente (JWT)
+      String token = jwtTokenProvider.generateToken(usuario.getCorreo(), usuario.getRol());
+      jwtCookieService.addJwtCookie(response, token);
 
-            // Setear cookies HttpOnly con los tokens
-            cookieUtil.createAccessTokenCookie(response, authResponse.getToken());
-            cookieUtil.createRefreshTokenCookie(response, refreshToken);
-
-            // Redirigir según el rol
-            return switch (usuario.getRol().toUpperCase()) {
-                case "ADMINISTRADOR" -> "redirect:/admin/proyectos";
-                case "LIDER"         -> "redirect:/lider/dashboard";
-                case "PARTICIPANTE"  -> "redirect:/dashboard";
-                default              -> "redirect:/login";
-            };
-
-        } catch (Exception e) {
-            model.addAttribute("error", "No se pudo completar el registro: " + e.getMessage());
-            model.addAttribute("usuario", usuario);
-            return determinarVistaRegistro(usuario.getRol());
-        }
+      // Redirigir según el rol
+      return switch (usuario.getRol()) {
+          case "ADMINISTRADOR" -> "redirect:/admin/proyectos";
+          case "LIDER"         -> "redirect:/lider/dashboard";
+          case "PARTICIPANTE"  -> "redirect:/dashboard";
+          default              -> "redirect:/login";
+      };
     }
 
-    // Helper para devolver el HTML correcto según el rol
-    private String determinarVistaRegistro(String rol) {
-        if ("LIDER".equalsIgnoreCase(rol)) {
-            return "registro-lider";
-        }
-        return "Registro";
-    }
+   
 
     // ============================================
     // LOGIN
     // ============================================
     @GetMapping("/login")
     public String mostrarLogin(Model model) {
+        model.addAttribute("loginDTO", new Object());
         return "Login";
     }
 
@@ -148,42 +120,33 @@ public class UsuarioWebController {
             HttpServletResponse response,
             Model model) {
 
-        try {
-            // Crear LoginRequest y delegar a AuthService (que genera JWT)
-            LoginRequest loginRequest = new LoginRequest();
-            loginRequest.setCorreo(correo);
-            loginRequest.setContrasena(contrasena);
+        Usuarios usuario = usuarioService.buscarPorCorreo(correo);
 
-            AuthResponse authResponse = authService.login(loginRequest);
-
-            // Generar refresh token
-            String refreshToken = jwtTokenProvider.generateRefreshToken(correo);
-
-            // Setear cookies HttpOnly
-            cookieUtil.createAccessTokenCookie(response, authResponse.getToken());
-            cookieUtil.createRefreshTokenCookie(response, refreshToken);
-
-            // Redirigir según rol
-            String rol = authResponse.getRol().toUpperCase();
-            return switch (rol) {
-                case "ADMINISTRADOR", "ADMIN" -> "redirect:/admin/proyectos";
-                case "LIDER" -> "redirect:/lider/dashboard";
-                case "PARTICIPANTE", "USUARIO" -> "redirect:/dashboard";
-                default -> "redirect:/login?error=RoleInvalido";
-            };
-
-        } catch (Exception e) {
+        if (usuario == null || !passwordEncoder.matches(contrasena, usuario.getContrasena())) {
             model.addAttribute("error", "Correo o contraseña incorrectos");
             return "Login";
         }
+
+        // Guardar en Cookie usando JWT STATELESS
+        String token = jwtTokenProvider.generateToken(usuario.getCorreo(), usuario.getRol());
+        jwtCookieService.addJwtCookie(response, token);
+
+        String rol = usuario.getRol().toUpperCase();
+
+        return switch (rol) {
+            case "ADMINISTRADOR", "ADMINISTRADOR_ROL", "ADMIN" -> "redirect:/admin/proyectos";
+            case "LIDER", "LIDER_ROL" -> "redirect:/lider/dashboard";
+            case "PARTICIPANTE", "PARTICIPANTE_ROL", "USUARIO" -> "redirect:/dashboard";
+            default -> "redirect:/login?error=RoleInvalido";
+        };
     }
 
     // ============================================
-    // LOGOUT (borra cookies JWT)
+    // LOGOUT
     // ============================================
     @GetMapping("/logout")
     public String logout(HttpServletResponse response, RedirectAttributes redirectAttributes) {
-        cookieUtil.clearCookies(response);
+        jwtCookieService.clearJwtCookie(response);
         redirectAttributes.addFlashAttribute("mensaje", "Sesión cerrada correctamente");
         return "redirect:/login";
     }
@@ -192,9 +155,11 @@ public class UsuarioWebController {
     // DASHBOARD PRINCIPAL
     // ============================================
     @GetMapping("/dashboard")
-    public String dashboard(Model model) {
-        Usuarios usuario = SecurityUtils.getUsuarioActual();
+    public String dashboard(Principal principal, Model model) {
 
+        if (principal == null) return "redirect:/login";
+
+        Usuarios usuario = usuarioService.buscarPorCorreo(principal.getName());
         if (usuario == null) {
             return "redirect:/login";
         }
@@ -204,21 +169,26 @@ public class UsuarioWebController {
     }
 
     @GetMapping("/administrador_dashboard")
-    public String adminDashboard(Model model) {
-        Usuarios usuario = SecurityUtils.getUsuarioActual();
-        if (usuario == null) return "redirect:/login";
+    public String adminDashboard(Principal principal, Model model) {
+
+        if (principal == null) return "redirect:/login";
+        Usuarios usuario = usuarioService.buscarPorCorreo(principal.getName());
+        if (usuario == null)
+            return "redirect:/login";
 
         model.addAttribute("usuario", usuario);
-        return "Administrador_Dashboard";
+        return "Administrador_Dashboard"; // nombre EXACTO del HTML
     }
 
     // ============================================
     // BUZÓN DE TAREAS
     // ============================================
     @GetMapping("/tareas/buzon")
-    public String mostrarBuzonTareas(Model model) {
-        Usuarios usuario = SecurityUtils.getUsuarioActual();
+    public String mostrarBuzonTareas(Principal principal, Model model) {
 
+        if (principal == null) return "redirect:/login";
+
+        Usuarios usuario = usuarioService.buscarPorCorreo(principal.getName());
         if (usuario == null) {
             return "redirect:/login";
         }
@@ -235,9 +205,11 @@ public class UsuarioWebController {
     // VER CREDENCIALES (PERFIL)
     // ============================================
     @GetMapping("/usuario/credenciales")
-    public String verCredenciales(Model model) {
-        Usuarios usuario = SecurityUtils.getUsuarioActual();
+    public String verCredenciales(Principal principal, Model model) {
 
+        if (principal == null) return "redirect:/login";
+
+        Usuarios usuario = usuarioService.buscarPorCorreo(principal.getName());
         if (usuario == null) {
             return "redirect:/login";
         }
@@ -256,11 +228,12 @@ public class UsuarioWebController {
             @RequestParam(required = false) String contrasenaActual,
             @RequestParam(required = false) String contrasenaNueva,
             @RequestParam(required = false) String contrasenaConfirmacion,
-            HttpServletResponse response,
+            Principal principal,
             RedirectAttributes redirectAttributes) {
 
-        Usuarios usuario = SecurityUtils.getUsuarioActual();
+        if (principal == null) return "redirect:/login";
 
+        Usuarios usuario = usuarioService.buscarPorCorreo(principal.getName());
         if (usuario == null) {
             return "redirect:/login";
         }
@@ -271,7 +244,6 @@ public class UsuarioWebController {
         }
 
         // Actualizar correo si se proporciona y no existe
-        boolean correoCambio = false;
         if (correo != null && !correo.trim().isEmpty() && !correo.equals(usuario.getCorreo())) {
             Usuarios usuarioExistente = usuarioService.buscarPorCorreo(correo.trim());
             if (usuarioExistente != null) {
@@ -279,41 +251,35 @@ public class UsuarioWebController {
                 return "redirect:/usuario/credenciales";
             }
             usuario.setCorreo(correo.trim());
-            correoCambio = true;
         }
 
         // Cambiar contraseña si se solicita
         if (contrasenaNueva != null && !contrasenaNueva.isEmpty()) {
 
-            // Validar contraseña actual con BCrypt
-            if (contrasenaActual == null || !passwordEncoder.matches(contrasenaActual, usuario.getContrasena())) {
+            // Validar contraseña actual
+            if (contrasenaActual == null || !usuario.getContrasena().equals(contrasenaActual)) {
                 redirectAttributes.addFlashAttribute("error", "Contraseña actual incorrecta");
                 return "redirect:/usuario/credenciales";
             }
 
+            // Validar confirmación
             if (!contrasenaNueva.equals(contrasenaConfirmacion)) {
                 redirectAttributes.addFlashAttribute("error", "Las contraseñas nuevas no coinciden");
                 return "redirect:/usuario/credenciales";
             }
 
+            // Validar longitud mínima
             if (contrasenaNueva.length() < 6) {
                 redirectAttributes.addFlashAttribute("error", "La contraseña debe tener al menos 6 caracteres");
                 return "redirect:/usuario/credenciales";
             }
 
+            // Encriptar la contraseña nueva usando BCrypt
             usuario.setContrasena(passwordEncoder.encode(contrasenaNueva));
         }
 
         // Guardar cambios
         usuarioService.guardarUsuario(usuario);
-
-        // Si cambió el correo, regenerar el JWT con el nuevo correo
-        if (correoCambio) {
-            String nuevoToken = jwtTokenProvider.generateToken(usuario.getCorreo(), usuario.getRol());
-            String nuevoRefresh = jwtTokenProvider.generateRefreshToken(usuario.getCorreo());
-            cookieUtil.createAccessTokenCookie(response, nuevoToken);
-            cookieUtil.createRefreshTokenCookie(response, nuevoRefresh);
-        }
 
         redirectAttributes.addFlashAttribute("mensaje", "✅ Credenciales actualizadas correctamente");
         return "redirect:/usuario/credenciales";
@@ -323,13 +289,16 @@ public class UsuarioWebController {
     // ASIGNACIÓN DE TAREAS (LÍDER)
     // ============================================
     @GetMapping("/lider/asignar-tareas")
-    public String mostrarAsignacionTareas(Model model) {
-        Usuarios usuario = SecurityUtils.getUsuarioActual();
+    public String mostrarAsignacionTareas(Principal principal, Model model) {
 
+        if (principal == null) return "redirect:/login";
+
+        Usuarios usuario = usuarioService.buscarPorCorreo(principal.getName());
         if (usuario == null) {
             return "redirect:/login";
         }
 
+        // Validar que sea líder
         if (!"LIDER".equals(usuario.getRol())) {
             return "redirect:/dashboard";
         }
@@ -337,14 +306,13 @@ public class UsuarioWebController {
         return "Lider_AsignarTareas";
     }
 
-    // ============================================
-    // SELECCIONAR ROL Y REGISTROS POR ROL
-    // ============================================
+    //seleccionar-rol
     @GetMapping("/seleccionar-rol")
     public String seleccionarRol() {
         return "seleccionar-rol";
     }
 
+    //Registro Lider
     @GetMapping("/registro/lider")
     public String registroLider(Model model) {
         model.addAttribute("usuario", new Usuarios());
@@ -358,10 +326,12 @@ public class UsuarioWebController {
     }
 
     @GetMapping("/publico/proyectos")
-    public String verProyectosPublico(Model model) {
+    public String verProyectosPublico(Model model, Principal principal) {
         model.addAttribute("proyectos", proyectoService.listar());
-        Usuarios usuario = SecurityUtils.getUsuarioActual();
-        model.addAttribute("usuario", usuario);
-        return "Participacion_Proyecto_Usuario";
+        if (principal != null) {
+             Usuarios usuario = usuarioService.buscarPorCorreo(principal.getName());
+             model.addAttribute("usuario", usuario);
+        }
+       return "Participacion_Proyecto_Usuario";
     }
 }

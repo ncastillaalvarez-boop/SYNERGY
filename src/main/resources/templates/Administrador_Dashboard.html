@@ -27,6 +27,12 @@
         <!-- Mensaje de éxito o error -->
         <div th:if="${mensaje}" class="alert-success" th:text="${mensaje}"></div>
 
+        <!-- Barra de Búsqueda -->
+        <div style="margin-bottom: 20px;">
+          <input type="text" id="buscadorProyectos" onkeyup="filtrarProyectos()" placeholder="🔍 Buscar por nombre o estado..."
+                 style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(15,23,42,0.6); color: white; font-size: 16px;">
+        </div>
+
         <!-- Tabla de proyectos -->
         <table class="project-table">
           <thead>
@@ -73,5 +79,23 @@
     </div>
   </div>
 
+<script>
+function filtrarProyectos() {
+  const filter = document.getElementById("buscadorProyectos").value.toLowerCase();
+  const trs = document.querySelectorAll(".project-table tbody tr");
+  
+  trs.forEach(tr => {
+    if(tr.children.length === 1) return; // Ignorar el "No hay proyectos"
+    const nombre = tr.children[0].textContent.toLowerCase();
+    const estado = tr.children[1].textContent.toLowerCase();
+    
+    if (nombre.includes(filter) || estado.includes(filter)) {
+      tr.style.display = "";
+    } else {
+      tr.style.display = "none";
+    }
+  });
+}
+</script>
 </body>
 </html>

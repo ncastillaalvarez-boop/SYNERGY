@@ -1,5 +1,6 @@
 package com.proaula.spring.synergy.Controller;
 
+import jakarta.servlet.http.HttpSession;
 import java.security.Principal;
 import java.util.List;
 
@@ -10,12 +11,11 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import com.proaula.spring.synergy.Model.Proyecto;
 import com.proaula.spring.synergy.Model.Usuarios;
-import com.proaula.spring.synergy.Security.SecurityUtils;
-import com.proaula.spring.synergy.Service.ParticipacionService;
-import com.proaula.spring.synergy.Service.ProyectoService;
+import com.proaula.spring.synergy.Model.Proyecto;
 import com.proaula.spring.synergy.Service.UsuarioService;
+import com.proaula.spring.synergy.Service.ProyectoService;
+import com.proaula.spring.synergy.Service.ParticipacionService;
 
 @Controller
 @RequestMapping("/proyectos")
@@ -34,10 +34,13 @@ public class ProyectoWebController {
     // DASHBOARD DE PROYECTOS
     // ==============================
     @GetMapping("/dashboard")
-    public String dashboardProyectos(Model model) {
+    public String dashboardProyectos(Principal principal, Model model) {
 
-        Usuarios usuario = SecurityUtils.getUsuarioActual();
+        if (principal == null) {
+            return "redirect:/login";
+        }
 
+        Usuarios usuario = usuarioService.buscarPorCorreo(principal.getName());
         if (usuario == null) {
             return "redirect:/login";
         }
@@ -58,40 +61,45 @@ public class ProyectoWebController {
     }
 
     @PostMapping("/guardar")
-    public String guardarProyecto(
-            @ModelAttribute Proyecto proyecto,
-            @RequestParam("archivo") MultipartFile archivo,
-            Model model) {
+public String guardarProyecto(
+        @ModelAttribute Proyecto proyecto,
+        @RequestParam("archivo") MultipartFile archivo,
+        Principal principal,
+        Model model) {
 
-        Usuarios lider = SecurityUtils.getUsuarioActual();
-
-        if (lider == null) {
-            return "redirect:/login";
-        }
-
-        proyecto.setIdLider(lider.getId());
-
-        try {
-            proyectoService.guardar(proyecto, archivo);
-            model.addAttribute("mensajeExito", "Proyecto registrado correctamente");
-        } catch (RuntimeException e) {
-            model.addAttribute("error", e.getMessage());
-        }
-
-        model.addAttribute("proyecto", new Proyecto());
-        model.addAttribute("proyectos", proyectoService.listar());
-
-        return "registro_proyectos";
+    if (principal == null) {
+        return "redirect:/login";
     }
+
+    // Asignar líder correctamente usando el Principal provisto por JWT
+    Usuarios lider = usuarioService.buscarPorCorreo(principal.getName());
+    proyecto.setIdLider(lider.getId());
+
+    try {
+        proyectoService.guardar(proyecto, archivo);
+        model.addAttribute("mensajeExito", "Proyecto registrado correctamente");
+    } catch (RuntimeException e) {
+        model.addAttribute("error", e.getMessage());
+    }
+
+    model.addAttribute("proyecto", new Proyecto());
+    model.addAttribute("proyectos", proyectoService.listar());
+
+    return "registro_proyectos";
+}
+
 
     // ==============================
     // LISTA GENERAL PARA INSCRIBIRSE
     // ==============================
     @GetMapping("/participar")
-    public String mostrarListaParticipacion(Model model) {
+    public String mostrarListaParticipacion(Principal principal, Model model) {
 
-        Usuarios usuario = SecurityUtils.getUsuarioActual();
+        if (principal == null) {
+            return "redirect:/login";
+        }
 
+        Usuarios usuario = usuarioService.buscarPorCorreo(principal.getName());
         if (usuario == null) {
             return "redirect:/login";
         }
@@ -167,8 +175,10 @@ public class ProyectoWebController {
             @PathVariable String idUsuario,
             Model model) {
 
+        // Obtener usuario por ID
         Usuarios usuario = usuarioService.obtenerUsuarioPorId(idUsuario);
 
+        // Proyectos donde el usuario es líder
         List<Proyecto> proyectos = proyectoService.obtenerProyectosDeLider(idUsuario);
 
         model.addAttribute("usuario", usuario);
@@ -176,4 +186,6 @@ public class ProyectoWebController {
 
         return "Dashboard_MisProyectos";
     }
+    
+
 }

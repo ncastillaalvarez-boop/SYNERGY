@@ -14,11 +14,14 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.proaula.spring.synergy.Model.Proyecto;
 import com.proaula.spring.synergy.Model.Tarea;
+
 import com.proaula.spring.synergy.Model.Usuarios;
-import com.proaula.spring.synergy.Security.SecurityUtils;
 import com.proaula.spring.synergy.Service.ProyectoService;
 import com.proaula.spring.synergy.Service.UsuarioService;
 import com.proaula.spring.synergy.Service.TareaService;
+
+
+import java.security.Principal;
 
 @Controller
 @RequestMapping("/lider")
@@ -36,8 +39,9 @@ public class LiderController {
     // =======================================================
     // VALIDAR QUE EL USUARIO SEA LÍDER
     // =======================================================
-    private Usuarios validarLider() {
-        Usuarios usuario = SecurityUtils.getUsuarioActual();
+    private Usuarios validarLider(Principal principal) {
+        if (principal == null) return null;
+        Usuarios usuario = usuarioService.buscarPorCorreo(principal.getName());
 
         if (usuario == null)
             return null;
@@ -52,9 +56,9 @@ public class LiderController {
     // DASHBOARD DEL LÍDER
     // =======================================================
     @GetMapping("/dashboard")
-    public String dashboardLider(Model model) {
+    public String dashboardLider(Principal principal, Model model) {
 
-        Usuarios lider = validarLider();
+        Usuarios lider = validarLider(principal);
         if (lider == null)
             return "redirect:/login";
 
@@ -70,9 +74,9 @@ public class LiderController {
     // FORMULARIO CREAR PROYECTO
     // =======================================================
     @GetMapping("/proyecto/nuevo")
-    public String formularioNuevoProyecto(Model model) {
+    public String formularioNuevoProyecto(Principal principal, Model model) {
 
-        Usuarios lider = validarLider();
+        Usuarios lider = validarLider(principal);
         if (lider == null)
             return "redirect:/login";
 
@@ -84,9 +88,10 @@ public class LiderController {
     // GUARDAR PROYECTO
     // =======================================================
     @PostMapping("/proyecto/guardar")
-    public String guardarProyecto(@ModelAttribute Proyecto proyecto) {
+    public String guardarProyecto(@ModelAttribute Proyecto proyecto,
+                                  Principal principal) {
 
-        Usuarios lider = validarLider();
+        Usuarios lider = validarLider(principal);
         if (lider == null)
             return "redirect:/login";
 
@@ -100,9 +105,11 @@ public class LiderController {
     // EDITAR PROYECTO
     // =======================================================
     @GetMapping("/proyecto/{id}/editar")
-    public String editarProyecto(@PathVariable String id, Model model) {
+    public String editarProyecto(@PathVariable String id,
+                                 Principal principal,
+                                 Model model) {
 
-        Usuarios lider = validarLider();
+        Usuarios lider = validarLider(principal);
         if (lider == null)
             return "redirect:/login";
 
@@ -120,9 +127,10 @@ public class LiderController {
     // =======================================================
     @PostMapping("/proyecto/{id}/actualizar")
     public String actualizarProyecto(@PathVariable String id,
-                                     @ModelAttribute Proyecto proyecto) {
+                                     @ModelAttribute Proyecto proyecto,
+                                     Principal principal) {
 
-        Usuarios lider = validarLider();
+        Usuarios lider = validarLider(principal);
         if (lider == null)
             return "redirect:/login";
 
@@ -131,33 +139,34 @@ public class LiderController {
 
         proyectoService.guardar(proyecto, null);
 
-        return "redirect:/lider/dashboard";
+        return "redirect:/lider/dashboard";  // ← CORREGIDO
     }
 
     // =======================================================
     // ASIGNAR TAREAS
     // =======================================================
+
     @GetMapping("/tareas/asignar")
-    public String asignarTareas(Model model) {
+    public String asignarTareas(Principal principal, Model model) {
 
-        Usuarios lider = validarLider();
-        if (lider == null)
-            return "redirect:/login";
+    Usuarios lider = validarLider(principal);
+    if (lider == null)
+        return "redirect:/login";
+    // Obtener proyectos del líder
+    List<Proyecto> proyectos = proyectoService.obtenerProyectosDeLider(lider.getId());
+    model.addAttribute("proyectos", proyectos);
 
-        List<Proyecto> proyectos = proyectoService.obtenerProyectosDeLider(lider.getId());
-        model.addAttribute("proyectos", proyectos);
-
-        List<Usuarios> usuarios = usuarioService.obtenerTodosUsuarios();
-        model.addAttribute("usuarios", usuarios);
-
-        return "Lider_Asignar_Tareas";
-    }
+    List<Usuarios> usuarios = usuarioService.obtenerTodosUsuarios();
+    model.addAttribute("usuarios", usuarios);
+    
+    return "Lider_Asignar_Tareas";
+}
 
     // VER USUARIOS INSCRITOS AL PROYECTO
     @GetMapping("/usuarios")
-    public String usuariosInscritos(Model model) {
+    public String usuariosInscritos(Principal principal, Model model) {
 
-        Usuarios lider = validarLider();
+        Usuarios lider = validarLider(principal);
         if (lider == null)
             return "redirect:/login";
 
@@ -166,23 +175,24 @@ public class LiderController {
 
     // VER TAREAS RECIBIDAS
     @GetMapping("/tareas/recibidas")
-    public String tareasRecibidas(Model model) {
+    public String tareasRecibidas(Principal principal, Model model) {
 
-        Usuarios lider = validarLider();
+        Usuarios lider = validarLider(principal);
         if (lider == null)
             return "redirect:/login";
 
         return "Lider_Tareas_Recibidas";
     }
 
-    // =======================================================
+     // =======================================================
     // ELIMINAR PROYECTO
     // =======================================================
     @PostMapping("/proyecto/{id}/eliminar")
-    public String eliminarProyecto(@PathVariable String id,
-                                   RedirectAttributes redirectAttributes) {
+     public String eliminarProyecto(@PathVariable String id,
+                                Principal principal,
+                                RedirectAttributes redirectAttributes) {
 
-        Usuarios lider = validarLider();
+        Usuarios lider = validarLider(principal);
         if (lider == null)
             return "redirect:/login";
 
@@ -202,18 +212,22 @@ public class LiderController {
     // VER DETALLE DEL PROYECTO CON TAREAS
     // =======================================================
     @GetMapping("/proyecto/{id}/detalle")
-    public String verDetalleProyecto(@PathVariable String id, Model model) {
+     public String verDetalleProyecto(@PathVariable String id,
+                                  Principal principal,
+                                  Model model) {
 
-        Usuarios lider = validarLider();
+        Usuarios lider = validarLider(principal);
         if (lider == null)
             return "redirect:/login";
 
         Proyecto proyecto = proyectoService.buscarPorId(id);
         if (proyecto == null || !proyecto.getIdLider().equals(lider.getId()))
-            return "redirect:/lider/tareas/asignar";
+        return "redirect:/lider/tareas/asignar";
 
+        // Tareas del proyecto
         List<Tarea> tareas = tareaService.obtenerTareasPorProyecto(id);
 
+        // Nombres de integrantes
         List<Usuarios> integrantes = proyecto.getParticipantes().stream()
             .map(uid -> usuarioService.obtenerUsuarioPorId(uid))
             .filter(u -> u != null)
@@ -229,19 +243,23 @@ public class LiderController {
 
     @PostMapping("/proyecto/{id}/aceptar")
     public String aceptarProyecto(@PathVariable String id,
+                                  Principal principal,
                                   RedirectAttributes redirectAttributes) {
 
-        Usuarios lider = validarLider();
-        if (lider == null)
-            return "redirect:/login";
+            Usuarios lider = validarLider(principal);
+            if (lider == null)
+                return "redirect:/login";
 
-        Proyecto proyecto = proyectoService.buscarPorId(id);
-        if (proyecto != null) {
-            proyecto.setEstado("COMPLETADO");
-            proyectoService.guardar(proyecto, null);
-            redirectAttributes.addFlashAttribute("mensaje", "✅ Proyecto aceptado correctamente");
-        }
+            Proyecto proyecto = proyectoService.buscarPorId(id);
+            if (proyecto != null) {
+                proyecto.setEstado("COMPLETADO");
+                proyectoService.guardar(proyecto, null);
+                redirectAttributes.addFlashAttribute("mensaje", "✅ Proyecto aceptado correctamente");
+            }
 
-        return "redirect:/lider/tareas/asignar";
+            return "redirect:/lider/tareas/asignar";
     }
+
+
+
 }

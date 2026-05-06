@@ -21,8 +21,13 @@
           <p class="subtitle">Participa en cualquiera de los proyectos publicados.</p>
         </div>
 
+        <!-- BUSCADOR -->
+        <div class="search-container" style="margin-bottom: 20px; display: flex; justify-content: flex-end;">
+            <input type="text" id="buscador" onkeyup="buscarProyectos()" placeholder="🔍 Buscar por nombre o descripción..." style="padding: 10px; width: 100%; max-width: 400px; border-radius: 8px; border: 1px solid #ccc;">
+        </div>
+
         <!-- TABLA -->
-        <table class="project-table">
+        <table class="project-table" id="tablaProyectos">
           <thead>
             <tr>
               <th>ID</th>
@@ -52,13 +57,12 @@
                     <button type="submit" class="btn-participar">Participar</button>
                   </form>
 
-                  <!--SI ES INVITADO LO REDIRIGE A RESGISTRARSE-->
+                  <!--SI ES INVITADO LO REDIRIGE A LOGIN-->
                    <button th:if="${usuario == null or usuario.getId() == null}" 
                       class="btn-participar"
-                      onclick="window.location.href='/seleccionar-rol'">
+                      onclick="window.location.href='/login'">
                       Participar
                    </button>
-
 
                 </div>
               </td>
@@ -72,6 +76,25 @@
   </div>
 
   <script>
+    function buscarProyectos() {
+        let input = document.getElementById("buscador");
+        let filter = input.value.toLowerCase();
+        let table = document.getElementById("tablaProyectos");
+        let tr = table.getElementsByTagName("tr");
+
+        for (let i = 1; i < tr.length; i++) {
+            let tdNombre = tr[i].getElementsByTagName("td")[1];
+            let tdDesc = tr[i].getElementsByTagName("td")[2];
+            if (tdNombre || tdDesc) {
+                let txtValue = (tdNombre.textContent || tdNombre.innerText) + " " + (tdDesc.textContent || tdDesc.innerText);
+                if (txtValue.toLowerCase().indexOf(filter) > -1) {
+                    tr[i].style.display = "";
+                } else {
+                    tr[i].style.display = "none";
+                }
+            }       
+        }
+    }
     function showToast(message, type) {
         const toast = document.getElementById("toast");
         toast.textContent = message;

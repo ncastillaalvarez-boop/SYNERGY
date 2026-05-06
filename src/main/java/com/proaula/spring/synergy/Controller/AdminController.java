@@ -14,9 +14,10 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.proaula.spring.synergy.Model.Proyecto;
 import com.proaula.spring.synergy.Model.Usuarios;
-import com.proaula.spring.synergy.Security.SecurityUtils;
 import com.proaula.spring.synergy.Service.ProyectoService;
 import com.proaula.spring.synergy.Service.UsuarioService;
+
+import java.security.Principal;
 
 @Controller
 @RequestMapping("/admin")
@@ -31,10 +32,15 @@ public class AdminController {
     // ---------------------------------------------------------
     // MÉTODO REUTILIZABLE DE VALIDACIÓN DE ADMIN
     // ---------------------------------------------------------
-    private Usuarios validarAdmin() {
-        Usuarios usuario = SecurityUtils.getUsuarioActual();
-        if (usuario == null) return null;
-        if (!"ADMINISTRADOR".equalsIgnoreCase(usuario.getRol())) return null;
+    private Usuarios validarAdmin(Principal principal) {
+        if (principal == null) return null;
+        Usuarios usuario = usuarioService.buscarPorCorreo(principal.getName());
+
+        if (usuario == null)
+            return null;
+        if (!"ADMINISTRADOR".equalsIgnoreCase(usuario.getRol()))
+            return null;
+
         return usuario;
     }
 
@@ -42,13 +48,16 @@ public class AdminController {
     // VER TODOS LOS USUARIOS
     // ---------------------------------------------------------
     @GetMapping("/usuarios")
-    public String verUsuarios(Model model) {
-        Usuarios usuario = validarAdmin();
+    public String verUsuarios(Model model, Principal principal) {
+
+        Usuarios usuario = validarAdmin(principal);
         if (usuario == null) {
             return "redirect:/login";
         }
         model.addAttribute("usuario", usuario);
         model.addAttribute("usuarios", usuarioService.obtenerTodosUsuarios());
+
+        // Vista Thymeleaf: src/main/resources/templates/Admin_Usuarios_Dashboard.html
         return "Admin_Usuarios_Dashboard";
     }
 
@@ -56,9 +65,9 @@ public class AdminController {
     // VER PROYECTO
     // ---------------------------------------------------------
     @GetMapping("/proyecto/{id}")
-    public String verProyecto(@PathVariable String id, Model model) {
+    public String verProyecto(@PathVariable String id, Principal principal, Model model) {
 
-        Usuarios admin = validarAdmin();
+        Usuarios admin = validarAdmin(principal);
         if (admin == null)
             return "redirect:/login";
 
@@ -69,13 +78,14 @@ public class AdminController {
         model.addAttribute("usuario", admin);
         model.addAttribute("proyecto", proyecto);
 
+        // Vista: Admin_Ver_Proyecto.html
         return "Admin_Ver_Proyecto";
     }
 
     @GetMapping("/proyectos")
-    public String verProyectos(Model model) {
+    public String verProyectos(Principal principal, Model model) {
 
-        Usuarios admin = validarAdmin();
+        Usuarios admin = validarAdmin(principal);
         if (admin == null)
             return "redirect:/login";
 
@@ -84,6 +94,7 @@ public class AdminController {
         model.addAttribute("usuario", admin);
         model.addAttribute("proyectos", proyectos);
 
+        // Vista: Administrador_Dashboard.html
         return "Administrador_Dashboard";
     }
 
@@ -92,9 +103,10 @@ public class AdminController {
     // ---------------------------------------------------------
     @PostMapping("/proyecto/{id}/aceptar")
     public String aceptarProyecto(@PathVariable String id,
+            Principal principal,
             RedirectAttributes redirectAttributes) {
 
-        Usuarios admin = validarAdmin();
+        Usuarios admin = validarAdmin(principal);
         if (admin == null)
             return "redirect:/login";
 
@@ -113,9 +125,10 @@ public class AdminController {
     // ---------------------------------------------------------
     @PostMapping("/proyecto/{id}/eliminar")
     public String eliminarProyecto(@PathVariable String id,
+            Principal principal,
             RedirectAttributes redirectAttributes) {
 
-        Usuarios admin = validarAdmin();
+        Usuarios admin = validarAdmin(principal);
         if (admin == null)
             return "redirect:/login";
 
@@ -136,12 +149,14 @@ public class AdminController {
     // ---------------------------------------------------------
     @PostMapping("/usuario/{id}/eliminar")
     public String eliminarUsuario(@PathVariable String id,
+            Principal principal,
             RedirectAttributes redirectAttributes) {
 
-        Usuarios admin = validarAdmin();
+        Usuarios admin = validarAdmin(principal);
         if (admin == null)
             return "redirect:/login";
 
+        // Evitar que el admin se elimine a sí mismo
         if (admin.getId().equals(id)) {
             redirectAttributes.addFlashAttribute("error",
                     "❌ No puedes eliminar tu propia cuenta de administrador");
@@ -166,9 +181,10 @@ public class AdminController {
     @PostMapping("/usuario/{id}/cambiar-rol")
     public String cambiarRol(@PathVariable String id,
             @RequestParam String nuevoRol,
+            Principal principal,
             RedirectAttributes redirectAttributes) {
 
-        Usuarios admin = validarAdmin();
+        Usuarios admin = validarAdmin(principal);
         if (admin == null)
             return "redirect:/login";
 

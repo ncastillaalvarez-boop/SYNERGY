@@ -16,7 +16,7 @@ import com.proaula.spring.synergy.Model.Tarea;
 import com.proaula.spring.synergy.Service.EntregaTareaService;
 import com.proaula.spring.synergy.Service.TareaService;
 
-import com.proaula.spring.synergy.Security.SecurityUtils;
+import java.security.Principal;
 
 @Controller
 @RequestMapping("/tareas")
@@ -34,9 +34,11 @@ public class EntregaTareaController {
     @GetMapping("/entregar/{id}")
     public String mostrarFormularioEntrega(
             @PathVariable String id,
+            Principal principal,
             Model model) {
 
-        if (SecurityUtils.getUsuarioActual() == null) {
+        // Verificar sesión con JWT Stateless
+        if (principal == null) {
             return "redirect:/login";
         }
 

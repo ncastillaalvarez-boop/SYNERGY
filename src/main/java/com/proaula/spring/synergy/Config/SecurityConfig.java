@@ -15,7 +15,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-import com.proaula.spring.synergy.Security.JwtAuthenticationEntryPoint;
 import com.proaula.spring.synergy.Security.JwtAuthenticationFilter;
 import com.proaula.spring.synergy.Security.UserDetailsServiceImpl;
 
@@ -30,9 +29,6 @@ public class SecurityConfig {
 
     @Autowired
     private UserDetailsServiceImpl userDetailsService;
-
-    @Autowired
-    private JwtAuthenticationEntryPoint unauthorizedHandler;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -61,14 +57,12 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
-            // 🚀 STATELESS — sin sesiones del lado del servidor
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
-            // Manejo de errores de autenticación
-            .exceptionHandling(ex -> ex.authenticationEntryPoint(unauthorizedHandler))
             .authorizeHttpRequests(authz -> authz
-                // ── Rutas públicas ──
+
+                // ── Rutas públicas (INVITADO sin login) ──
                 .requestMatchers(
                     "/", "/index", "/login", "/logout",
                     "/seleccionar-rol",
@@ -77,23 +71,27 @@ public class SecurityConfig {
                     "/publico/**",
                     "/proyectos/publico",
                     "/error",
-                    "/css/**", "/js/**", "/img/**", "/IMG/**", "/images/**",
-                    "/api/auth/**"
+                    "/css/**", "/js/**", "/img/**", "/IMG/**", "/images/**"
                 ).permitAll()
 
-                // ── Rutas API protegidas por JWT ──
+                // ── Solo JWT para API ──
                 .requestMatchers("/api/admin/**").hasRole("ADMINISTRADOR")
                 .requestMatchers("/api/lider/**").hasAnyRole("ADMINISTRADOR", "LIDER")
                 .requestMatchers("/api/**").authenticated()
 
-                // ── Rutas Thymeleaf protegidas por JWT (cookie) ──
-                .anyRequest().authenticated()
+                // ── Rutas Thymeleaf controladas por sesión ──
+                .anyRequest().permitAll()
             )
             .authenticationProvider(authenticationProvider())
             .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
-            // 🚫 Logout deshabilitado (con JWT se maneja en /api/auth/logout)
-            .logout(logout -> logout.disable());
+            .logout(logout -> logout
+                .logoutUrl("/logout")
+                .logoutSuccessUrl("/login?logout")
+                .deleteCookies("jwt_token") // Se elimina la cookie JWT
+                .permitAll()
+            );
       
         return http.build();
     }
+   
 }
