@@ -1,6 +1,5 @@
 package com.proaula.spring.synergy.Controller;
 
-import java.util.Optional;
 
 import com.proaula.spring.synergy.Model.Comentario;
 import com.proaula.spring.synergy.Model.Proyecto;

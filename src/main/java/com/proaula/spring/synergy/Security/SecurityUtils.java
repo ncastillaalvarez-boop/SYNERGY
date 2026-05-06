@@ -2,11 +2,9 @@ package com.proaula.spring.synergy.Security;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Component;
 
 import com.proaula.spring.synergy.Model.Usuarios;
 
-@Component
 public class SecurityUtils {
 
     /**
