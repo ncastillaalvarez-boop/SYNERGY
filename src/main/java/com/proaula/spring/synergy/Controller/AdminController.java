@@ -17,7 +17,7 @@ import com.proaula.spring.synergy.Model.Usuarios;
 import com.proaula.spring.synergy.Service.ProyectoService;
 import com.proaula.spring.synergy.Service.UsuarioService;
 
-import jakarta.servlet.http.HttpSession;
+import java.security.Principal;
 
 @Controller
 @RequestMapping("/admin")
@@ -32,8 +32,9 @@ public class AdminController {
     // ---------------------------------------------------------
     // MÉTODO REUTILIZABLE DE VALIDACIÓN DE ADMIN
     // ---------------------------------------------------------
-    private Usuarios validarAdmin(HttpSession session) {
-        Usuarios usuario = (Usuarios) session.getAttribute("usuario");
+    private Usuarios validarAdmin(Principal principal) {
+        if (principal == null) return null;
+        Usuarios usuario = usuarioService.buscarPorCorreo(principal.getName());
 
         if (usuario == null)
             return null;
@@ -47,10 +48,10 @@ public class AdminController {
     // VER TODOS LOS USUARIOS
     // ---------------------------------------------------------
     @GetMapping("/usuarios")
-    public String verUsuarios(Model model, HttpSession session) {
+    public String verUsuarios(Model model, Principal principal) {
 
-        Usuarios usuario = (Usuarios) session.getAttribute("usuario");
-        if (usuario == null || !"ADMINISTRADOR".equalsIgnoreCase(usuario.getRol())) {
+        Usuarios usuario = validarAdmin(principal);
+        if (usuario == null) {
             return "redirect:/login";
         }
         model.addAttribute("usuario", usuario);
@@ -64,9 +65,9 @@ public class AdminController {
     // VER PROYECTO
     // ---------------------------------------------------------
     @GetMapping("/proyecto/{id}")
-    public String verProyecto(@PathVariable String id, HttpSession session, Model model) {
+    public String verProyecto(@PathVariable String id, Principal principal, Model model) {
 
-        Usuarios admin = validarAdmin(session);
+        Usuarios admin = validarAdmin(principal);
         if (admin == null)
             return "redirect:/login";
 
@@ -82,9 +83,9 @@ public class AdminController {
     }
 
     @GetMapping("/proyectos")
-    public String verProyectos(HttpSession session, Model model) {
+    public String verProyectos(Principal principal, Model model) {
 
-        Usuarios admin = validarAdmin(session);
+        Usuarios admin = validarAdmin(principal);
         if (admin == null)
             return "redirect:/login";
 
@@ -102,10 +103,10 @@ public class AdminController {
     // ---------------------------------------------------------
     @PostMapping("/proyecto/{id}/aceptar")
     public String aceptarProyecto(@PathVariable String id,
-            HttpSession session,
+            Principal principal,
             RedirectAttributes redirectAttributes) {
 
-        Usuarios admin = validarAdmin(session);
+        Usuarios admin = validarAdmin(principal);
         if (admin == null)
             return "redirect:/login";
 
@@ -124,10 +125,10 @@ public class AdminController {
     // ---------------------------------------------------------
     @PostMapping("/proyecto/{id}/eliminar")
     public String eliminarProyecto(@PathVariable String id,
-            HttpSession session,
+            Principal principal,
             RedirectAttributes redirectAttributes) {
 
-        Usuarios admin = validarAdmin(session);
+        Usuarios admin = validarAdmin(principal);
         if (admin == null)
             return "redirect:/login";
 
@@ -148,10 +149,10 @@ public class AdminController {
     // ---------------------------------------------------------
     @PostMapping("/usuario/{id}/eliminar")
     public String eliminarUsuario(@PathVariable String id,
-            HttpSession session,
+            Principal principal,
             RedirectAttributes redirectAttributes) {
 
-        Usuarios admin = validarAdmin(session);
+        Usuarios admin = validarAdmin(principal);
         if (admin == null)
             return "redirect:/login";
 
@@ -180,10 +181,10 @@ public class AdminController {
     @PostMapping("/usuario/{id}/cambiar-rol")
     public String cambiarRol(@PathVariable String id,
             @RequestParam String nuevoRol,
-            HttpSession session,
+            Principal principal,
             RedirectAttributes redirectAttributes) {
 
-        Usuarios admin = validarAdmin(session);
+        Usuarios admin = validarAdmin(principal);
         if (admin == null)
             return "redirect:/login";
 

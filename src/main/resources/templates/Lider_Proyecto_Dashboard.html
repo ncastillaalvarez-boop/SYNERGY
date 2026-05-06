@@ -57,6 +57,12 @@
         <div class="proyectos-lista">
           <h2>Mis proyectos</h2>
 
+          <!-- Barra de Búsqueda de Proyectos -->
+          <div style="margin-bottom: 20px;">
+            <input type="text" id="buscadorLider" onkeyup="filtrarProyectosLider()" placeholder="🔍 Buscar proyecto por nombre..."
+                   style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(15,23,42,0.6); color: white; font-size: 16px;">
+          </div>
+
         <div th:if="${#lists.isEmpty(proyectos)}">
           <p>No tienes proyectos creados aún.</p>
        </div>
@@ -84,6 +90,22 @@
     </div>
   </div>
 
+<script>
+function filtrarProyectosLider() {
+  const filter = document.getElementById("buscadorLider").value.toLowerCase();
+  const cards = document.querySelectorAll(".proyecto-card");
+  
+  cards.forEach(card => {
+    const nombre = card.querySelector("h3").textContent.toLowerCase();
+    
+    if (nombre.includes(filter)) {
+      card.style.display = "";
+    } else {
+      card.style.display = "none";
+    }
+  });
+}
+</script>
 </body>
 
 </html>

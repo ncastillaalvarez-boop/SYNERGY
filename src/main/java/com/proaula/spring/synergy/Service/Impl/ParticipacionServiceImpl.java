@@ -82,7 +82,9 @@ public class ParticipacionServiceImpl implements ParticipacionService {
         List<Participacion> participaciones = participacionRepository.findByIdProyecto(proyectoId);
         return participaciones.stream()
                 .map(p -> usuarioRepository.findById(p.getIdUsuario()).orElse(null))
-                .filter(u -> u != null)
+                .filter(u -> u != null && 
+                             !"ADMINISTRADOR".equalsIgnoreCase(u.getRol()) &&
+                             !"LIDER".equalsIgnoreCase(u.getRol()))
                 .collect(Collectors.toList());
     }
 

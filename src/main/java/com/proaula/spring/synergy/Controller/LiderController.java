@@ -21,7 +21,7 @@ import com.proaula.spring.synergy.Service.UsuarioService;
 import com.proaula.spring.synergy.Service.TareaService;
 
 
-import jakarta.servlet.http.HttpSession;
+import java.security.Principal;
 
 @Controller
 @RequestMapping("/lider")
@@ -39,8 +39,9 @@ public class LiderController {
     // =======================================================
     // VALIDAR QUE EL USUARIO SEA LÍDER
     // =======================================================
-    private Usuarios validarLider(HttpSession session) {
-        Usuarios usuario = (Usuarios) session.getAttribute("usuario");
+    private Usuarios validarLider(Principal principal) {
+        if (principal == null) return null;
+        Usuarios usuario = usuarioService.buscarPorCorreo(principal.getName());
 
         if (usuario == null)
             return null;
@@ -55,9 +56,9 @@ public class LiderController {
     // DASHBOARD DEL LÍDER
     // =======================================================
     @GetMapping("/dashboard")
-    public String dashboardLider(HttpSession session, Model model) {
+    public String dashboardLider(Principal principal, Model model) {
 
-        Usuarios lider = validarLider(session);
+        Usuarios lider = validarLider(principal);
         if (lider == null)
             return "redirect:/login";
 
@@ -73,9 +74,9 @@ public class LiderController {
     // FORMULARIO CREAR PROYECTO
     // =======================================================
     @GetMapping("/proyecto/nuevo")
-    public String formularioNuevoProyecto(HttpSession session, Model model) {
+    public String formularioNuevoProyecto(Principal principal, Model model) {
 
-        Usuarios lider = validarLider(session);
+        Usuarios lider = validarLider(principal);
         if (lider == null)
             return "redirect:/login";
 
@@ -88,9 +89,9 @@ public class LiderController {
     // =======================================================
     @PostMapping("/proyecto/guardar")
     public String guardarProyecto(@ModelAttribute Proyecto proyecto,
-                                  HttpSession session) {
+                                  Principal principal) {
 
-        Usuarios lider = validarLider(session);
+        Usuarios lider = validarLider(principal);
         if (lider == null)
             return "redirect:/login";
 
@@ -105,10 +106,10 @@ public class LiderController {
     // =======================================================
     @GetMapping("/proyecto/{id}/editar")
     public String editarProyecto(@PathVariable String id,
-                                 HttpSession session,
+                                 Principal principal,
                                  Model model) {
 
-        Usuarios lider = validarLider(session);
+        Usuarios lider = validarLider(principal);
         if (lider == null)
             return "redirect:/login";
 
@@ -127,9 +128,9 @@ public class LiderController {
     @PostMapping("/proyecto/{id}/actualizar")
     public String actualizarProyecto(@PathVariable String id,
                                      @ModelAttribute Proyecto proyecto,
-                                     HttpSession session) {
+                                     Principal principal) {
 
-        Usuarios lider = validarLider(session);
+        Usuarios lider = validarLider(principal);
         if (lider == null)
             return "redirect:/login";
 
@@ -146,9 +147,9 @@ public class LiderController {
     // =======================================================
 
     @GetMapping("/tareas/asignar")
-    public String asignarTareas(HttpSession session, Model model) {
+    public String asignarTareas(Principal principal, Model model) {
 
-    Usuarios lider = validarLider(session);
+    Usuarios lider = validarLider(principal);
     if (lider == null)
         return "redirect:/login";
     // Obtener proyectos del líder
@@ -163,9 +164,9 @@ public class LiderController {
 
     // VER USUARIOS INSCRITOS AL PROYECTO
     @GetMapping("/usuarios")
-    public String usuariosInscritos(HttpSession session, Model model) {
+    public String usuariosInscritos(Principal principal, Model model) {
 
-        Usuarios lider = validarLider(session);
+        Usuarios lider = validarLider(principal);
         if (lider == null)
             return "redirect:/login";
 
@@ -174,9 +175,9 @@ public class LiderController {
 
     // VER TAREAS RECIBIDAS
     @GetMapping("/tareas/recibidas")
-    public String tareasRecibidas(HttpSession session, Model model) {
+    public String tareasRecibidas(Principal principal, Model model) {
 
-        Usuarios lider = validarLider(session);
+        Usuarios lider = validarLider(principal);
         if (lider == null)
             return "redirect:/login";
 
@@ -188,10 +189,10 @@ public class LiderController {
     // =======================================================
     @PostMapping("/proyecto/{id}/eliminar")
      public String eliminarProyecto(@PathVariable String id,
-                                HttpSession session,
+                                Principal principal,
                                 RedirectAttributes redirectAttributes) {
 
-        Usuarios lider = validarLider(session);
+        Usuarios lider = validarLider(principal);
         if (lider == null)
             return "redirect:/login";
 
@@ -212,10 +213,10 @@ public class LiderController {
     // =======================================================
     @GetMapping("/proyecto/{id}/detalle")
      public String verDetalleProyecto(@PathVariable String id,
-                                  HttpSession session,
+                                  Principal principal,
                                   Model model) {
 
-        Usuarios lider = validarLider(session);
+        Usuarios lider = validarLider(principal);
         if (lider == null)
             return "redirect:/login";
 
@@ -242,10 +243,10 @@ public class LiderController {
 
     @PostMapping("/proyecto/{id}/aceptar")
     public String aceptarProyecto(@PathVariable String id,
-                                  HttpSession session,
+                                  Principal principal,
                                   RedirectAttributes redirectAttributes) {
 
-            Usuarios lider = validarLider(session);
+            Usuarios lider = validarLider(principal);
             if (lider == null)
                 return "redirect:/login";
 

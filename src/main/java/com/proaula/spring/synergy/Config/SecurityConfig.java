@@ -58,10 +58,7 @@ public class SecurityConfig {
         http
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
-                .maximumSessions(2)
-                .maxSessionsPreventsLogin(false)
-                .expiredUrl("/login?sessionExpirada=true")
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
             .authorizeHttpRequests(authz -> authz
 
@@ -89,8 +86,8 @@ public class SecurityConfig {
             .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
             .logout(logout -> logout
                 .logoutUrl("/logout")
-                .invalidateHttpSession(true)
-                .deleteCookies("SYNERGY_SESSION")
+                .logoutSuccessUrl("/login?logout")
+                .deleteCookies("jwt_token") // Se elimina la cookie JWT
                 .permitAll()
             );
       

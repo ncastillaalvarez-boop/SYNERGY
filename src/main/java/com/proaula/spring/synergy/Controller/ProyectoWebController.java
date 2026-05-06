@@ -34,10 +34,13 @@ public class ProyectoWebController {
     // DASHBOARD DE PROYECTOS
     // ==============================
     @GetMapping("/dashboard")
-    public String dashboardProyectos(HttpSession session, Model model) {
+    public String dashboardProyectos(Principal principal, Model model) {
 
-        Usuarios usuario = (Usuarios) session.getAttribute("usuario");
+        if (principal == null) {
+            return "redirect:/login";
+        }
 
+        Usuarios usuario = usuarioService.buscarPorCorreo(principal.getName());
         if (usuario == null) {
             return "redirect:/login";
         }
@@ -61,17 +64,15 @@ public class ProyectoWebController {
 public String guardarProyecto(
         @ModelAttribute Proyecto proyecto,
         @RequestParam("archivo") MultipartFile archivo,
-        HttpSession session,
+        Principal principal,
         Model model) {
 
-    String usuarioId = (String) session.getAttribute("usuarioId");
-
-    if (usuarioId == null) {
+    if (principal == null) {
         return "redirect:/login";
     }
 
-    // Asignar líder correctamente
-    Usuarios lider = usuarioService.obtenerUsuarioPorId(usuarioId);
+    // Asignar líder correctamente usando el Principal provisto por JWT
+    Usuarios lider = usuarioService.buscarPorCorreo(principal.getName());
     proyecto.setIdLider(lider.getId());
 
     try {
@@ -92,10 +93,13 @@ public String guardarProyecto(
     // LISTA GENERAL PARA INSCRIBIRSE
     // ==============================
     @GetMapping("/participar")
-    public String mostrarListaParticipacion(HttpSession session, Model model) {
+    public String mostrarListaParticipacion(Principal principal, Model model) {
 
-        Usuarios usuario = (Usuarios) session.getAttribute("usuario");
+        if (principal == null) {
+            return "redirect:/login";
+        }
 
+        Usuarios usuario = usuarioService.buscarPorCorreo(principal.getName());
         if (usuario == null) {
             return "redirect:/login";
         }

@@ -19,6 +19,10 @@ import com.proaula.spring.synergy.Service.TareaService;
 import com.proaula.spring.synergy.Service.UsuarioService;
 
 import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpServletResponse;
+import java.security.Principal;
+import com.proaula.spring.synergy.Security.JwtTokenProvider;
+import com.proaula.spring.synergy.Security.JwtCookieService;
 
 @Controller
 public class UsuarioWebController {
@@ -34,6 +38,12 @@ public class UsuarioWebController {
 
     @Autowired
     private TareaService tareaService;
+
+    @Autowired
+    private JwtTokenProvider jwtTokenProvider;
+
+    @Autowired
+    private JwtCookieService jwtCookieService;
 
     // ============================================
     // PÁGINA PRINCIPAL
@@ -60,7 +70,7 @@ public class UsuarioWebController {
     public String registrar(
             @ModelAttribute Usuarios usuario,
             @RequestParam(required = false) String confirmarContrasena,
-            HttpSession session,
+            HttpServletResponse response,
             RedirectAttributes ra) {
 
         // Encriptar contraseña antes de guardar
@@ -79,9 +89,9 @@ public class UsuarioWebController {
        // Guardar en BD
        usuarioService.guardarUsuario(usuario);
 
-      // Guardar en sesión
-      session.setAttribute("usuario", usuario);
-      session.setAttribute("usuarioId", usuario.getId());
+      // Iniciar sesión automáticamente (JWT)
+      String token = jwtTokenProvider.generateToken(usuario.getCorreo(), usuario.getRol());
+      jwtCookieService.addJwtCookie(response, token);
 
       // Redirigir según el rol
       return switch (usuario.getRol()) {
@@ -107,7 +117,7 @@ public class UsuarioWebController {
     public String procesarLogin(
             @RequestParam String correo,
             @RequestParam String contrasena,
-            HttpSession session,
+            HttpServletResponse response,
             Model model) {
 
         Usuarios usuario = usuarioService.buscarPorCorreo(correo);
@@ -117,9 +127,9 @@ public class UsuarioWebController {
             return "Login";
         }
 
-        // Guardar en sesión
-        session.setAttribute("usuario", usuario);
-        session.setAttribute("usuarioId", usuario.getId());
+        // Guardar en Cookie usando JWT STATELESS
+        String token = jwtTokenProvider.generateToken(usuario.getCorreo(), usuario.getRol());
+        jwtCookieService.addJwtCookie(response, token);
 
         String rol = usuario.getRol().toUpperCase();
 
@@ -135,8 +145,8 @@ public class UsuarioWebController {
     // LOGOUT
     // ============================================
     @GetMapping("/logout")
-    public String logout(HttpSession session, RedirectAttributes redirectAttributes) {
-        session.invalidate();
+    public String logout(HttpServletResponse response, RedirectAttributes redirectAttributes) {
+        jwtCookieService.clearJwtCookie(response);
         redirectAttributes.addFlashAttribute("mensaje", "Sesión cerrada correctamente");
         return "redirect:/login";
     }
@@ -145,10 +155,11 @@ public class UsuarioWebController {
     // DASHBOARD PRINCIPAL
     // ============================================
     @GetMapping("/dashboard")
-    public String dashboard(HttpSession session, Model model) {
+    public String dashboard(Principal principal, Model model) {
 
-        Usuarios usuario = (Usuarios) session.getAttribute("usuario");
+        if (principal == null) return "redirect:/login";
 
+        Usuarios usuario = usuarioService.buscarPorCorreo(principal.getName());
         if (usuario == null) {
             return "redirect:/login";
         }
@@ -158,9 +169,10 @@ public class UsuarioWebController {
     }
 
     @GetMapping("/administrador_dashboard")
-    public String adminDashboard(HttpSession session, Model model) {
+    public String adminDashboard(Principal principal, Model model) {
 
-        Usuarios usuario = (Usuarios) session.getAttribute("usuario");
+        if (principal == null) return "redirect:/login";
+        Usuarios usuario = usuarioService.buscarPorCorreo(principal.getName());
         if (usuario == null)
             return "redirect:/login";
 
@@ -172,10 +184,11 @@ public class UsuarioWebController {
     // BUZÓN DE TAREAS
     // ============================================
     @GetMapping("/tareas/buzon")
-    public String mostrarBuzonTareas(HttpSession session, Model model) {
+    public String mostrarBuzonTareas(Principal principal, Model model) {
 
-        Usuarios usuario = (Usuarios) session.getAttribute("usuario");
+        if (principal == null) return "redirect:/login";
 
+        Usuarios usuario = usuarioService.buscarPorCorreo(principal.getName());
         if (usuario == null) {
             return "redirect:/login";
         }
@@ -192,10 +205,11 @@ public class UsuarioWebController {
     // VER CREDENCIALES (PERFIL)
     // ============================================
     @GetMapping("/usuario/credenciales")
-    public String verCredenciales(HttpSession session, Model model) {
+    public String verCredenciales(Principal principal, Model model) {
 
-        Usuarios usuario = (Usuarios) session.getAttribute("usuario");
+        if (principal == null) return "redirect:/login";
 
+        Usuarios usuario = usuarioService.buscarPorCorreo(principal.getName());
         if (usuario == null) {
             return "redirect:/login";
         }
@@ -214,11 +228,12 @@ public class UsuarioWebController {
             @RequestParam(required = false) String contrasenaActual,
             @RequestParam(required = false) String contrasenaNueva,
             @RequestParam(required = false) String contrasenaConfirmacion,
-            HttpSession session,
+            Principal principal,
             RedirectAttributes redirectAttributes) {
 
-        Usuarios usuario = (Usuarios) session.getAttribute("usuario");
+        if (principal == null) return "redirect:/login";
 
+        Usuarios usuario = usuarioService.buscarPorCorreo(principal.getName());
         if (usuario == null) {
             return "redirect:/login";
         }
@@ -266,9 +281,6 @@ public class UsuarioWebController {
         // Guardar cambios
         usuarioService.guardarUsuario(usuario);
 
-        // Actualizar sesión
-        session.setAttribute("usuario", usuario);
-
         redirectAttributes.addFlashAttribute("mensaje", "✅ Credenciales actualizadas correctamente");
         return "redirect:/usuario/credenciales";
     }
@@ -277,10 +289,11 @@ public class UsuarioWebController {
     // ASIGNACIÓN DE TAREAS (LÍDER)
     // ============================================
     @GetMapping("/lider/asignar-tareas")
-    public String mostrarAsignacionTareas(HttpSession session, Model model) {
+    public String mostrarAsignacionTareas(Principal principal, Model model) {
 
-        Usuarios usuario = (Usuarios) session.getAttribute("usuario");
+        if (principal == null) return "redirect:/login";
 
+        Usuarios usuario = usuarioService.buscarPorCorreo(principal.getName());
         if (usuario == null) {
             return "redirect:/login";
         }
@@ -313,10 +326,12 @@ public class UsuarioWebController {
     }
 
     @GetMapping("/publico/proyectos")
-    public String verProyectosPublico(Model model, HttpSession session) {
+    public String verProyectosPublico(Model model, Principal principal) {
         model.addAttribute("proyectos", proyectoService.listar());
-        Usuarios usuario = (Usuarios) session.getAttribute("usuario");
-        model.addAttribute("usuario", usuario);
+        if (principal != null) {
+             Usuarios usuario = usuarioService.buscarPorCorreo(principal.getName());
+             model.addAttribute("usuario", usuario);
+        }
        return "Participacion_Proyecto_Usuario";
     }
 }

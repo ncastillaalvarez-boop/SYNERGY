@@ -45,6 +45,12 @@
           </div>
         </div>
 
+        <!-- Barra de búsqueda -->
+        <div style="margin-bottom: 20px;">
+          <input type="text" id="buscadorUsuarios" onkeyup="filtrarUsuarios()" placeholder="🔍 Buscar por nombre, correo o rol..."
+                 style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(15,23,42,0.6); color: white; font-size: 16px;">
+        </div>
+
         <!-- Tabla de usuarios -->
         <table class="project-table">
           <thead>
@@ -113,5 +119,24 @@
     </div>
   </div>
 
+<script>
+function filtrarUsuarios() {
+  const filter = document.getElementById("buscadorUsuarios").value.toLowerCase();
+  const trs = document.querySelectorAll(".project-table tbody tr");
+  
+  trs.forEach(tr => {
+    if(tr.children.length === 1) return; 
+    const nombre = tr.children[1].textContent.toLowerCase();
+    const correo = tr.children[2].textContent.toLowerCase();
+    const rol = tr.children[3].textContent.toLowerCase();
+    
+    if (nombre.includes(filter) || correo.includes(filter) || rol.includes(filter)) {
+      tr.style.display = "";
+    } else {
+      tr.style.display = "none";
+    }
+  });
+}
+</script>
 </body>
 </html>
