@@ -38,6 +38,10 @@ public class Proyecto {
     private LocalDateTime fechaCreacion;
     private LocalDateTime fechaActualizacion;
 
+    private byte[] datos;
+    private String nombreArchivo;
+    private String tipoArchivo;
+
     public Proyecto() {
         this.fechaCreacion = LocalDateTime.now();
         this.fechaActualizacion = LocalDateTime.now();
@@ -151,6 +155,15 @@ public class Proyecto {
     public void setFechaActualizacion(LocalDateTime fechaActualizacion) {
         this.fechaActualizacion = fechaActualizacion;
     }
+
+    public byte[] getDatos() { return datos; }
+    public void setDatos(byte[] datos) { this.datos = datos; }
+
+    public String getNombreArchivo() { return nombreArchivo; }
+    public void setNombreArchivo(String nombreArchivo) { this.nombreArchivo = nombreArchivo; }
+
+    public String getTipoArchivo() { return tipoArchivo; }
+    public void setTipoArchivo(String tipoArchivo) { this.tipoArchivo = tipoArchivo; }
 
     // Métodos de utilidad
     public void addParticipante(String usuarioId) {

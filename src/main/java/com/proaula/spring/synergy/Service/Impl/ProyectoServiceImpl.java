@@ -29,7 +29,13 @@ public class ProyectoServiceImpl implements ProyectoService {
     public Proyecto guardar(Proyecto proyecto, MultipartFile archivo) {
         try {
             if (archivo != null && !archivo.isEmpty()) {
-                System.out.println("Archivo recibido: " + archivo.getOriginalFilename());
+                try {
+                    proyecto.setDatos(archivo.getBytes());
+                    proyecto.setNombreArchivo(archivo.getOriginalFilename());
+                    proyecto.setTipoArchivo(archivo.getContentType());
+                } catch (java.io.IOException e) {
+                    throw new RuntimeException("Error al procesar la imagen: " + e.getMessage());
+                }
             }
 
             if (proyecto.getIdLider() == null) {

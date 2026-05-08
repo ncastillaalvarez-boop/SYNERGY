@@ -5,6 +5,9 @@ import java.security.Principal;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -182,6 +185,23 @@ public String guardarProyecto(
 
         return "Dashboard_MisProyectos";
     }
-    
+
+    // ==============================
+    // IMAGEN DE PROYECTO
+    // ==============================
+    @GetMapping("/{id}/imagen")
+    public ResponseEntity<byte[]> verImagenProyecto(@PathVariable String id) {
+        Proyecto proyecto = proyectoService.buscarPorId(id);
+        if (proyecto == null || proyecto.getDatos() == null) {
+            return ResponseEntity.notFound().build();
+        }
+        MediaType tipo = MediaType.IMAGE_JPEG;
+        if (proyecto.getTipoArchivo() != null) {
+            try { tipo = MediaType.parseMediaType(proyecto.getTipoArchivo()); } catch (Exception ignored) {}
+        }
+        org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+        headers.setContentType(tipo);
+        return new ResponseEntity<>(proyecto.getDatos(), headers, HttpStatus.OK);
+    }
 
 }

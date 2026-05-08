@@ -81,6 +81,16 @@ public class AdminController {
         if (proyecto == null)
             return "redirect:/admin/proyectos";
 
+        // Nombre del líder
+        if (proyecto.getIdLider() != null) {
+            Usuarios lider = usuarioService.obtenerUsuarioPorId(proyecto.getIdLider());
+            model.addAttribute("lider", lider);
+        }
+
+        // Participantes inscritos
+        List<Usuarios> participantes = participacionService.listarUsuariosPorProyecto(id);
+        model.addAttribute("participantes", participantes);
+
         model.addAttribute("usuario", admin);
         model.addAttribute("proyecto", proyecto);
 

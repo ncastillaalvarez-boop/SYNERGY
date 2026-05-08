@@ -5,31 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Detalles del Proyecto – Synergy Admin</title>
   <link rel="stylesheet" th:href="@{/css/Administrador_Dashboard.css}" />
-  <style>
-    .detail-card {
-      background: rgba(255,255,255,0.95);
-      padding: 2rem;
-      border-radius: 10px;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-      margin-bottom: 1.5rem;
-    }
-    .detail-row {
-      display: flex;
-      justify-content: space-between;
-      padding: 1rem 0;
-      border-bottom: 1px solid #eee;
-    }
-    .detail-row:last-child {
-      border-bottom: none;
-    }
-    .detail-label {
-      font-weight: 600;
-      color: #555;
-    }
-    .detail-value {
-      color: #333;
-    }
-  </style>
 </head>
 <body>
 
@@ -38,60 +13,105 @@
 
     <div class="container">
       <div class="card">
+
         <!-- Encabezado -->
         <div class="header">
           <div class="top-buttons">
-            <button class="btn-inicio" onclick="window.location.href='/admin/proyectos'">⬅ Volver</button>
+            <a th:href="@{/admin/proyectos}" class="btn-inicio">⬅ Volver</a>
           </div>
-          <h1>📋 Detalles del Proyecto</h1>
+          <h1>Detalle del Proyecto</h1>
+          <p class="subtitle">Información completa registrada en el sistema.</p>
         </div>
 
-        <!-- Detalles del proyecto -->
-        <div class="detail-card">
-          <h2 th:text="${proyecto.nombre}" style="margin-top: 0; color: #2c3e50;">Nombre del Proyecto</h2>
-          
-          <div class="detail-row">
-            <span class="detail-label">🆔 ID del Proyecto:</span>
-            <span class="detail-value" th:text="${proyecto.id}">1</span>
-          </div>
+        <!-- Imagen del proyecto (solo si existe) -->
+        <div th:if="${proyecto.datos != null}" style="margin-bottom: 28px; text-align: center;">
+          <img th:src="@{/proyectos/{id}/imagen(id=${proyecto.id})}"
+               alt="Imagen del proyecto"
+               style="max-width: 100%; max-height: 340px; border-radius: 12px;
+                      border: 1px solid rgba(255,255,255,0.08); object-fit: cover;">
+          <p style="font-size: 0.78rem; color: #64748B; margin-top: 6px;"
+             th:text="${proyecto.nombreArchivo}"></p>
+        </div>
 
-          <div class="detail-row">
-            <span class="detail-label">📝 Descripción:</span>
-            <span class="detail-value" th:text="${proyecto.descripcion != null ? proyecto.descripcion : 'Sin descripción'}">Descripción del proyecto</span>
-          </div>
+        <!-- Sección: información general -->
+        <div class="seccion-panel" style="margin-bottom: 16px;">
+          <div class="seccion-panel-header">📋 Información general</div>
+          <div class="seccion-panel-body">
 
-          <div class="detail-row">
-            <span class="detail-label">👤 ID del Líder:</span>
-            <span class="detail-value" th:text="${proyecto.idLider != null ? proyecto.idLider : 'Sin asignar'}">N/A</span>
-          </div>
+            <div class="detalle-fila">
+              <span class="detalle-label">Nombre</span>
+              <span class="detalle-valor" th:text="${proyecto.nombre}">—</span>
+            </div>
 
-          <div class="detail-row">
-            <span class="detail-label">📅 Fecha de Inicio:</span>
-            <span class="detail-value" th:text="${proyecto.fechaInicio != null ? #temporals.format(proyecto.fechaInicio, 'dd/MM/yyyy') : 'No definida'}">N/A</span>
-          </div>
+            <div class="detalle-fila">
+              <span class="detalle-label">Descripción</span>
+              <span class="detalle-valor"
+                    th:text="${proyecto.descripcion != null ? proyecto.descripcion : 'Sin descripción'}">—</span>
+            </div>
 
-          <div class="detail-row">
-            <span class="detail-label">📅 Fecha de Fin:</span>
-            <span class="detail-value" th:text="${proyecto.fechaFin != null ? #temporals.format(proyecto.fechaFin, 'dd/MM/yyyy') : 'No definida'}">N/A</span>
+            <div class="detalle-fila">
+              <span class="detalle-label">Estado</span>
+              <span class="badge-estado"
+                    th:classappend="${proyecto.estado == 'ACTIVO'} ? ' badge-activo' :
+                                    (${proyecto.estado == 'COMPLETADO'} ? ' badge-completado' : ' badge-otro')"
+                    th:text="${proyecto.estado ?: 'SIN ESTADO'}">—</span>
+            </div>
+
+            <div class="detalle-fila">
+              <span class="detalle-label">Fecha de inicio</span>
+              <span class="detalle-valor"
+                    th:text="${proyecto.fechaInicio != null ? #temporals.format(proyecto.fechaInicio, 'dd/MM/yyyy') : 'No definida'}">—</span>
+            </div>
+
+            <div class="detalle-fila">
+              <span class="detalle-label">Fecha de fin</span>
+              <span class="detalle-valor"
+                    th:text="${proyecto.fechaFin != null ? #temporals.format(proyecto.fechaFin, 'dd/MM/yyyy') : 'No definida'}">—</span>
+            </div>
+
+            <div class="detalle-fila">
+              <span class="detalle-label">Líder</span>
+              <span class="detalle-valor"
+                    th:text="${lider != null ? lider.nombre + ' (' + lider.correo + ')' : proyecto.idLider}">—</span>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Sección: participantes -->
+        <div class="seccion-panel" style="margin-bottom: 24px;">
+          <div class="seccion-panel-header">
+            👥 Participantes inscritos
+            (<span th:text="${#lists.size(participantes)}">0</span>)
+          </div>
+          <div class="seccion-panel-body">
+            <div th:if="${#lists.isEmpty(participantes)}" class="seccion-empty">
+              Sin participantes inscritos aún.
+            </div>
+            <div class="part-tags" th:unless="${#lists.isEmpty(participantes)}">
+              <span class="part-tag"
+                    th:each="u : ${participantes}"
+                    th:text="${u.nombre}">Usuario</span>
+            </div>
           </div>
         </div>
 
         <!-- Acciones -->
-        <div style="display: flex; gap: 1rem; justify-content: center;">
-          <form th:action="@{/admin/proyecto/{id}/aceptar(id=${proyecto.id})}" method="post">
-            <button type="submit" class="btn-aceptar" style="padding: 0.75rem 2rem; font-size: 1rem;">
-              ✅ Aceptar Proyecto
-            </button>
+        <div class="proyecto-acciones" style="justify-content: flex-start;">
+          <form th:action="@{/admin/proyecto/{id}/aceptar(id=${proyecto.id})}" method="post"
+                style="display:inline;">
+            <button type="submit" class="btn-aceptar">✅ Aceptar proyecto</button>
           </form>
 
-          <form th:action="@{/admin/proyecto/{id}/eliminar(id=${proyecto.id})}" 
-                method="post"
-                th:onsubmit="'return confirm(\'¿Eliminar definitivamente este proyecto?\')'">
-            <button type="submit" class="btn-eliminar" style="padding: 0.75rem 2rem; font-size: 1rem;">
-              🗑️ Eliminar Proyecto
+          <form th:action="@{/admin/proyecto/{id}/eliminar(id=${proyecto.id})}" method="post"
+                style="display:inline;">
+            <button type="submit" class="btn-eliminar"
+              onclick="return confirm('¿Eliminar definitivamente este proyecto?')">
+              🗑 Eliminar proyecto
             </button>
           </form>
         </div>
+
       </div>
     </div>
   </div>

@@ -390,6 +390,35 @@ h2 {
   font-style: italic;
 }
 
+/* ===== Filas de detalle (vista Admin_Ver_Proyecto) ===== */
+.detalle-fila {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+.detalle-fila:last-child { border-bottom: none; }
+
+.detalle-label {
+  font-size: 0.82rem;
+  color: #64748B;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+  min-width: 130px;
+}
+
+.detalle-valor {
+  font-size: 0.95rem;
+  color: #E2E8F0;
+  text-align: right;
+  flex: 1;
+  word-break: break-word;
+}
+
 /* ===== Contador en header de sección ===== */
 .seccion-count {
   font-size: 0.8rem;
