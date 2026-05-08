@@ -310,6 +310,56 @@ h2 {
 .alert-success { background: rgba(16, 185, 129, 0.1); color: #34D399; border: 1px solid rgba(16, 185, 129, 0.2); }
 .alert-error { background: rgba(239, 68, 68, 0.1); color: #F87171; border: 1px solid rgba(239, 68, 68, 0.2); }
 
+/* ===== Sección Panel (recuadro estilo menu-btn) ===== */
+.seccion-panel {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  margin-top: 8px;
+  overflow: hidden;
+}
+
+.seccion-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 1rem;
+  font-weight: 600;
+  color: #E2E8F0;
+}
+
+.seccion-panel-body {
+  padding: 24px;
+}
+
+.buscador-wrapper {
+  margin-bottom: 20px;
+}
+
+.buscador-input {
+  width: 100%;
+  padding: 11px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.25);
+  color: #E2E8F0;
+  font-size: 0.95rem;
+  outline: none;
+}
+
+.buscador-input:focus {
+  border-color: #10B981;
+}
+
+.seccion-empty {
+  color: #94A3B8;
+  text-align: center;
+  padding: 30px 0;
+  font-size: 0.95rem;
+}
+
 @media (max-width: 768px) {
   .card { padding: 30px 20px; }
   .project-table { display: block; overflow-x: auto; }

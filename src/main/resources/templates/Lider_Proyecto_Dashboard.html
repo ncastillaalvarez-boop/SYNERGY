@@ -20,92 +20,81 @@
         <!-- ENCABEZADO -->
         <div class="header">
           <div class="top-buttons">
-
-            <!-- Inicio -->
             <a th:href="@{/index}" class="btn-inicio">Inicio</a>
-
-            <!-- Logout -->
             <a th:href="@{/logout}" class="btn-usuarios">Cerrar sesión</a>
-
           </div>
-
           <h1>Panel del Líder</h1>
           <p class="subtitle">Gestiona tu proyecto fácilmente.</p>
         </div>
 
         <!-- OPCIONES PRINCIPALES -->
         <div class="menu-options">
-
           <a th:href="@{/lider/tareas/asignar}" class="menu-btn">
             📝 Asignar tareas
           </a>
-
           <a th:href="@{/lider/usuarios}" class="menu-btn">
             👥 Ver usuarios inscritos al proyecto
           </a>
-
           <a th:href="@{/lider/tareas/recibidas}" class="menu-btn">
             📥 Ver tareas recibidas
           </a>
-
           <a th:href="@{/lider/proyecto/nuevo}" class="menu-btn">
             ➕ Crear nuevo proyecto
           </a>
-
         </div>
-        <!-- MIS PROYECTOS -->
-        <div class="proyectos-lista">
-          <h2>Mis proyectos</h2>
 
-          <!-- Barra de Búsqueda de Proyectos -->
-          <div style="margin-bottom: 20px;">
-            <input type="text" id="buscadorLider" onkeyup="filtrarProyectosLider()" placeholder="🔍 Buscar proyecto por nombre..."
-                   style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(15,23,42,0.6); color: white; font-size: 16px;">
+        <!-- MIS PROYECTOS -->
+        <div class="seccion-panel">
+
+          <div class="seccion-panel-header">
+            <span>📁 Mis proyectos</span>
           </div>
 
-        <div th:if="${#lists.isEmpty(proyectos)}">
-          <p>No tienes proyectos creados aún.</p>
-       </div>
+          <div class="seccion-panel-body">
 
-        <div th:each="proyecto : ${proyectos}" class="proyecto-card">
-          <h3 th:text="${proyecto.nombre}">Nombre del proyecto</h3>
-          <p th:text="${proyecto.descripcion}">Descripción</p>
+            <div class="buscador-wrapper">
+              <input type="text" id="buscadorLider" onkeyup="filtrarProyectosLider()"
+                     placeholder="🔍 Buscar proyecto por nombre..."
+                     class="buscador-input">
+            </div>
 
-        <div class="proyecto-acciones">
+            <div th:if="${#lists.isEmpty(proyectos)}" class="seccion-empty">
+              No tienes proyectos creados aún.
+            </div>
 
-          <!-- Editar -->
-          <a th:href="@{/lider/proyecto/{id}/editar(id=${proyecto.id})}" class="btn-editar">
-             ✏️ Editar
-          </a>
+            <div th:each="proyecto : ${proyectos}" class="proyecto-card">
+              <h3 th:text="${proyecto.nombre}">Nombre del proyecto</h3>
+              <p th:text="${proyecto.descripcion}">Descripción</p>
+              <div class="proyecto-acciones">
+                <a th:href="@{/lider/proyecto/{id}/editar(id=${proyecto.id})}" class="btn-editar">
+                  ✏️ Editar
+                </a>
+                <form th:action="@{/lider/proyecto/{id}/eliminar(id=${proyecto.id})}" method="post"
+                      style="display:inline;">
+                  <button type="submit" class="btn-eliminar"
+                    onclick="return confirm('¿Estás seguro de eliminar este proyecto?')">
+                    🗑️ Eliminar
+                  </button>
+                </form>
+              </div>
+            </div>
 
-          <!-- Eliminar -->
-          <form th:action="@{/lider/proyecto/{id}/eliminar(id=${proyecto.id})}" method="post">
-            <button type="submit" class="btn-eliminar"
-              onclick="return confirm('¿Estás seguro de eliminar este proyecto?')">
-              🗑️ Eliminar
-            </button>
-          </form>
+          </div>
+        </div>
 
       </div>
     </div>
   </div>
 
-<script>
-function filtrarProyectosLider() {
-  const filter = document.getElementById("buscadorLider").value.toLowerCase();
-  const cards = document.querySelectorAll(".proyecto-card");
-  
-  cards.forEach(card => {
-    const nombre = card.querySelector("h3").textContent.toLowerCase();
-    
-    if (nombre.includes(filter)) {
-      card.style.display = "";
-    } else {
-      card.style.display = "none";
+  <script>
+    function filtrarProyectosLider() {
+      const filter = document.getElementById("buscadorLider").value.toLowerCase();
+      document.querySelectorAll(".proyecto-card").forEach(card => {
+        const nombre = card.querySelector("h3").textContent.toLowerCase();
+        card.style.display = nombre.includes(filter) ? "" : "none";
+      });
     }
-  });
-}
-</script>
-</body>
+  </script>
 
+</body>
 </html>
