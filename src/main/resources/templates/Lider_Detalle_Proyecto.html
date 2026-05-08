@@ -106,6 +106,15 @@
 
         <button class="btn-volver" onclick="location.href='/lider/tareas/asignar'">⬅ Volver</button>
 
+        <!-- Imagen del proyecto (solo si existe) -->
+        <div th:if="${proyecto.datos != null}"
+             style="margin-bottom: 20px; text-align: center;">
+            <img th:src="@{/proyectos/{id}/imagen(id=${proyecto.id})}"
+                 alt="Imagen del proyecto"
+                 style="max-width: 100%; max-height: 300px; border-radius: 12px;
+                        border: 1px solid #e0e0e0; object-fit: cover;">
+        </div>
+
         <!-- Nombre y descripción -->
         <h1 th:text="${proyecto.nombre}">Nombre del Proyecto</h1>
         <p class="subtitle" th:text="${proyecto.descripcion}">Descripción del proyecto</p>

@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.proaula.spring.synergy.Model.EntregaTarea;
@@ -97,6 +99,8 @@ public class LiderController {
     // =======================================================
     @PostMapping("/proyecto/guardar")
     public String guardarProyecto(@ModelAttribute Proyecto proyecto,
+                                  @RequestParam(value = "archivo", required = false)
+                                  MultipartFile archivo,
                                   Principal principal) {
 
         Usuarios lider = validarLider(principal);
@@ -104,7 +108,7 @@ public class LiderController {
             return "redirect:/login";
 
         proyecto.setIdLider(lider.getId());
-        proyectoService.guardar(proyecto, null);
+        proyectoService.guardar(proyecto, archivo);
 
         return "redirect:/lider/dashboard";
     }
