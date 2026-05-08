@@ -16,6 +16,7 @@ import com.proaula.spring.synergy.Model.Proyecto;
 import com.proaula.spring.synergy.Model.Tarea;
 
 import com.proaula.spring.synergy.Model.Usuarios;
+import com.proaula.spring.synergy.Service.ParticipacionService;
 import com.proaula.spring.synergy.Service.ProyectoService;
 import com.proaula.spring.synergy.Service.UsuarioService;
 import com.proaula.spring.synergy.Service.TareaService;
@@ -35,6 +36,9 @@ public class LiderController {
 
     @Autowired
     private UsuarioService usuarioService;
+
+    @Autowired
+    private ParticipacionService participacionService;
 
     // =======================================================
     // VALIDAR QUE EL USUARIO SEA LÍDER
@@ -170,6 +174,19 @@ public class LiderController {
         if (lider == null)
             return "redirect:/login";
 
+        List<Proyecto> proyectos = proyectoService.obtenerProyectosDeLider(lider.getId());
+
+        java.util.Set<String> vistos = new java.util.HashSet<>();
+        java.util.List<Usuarios> usuarios = new java.util.ArrayList<>();
+        for (Proyecto p : proyectos) {
+            for (Usuarios u : participacionService.listarUsuariosPorProyecto(p.getId())) {
+                if (vistos.add(u.getId())) {
+                    usuarios.add(u);
+                }
+            }
+        }
+
+        model.addAttribute("usuarios", usuarios);
         return "Lider_Usuarios_Proyecto";
     }
 

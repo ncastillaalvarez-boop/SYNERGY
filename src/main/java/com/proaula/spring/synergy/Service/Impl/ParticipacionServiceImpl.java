@@ -51,6 +51,13 @@ public class ParticipacionServiceImpl implements ParticipacionService {
         participacion.setIdProyecto(proyectoId);
         participacionRepository.save(participacion);
 
+        // Sincronizar el campo participantes del Proyecto
+        Proyecto proyecto = proyectoRepository.findById(proyectoId).orElse(null);
+        if (proyecto != null) {
+            proyecto.addParticipante(usuarioId);
+            proyectoRepository.save(proyecto);
+        }
+
         return true; // INSCRIPCIÓN EXITOSA
     }
 
@@ -67,6 +74,13 @@ public class ParticipacionServiceImpl implements ParticipacionService {
                 .findByIdUsuarioAndIdProyecto(usuarioId, proyectoId);
         if (participacion != null) {
             participacionRepository.delete(participacion);
+
+            // Sincronizar el campo participantes del Proyecto
+            Proyecto proyecto = proyectoRepository.findById(proyectoId).orElse(null);
+            if (proyecto != null) {
+                proyecto.removeParticipante(usuarioId);
+                proyectoRepository.save(proyecto);
+            }
         }
     }
 
