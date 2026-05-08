@@ -8,7 +8,7 @@ import java.util.List;
 
 public interface EntregaTareaService {
 
-    void guardarEntrega(String idTarea, MultipartFile archivo) throws IOException;
+    void guardarEntrega(String idTarea, MultipartFile archivo, String descripcionEvidencia) throws IOException;
 
     List<EntregaTarea> obtenerEntregasPorTarea(String idTarea);
 

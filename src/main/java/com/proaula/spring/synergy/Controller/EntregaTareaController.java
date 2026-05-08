@@ -61,10 +61,11 @@ public class EntregaTareaController {
     public String procesarEntrega(
             @PathVariable String id,
             @RequestParam("archivo") MultipartFile archivo,
+            @RequestParam(value = "descripcionEvidencia", required = false) String descripcionEvidencia,
             Model model) {
 
         Tarea tarea = tareaService.obtenerTareaPorId(id);
-        model.addAttribute("tarea", tarea); // <-- NECESARIO PARA VOLVER AL FORM EN CASO DE ERROR
+        model.addAttribute("tarea", tarea);
 
         if (tarea == null) {
             model.addAttribute("error", "La tarea no existe.");
@@ -72,7 +73,7 @@ public class EntregaTareaController {
         }
 
         try {
-            entregaTareaService.guardarEntrega(id, archivo);
+            entregaTareaService.guardarEntrega(id, archivo, descripcionEvidencia);
             tareaService.marcarComoCompletada(id);
 
         } catch (IOException e) {

@@ -17,12 +17,13 @@ public class EntregaTareaServiceImpl implements EntregaTareaService {
     @Autowired
     private EntregaTareaRepository entregaTareaRepository;
 
-    public void guardarEntrega(String idTarea, MultipartFile archivo) throws IOException {
+    public void guardarEntrega(String idTarea, MultipartFile archivo, String descripcionEvidencia) throws IOException {
         EntregaTarea entrega = new EntregaTarea();
         entrega.setIdTarea(idTarea);
         entrega.setNombreArchivo(archivo.getOriginalFilename());
         entrega.setTipoArchivo(archivo.getContentType());
         entrega.setDatos(archivo.getBytes());
+        entrega.setDescripcionEvidencia(descripcionEvidencia);
 
         entregaTareaRepository.save(entrega);
     }

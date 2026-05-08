@@ -27,6 +27,8 @@ public class EntregaTarea {
     @Indexed
     private LocalDateTime fechaEntrega;
 
+    private String descripcionEvidencia;
+
     private String estado; // ENTREGADO, REVISADO, CALIFICADO, RECHAZADO
     private String calificacion;
     private String comentariosRevisor;
@@ -125,5 +127,13 @@ public class EntregaTarea {
 
     public void setComentariosRevisor(String comentariosRevisor) {
         this.comentariosRevisor = comentariosRevisor;
+    }
+
+    public String getDescripcionEvidencia() {
+        return descripcionEvidencia;
+    }
+
+    public void setDescripcionEvidencia(String descripcionEvidencia) {
+        this.descripcionEvidencia = descripcionEvidencia;
     }
 }
