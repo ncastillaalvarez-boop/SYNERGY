@@ -76,7 +76,7 @@ public class TareaWebController {
         // Guardado con usuarios asignados
         tareaService.guardarTarea(tarea, usuariosIds);
 
-        return "redirect:/tareas/asignar/" + proyectoId;
+        return "redirect:/lider/proyecto/" + proyectoId + "/detalle";
     }
 
 

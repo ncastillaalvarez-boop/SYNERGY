@@ -132,12 +132,12 @@
                         <!-- Integrantes como avatares -->
                         <td>
                             <div class="avatares">
-                                <div th:if="${#lists.isEmpty(p.participantes)}"
+                                <div th:if="${#lists.isEmpty(participantesPorProyecto[p.id])}"
                                      class="avatar vacio">–</div>
-                                <div th:each="uid : ${p.participantes}"
+                                <div th:each="u : ${participantesPorProyecto[p.id]}"
                                      class="avatar"
-                                     th:title="${uid}"
-                                     th:text="${#strings.substring(uid, 0, 2).toUpperCase()}">
+                                     th:title="${u.nombre}"
+                                     th:text="${#strings.substring(u.nombre, 0, 2).toUpperCase()}">
                                 </div>
                             </div>
                         </td>

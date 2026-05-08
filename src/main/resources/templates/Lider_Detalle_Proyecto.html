@@ -209,9 +209,50 @@
         </table>
 
         <!-- Botón nueva tarea -->
-        <a th:href="@{/lider/tareas/nueva(proyectoId=${proyecto.id})}" class="btn-nueva-tarea">
+        <a href="#form-nueva-tarea" class="btn-nueva-tarea">
             ➕ Asignar nueva tarea
         </a>
+
+        <!-- Formulario nueva tarea -->
+        <div id="form-nueva-tarea" style="margin-top: 30px; padding: 20px; background: #f0f9f6; border-radius: 12px; border: 2px solid #0F6E56;">
+            <p class="seccion-titulo">➕ Nueva Tarea</p>
+            <form th:action="@{/tareas/guardar}" method="post">
+                <input type="hidden" name="proyectoId" th:value="${proyecto.id}">
+
+                <div style="margin-bottom: 12px;">
+                    <label style="font-weight:600; display:block; margin-bottom:4px;">Título</label>
+                    <input type="text" name="titulo" required
+                           style="width:100%; padding:8px 12px; border:1px solid #ccc; border-radius:8px; font-size:14px;">
+                </div>
+
+                <div style="margin-bottom: 12px;">
+                    <label style="font-weight:600; display:block; margin-bottom:4px;">Descripción</label>
+                    <textarea name="descripcion" rows="3" required
+                              style="width:100%; padding:8px 12px; border:1px solid #ccc; border-radius:8px; font-size:14px; resize:vertical;"></textarea>
+                </div>
+
+                <div style="margin-bottom: 12px;">
+                    <label style="font-weight:600; display:block; margin-bottom:4px;">Fecha de entrega</label>
+                    <input type="date" name="fechaEntrega" required
+                           style="padding:8px 12px; border:1px solid #ccc; border-radius:8px; font-size:14px;">
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                    <label style="font-weight:600; display:block; margin-bottom:8px;">Asignar a:</label>
+                    <div th:if="${#lists.isEmpty(integrantes)}" style="color:#aaa; font-size:13px;">
+                        Sin integrantes disponibles en este proyecto.
+                    </div>
+                    <div th:each="u : ${integrantes}" style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+                        <input type="checkbox" name="usuariosSeleccionados" th:value="${u.id}" th:id="'chk-'+${u.id}">
+                        <label th:for="'chk-'+${u.id}" th:text="${u.nombre}" style="font-size:14px; cursor:pointer;"></label>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-nueva-tarea">
+                    💾 Guardar Tarea
+                </button>
+            </form>
+        </div>
 
     </div>
 </div>

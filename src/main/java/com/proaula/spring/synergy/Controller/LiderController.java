@@ -153,18 +153,21 @@ public class LiderController {
     @GetMapping("/tareas/asignar")
     public String asignarTareas(Principal principal, Model model) {
 
-    Usuarios lider = validarLider(principal);
-    if (lider == null)
-        return "redirect:/login";
-    // Obtener proyectos del líder
-    List<Proyecto> proyectos = proyectoService.obtenerProyectosDeLider(lider.getId());
-    model.addAttribute("proyectos", proyectos);
+        Usuarios lider = validarLider(principal);
+        if (lider == null)
+            return "redirect:/login";
 
-    List<Usuarios> usuarios = usuarioService.obtenerTodosUsuarios();
-    model.addAttribute("usuarios", usuarios);
-    
-    return "Lider_Asignar_Tareas";
-}
+        List<Proyecto> proyectos = proyectoService.obtenerProyectosDeLider(lider.getId());
+        model.addAttribute("proyectos", proyectos);
+
+        java.util.Map<String, java.util.List<Usuarios>> participantesPorProyecto = new java.util.HashMap<>();
+        for (Proyecto p : proyectos) {
+            participantesPorProyecto.put(p.getId(), participacionService.listarUsuariosPorProyecto(p.getId()));
+        }
+        model.addAttribute("participantesPorProyecto", participantesPorProyecto);
+
+        return "Lider_Asignar_Tareas";
+    }
 
     // VER USUARIOS INSCRITOS AL PROYECTO
     @GetMapping("/usuarios")
