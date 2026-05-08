@@ -1,6 +1,8 @@
 package com.proaula.spring.synergy.Controller;
 
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -14,6 +16,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.proaula.spring.synergy.Model.Proyecto;
 import com.proaula.spring.synergy.Model.Usuarios;
+import com.proaula.spring.synergy.Service.ParticipacionService;
 import com.proaula.spring.synergy.Service.ProyectoService;
 import com.proaula.spring.synergy.Service.UsuarioService;
 
@@ -28,6 +31,9 @@ public class AdminController {
 
     @Autowired
     private UsuarioService usuarioService;
+
+    @Autowired
+    private ParticipacionService participacionService;
 
     // ---------------------------------------------------------
     // MÉTODO REUTILIZABLE DE VALIDACIÓN DE ADMIN
@@ -91,8 +97,23 @@ public class AdminController {
 
         List<Proyecto> proyectos = proyectoService.listar();
 
+        // Ordenar por fechaCreacion descendente (más recientes primero)
+        proyectos.sort((a, b) -> {
+            if (a.getFechaCreacion() == null) return 1;
+            if (b.getFechaCreacion() == null) return -1;
+            return b.getFechaCreacion().compareTo(a.getFechaCreacion());
+        });
+
+        // Mapa proyectoId → lista de participantes inscritos
+        Map<String, List<Usuarios>> participantesPorProyecto = new HashMap<>();
+        for (Proyecto p : proyectos) {
+            participantesPorProyecto.put(p.getId(),
+                    participacionService.listarUsuariosPorProyecto(p.getId()));
+        }
+
         model.addAttribute("usuario", admin);
         model.addAttribute("proyectos", proyectos);
+        model.addAttribute("participantesPorProyecto", participantesPorProyecto);
 
         // Vista: Administrador_Dashboard.html
         return "Administrador_Dashboard";

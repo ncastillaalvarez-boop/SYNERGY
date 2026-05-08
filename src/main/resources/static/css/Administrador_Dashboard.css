@@ -310,6 +310,93 @@ h2 {
 .alert-success { background: rgba(16, 185, 129, 0.1); color: #34D399; border: 1px solid rgba(16, 185, 129, 0.2); }
 .alert-error { background: rgba(239, 68, 68, 0.1); color: #F87171; border: 1px solid rgba(239, 68, 68, 0.2); }
 
+/* ===== Badges de estado ===== */
+.badge-estado {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.badge-activo    { background: rgba(16,185,129,0.15); color: #34D399; border: 1px solid rgba(16,185,129,0.3); }
+.badge-completado{ background: rgba(59,130,246,0.15);  color: #60A5FA; border: 1px solid rgba(59,130,246,0.3); }
+.badge-otro      { background: rgba(239,68,68,0.15);   color: #F87171; border: 1px solid rgba(239,68,68,0.3); }
+
+/* ===== Tarjeta de proyecto (versión admin) ===== */
+.proyecto-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.proyecto-nombre {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #F8FAFC;
+  margin: 0;
+}
+
+.proyecto-desc {
+  font-size: 0.9rem;
+  color: #94A3B8;
+  margin: 0 0 12px 0;
+  line-height: 1.5;
+}
+
+.proyecto-meta {
+  font-size: 0.82rem;
+  color: #64748B;
+  margin-bottom: 14px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ===== Participantes ===== */
+.proyecto-participantes {
+  margin-bottom: 16px;
+}
+
+.part-label {
+  font-size: 0.82rem;
+  color: #94A3B8;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.part-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.part-tag {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 20px;
+  padding: 3px 10px;
+  font-size: 0.78rem;
+  color: #CBD5E1;
+}
+
+.part-empty {
+  font-size: 0.82rem;
+  color: #475569;
+  font-style: italic;
+}
+
+/* ===== Contador en header de sección ===== */
+.seccion-count {
+  font-size: 0.8rem;
+  color: #64748B;
+  font-weight: 400;
+}
+
 /* ===== Sección Panel (recuadro estilo menu-btn) ===== */
 .seccion-panel {
   background: rgba(15, 23, 42, 0.6);

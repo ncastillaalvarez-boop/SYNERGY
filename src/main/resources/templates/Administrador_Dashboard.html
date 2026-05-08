@@ -27,75 +27,105 @@
         <!-- Mensaje de éxito o error -->
         <div th:if="${mensaje}" class="alert-success" th:text="${mensaje}"></div>
 
-        <!-- Barra de Búsqueda -->
-        <div style="margin-bottom: 20px;">
-          <input type="text" id="buscadorProyectos" onkeyup="filtrarProyectos()" placeholder="🔍 Buscar por nombre o estado..."
-                 style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(15,23,42,0.6); color: white; font-size: 16px;">
-        </div>
+        <!-- Sección de proyectos -->
+        <div class="seccion-panel">
 
-        <!-- Tabla de proyectos -->
-        <table class="project-table">
-          <thead>
-            <tr>
-              <th>Nombre del Proyecto</th>
-              <th>Estado</th>
-              <th>Fecha Inicio</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr th:each="proyecto : ${proyectos}">
-              <td th:text="${proyecto.nombre}">Nombre</td>
-              <td th:text="${proyecto.estado}">Estado</td>
-              <td th:text="${proyecto.fechaInicio}">Fecha</td>
-              <td class="actions">
+          <div class="seccion-panel-header">
+            <span>📋 Proyectos registrados</span>
+            <span class="seccion-count"
+                  th:text="${#lists.size(proyectos)} + ' proyecto(s)'">0 proyectos</span>
+          </div>
 
-                <!-- Ver -->
-                <a th:href="@{/admin/proyecto/{id}(id=${proyecto.id})}" class="btn-ver">Ver</a>
+          <div class="seccion-panel-body">
 
-                <!-- Aceptar -->
-                <form th:action="@{/admin/proyecto/{id}/aceptar(id=${proyecto.id})}" method="post" style="display:inline">
-                  <button type="submit" class="btn-aceptar">Aceptar</button>
+            <!-- Buscador -->
+            <div class="buscador-wrapper">
+              <input type="text" id="buscadorProyectos" onkeyup="filtrarProyectos()"
+                     placeholder="🔍 Buscar por nombre o estado..."
+                     class="buscador-input">
+            </div>
+
+            <!-- Sin proyectos -->
+            <div th:if="${#lists.isEmpty(proyectos)}" class="seccion-empty">
+              No hay proyectos registrados.
+            </div>
+
+            <!-- Tarjeta por proyecto -->
+            <div th:each="proyecto : ${proyectos}" class="proyecto-card" th:id="'card-' + ${proyecto.id}">
+
+              <!-- Header: nombre + badge estado -->
+              <div class="proyecto-card-header">
+                <h3 class="proyecto-nombre" th:text="${proyecto.nombre}">Nombre</h3>
+                <span class="badge-estado"
+                      th:classappend="${proyecto.estado == 'ACTIVO'} ? ' badge-activo' :
+                                      (${proyecto.estado == 'COMPLETADO'} ? ' badge-completado' : ' badge-otro')"
+                      th:text="${proyecto.estado ?: 'SIN ESTADO'}">Estado</span>
+              </div>
+
+              <!-- Descripción -->
+              <p class="proyecto-desc" th:text="${proyecto.descripcion}">Descripción</p>
+
+              <!-- Meta: fechas -->
+              <div class="proyecto-meta">
+                <span>📅 Inicio: <strong th:text="${proyecto.fechaInicio ?: '—'}">—</strong></span>
+                <span th:if="${proyecto.fechaFin != null}">
+                  · Fin: <strong th:text="${proyecto.fechaFin}">—</strong>
+                </span>
+              </div>
+
+              <!-- Participantes -->
+              <div class="proyecto-participantes">
+                <span class="part-label">
+                  👥 Participantes (<span th:text="${#lists.size(participantesPorProyecto[proyecto.id])}">0</span>):
+                </span>
+                <div th:if="${#lists.isEmpty(participantesPorProyecto[proyecto.id])}" class="part-empty">
+                  Sin participantes inscritos
+                </div>
+                <div class="part-tags" th:unless="${#lists.isEmpty(participantesPorProyecto[proyecto.id])}">
+                  <span class="part-tag"
+                        th:each="u : ${participantesPorProyecto[proyecto.id]}"
+                        th:text="${u.nombre}">Usuario</span>
+                </div>
+              </div>
+
+              <!-- Acciones -->
+              <div class="proyecto-acciones">
+                <a th:href="@{/admin/proyecto/{id}(id=${proyecto.id})}" class="btn-ver">👁 Ver detalle</a>
+
+                <form th:action="@{/admin/proyecto/{id}/aceptar(id=${proyecto.id})}" method="post"
+                      style="display:inline;">
+                  <button type="submit" class="btn-aceptar">✅ Aceptar</button>
                 </form>
 
-                <!-- Eliminar -->
-                <form th:action="@{/admin/proyecto/{id}/eliminar(id=${proyecto.id})}" method="post" style="display:inline">
+                <form th:action="@{/admin/proyecto/{id}/eliminar(id=${proyecto.id})}" method="post"
+                      style="display:inline;">
                   <button type="submit" class="btn-eliminar"
-                    onclick="return confirm('¿Seguro que deseas eliminar este proyecto?')">Eliminar</button>
+                    onclick="return confirm('¿Seguro que deseas eliminar este proyecto?')">
+                    🗑 Eliminar
+                  </button>
                 </form>
+              </div>
 
-              </td>
-            </tr>
+            </div>
+            <!-- fin th:each -->
 
-            <!-- Si no hay proyectos -->
-            <tr th:if="${#lists.isEmpty(proyectos)}">
-              <td colspan="4">No hay proyectos registrados.</td>
-            </tr>
-
-          </tbody>
-        </table>
+          </div>
+        </div>
 
       </div>
     </div>
   </div>
 
-<script>
-function filtrarProyectos() {
-  const filter = document.getElementById("buscadorProyectos").value.toLowerCase();
-  const trs = document.querySelectorAll(".project-table tbody tr");
-  
-  trs.forEach(tr => {
-    if(tr.children.length === 1) return; // Ignorar el "No hay proyectos"
-    const nombre = tr.children[0].textContent.toLowerCase();
-    const estado = tr.children[1].textContent.toLowerCase();
-    
-    if (nombre.includes(filter) || estado.includes(filter)) {
-      tr.style.display = "";
-    } else {
-      tr.style.display = "none";
+  <script>
+    function filtrarProyectos() {
+      const filter = document.getElementById("buscadorProyectos").value.toLowerCase();
+      document.querySelectorAll(".proyecto-card").forEach(card => {
+        const nombre = card.querySelector(".proyecto-nombre").textContent.toLowerCase();
+        const badge  = card.querySelector(".badge-estado").textContent.toLowerCase();
+        card.style.display = (nombre.includes(filter) || badge.includes(filter)) ? "" : "none";
+      });
     }
-  });
-}
-</script>
+  </script>
+
 </body>
 </html>
