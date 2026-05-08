@@ -58,9 +58,9 @@
                   </form>
 
                   <!--SI ES INVITADO LO REDIRIGE A LOGIN-->
-                   <button th:if="${usuario == null or usuario.getId() == null}" 
+                   <button th:if="${usuario == null or usuario.getId() == null}"
                       class="btn-participar"
-                      onclick="window.location.href='/login'">
+                      onclick="window.location.href='/seleccionar-rol'">
                       Participar
                    </button>
 
