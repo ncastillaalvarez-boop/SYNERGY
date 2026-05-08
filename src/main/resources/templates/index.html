@@ -12,27 +12,32 @@
     <nav>
       <a th:href="@{/publico/proyectos}" class="btn-invitado">Ver como invitado</a>
       <a th:href="@{/seleccionar-rol}">Registrarse</a>
-      <a th:href="@{/login}">Login</a>
+      <a th:href="@{/login}" class="btn-login">Login</a>
     </nav>
   </header>
 
   <section class="hero">
     <div class="overlay"></div>
     <div class="hero-content">
-      <h2>Bienvenido a Synergy</h2>
-      <p>Un espacio para la colaboración ecológica y comunitaria</p>
-      <a th:href="@{/seleccionar-rol}" class="btn-comenzar">Comenzar</a>
+      <div class="hero-badge">Gestión de proyectos ambientales</div>
+      <h2>Bienvenido a <span>Synergy</span></h2>
+      <p>Un espacio para la colaboración ecológica y comunitaria. Organiza equipos, asigna tareas y mide el impacto de tus proyectos.</p>
+      <div class="hero-actions">
+        <a th:href="@{/seleccionar-rol}" class="btn-comenzar">Comenzar ahora</a>
+        <a th:href="@{/publico/proyectos}" class="btn-hero-secondary">Ver proyectos</a>
+      </div>
     </div>
   </section>
 
   <section class="about">
     <h2 class="section-title">Sobre Synergy</h2>
+    <p class="section-subtitle">Una plataforma diseñada para equipos que trabajan por el medio ambiente.</p>
     <div class="about-content">
       <div class="about-text">
         <h3>Sistema de Gestión de Proyectos Ambientales</h3>
         <p>Synergy es una plataforma web diseñada para gestionar proyectos comunitarios ambientales, permitiendo que administradores, líderes y participantes trabajen de manera organizada, rápida y eficiente.</p>
         <p>Centraliza la creación, asignación, seguimiento y evaluación de proyectos y tareas, asegurando una comunicación clara y coordinación efectiva dentro de tus equipos.</p>
-        <h4 style="color: #2a9d8f; margin-top: 25px; margin-bottom: 15px;">¿Para quién es?</h4>
+        <h4>¿Para quién es?</h4>
         <ul class="about-features">
           <li>Instituciones educativas</li>
           <li>Grupos de trabajo comunitarios</li>
@@ -44,7 +49,7 @@
       </div>
       <div class="about-text">
         <h3>¿Por qué elegir Synergy?</h3>
-        <ul class="about-features" style="margin-top: 30px;">
+        <ul class="about-features">
           <li>✨ Gestión centralizada y ordenada</li>
           <li>🎯 Seguimiento en tiempo real de proyectos</li>
           <li>👥 Roles claros para cada usuario</li>
@@ -60,6 +65,7 @@
 
   <section class="features">
     <h2 class="section-title">Características Principales</h2>
+    <p class="section-subtitle">Todo lo que necesitas para gestionar tus proyectos en un solo lugar.</p>
     <div class="features-grid">
       <div class="feature-card">
         <div class="icon">🗂️</div>
@@ -152,7 +158,8 @@
 
   <section class="faq">
     <h2 class="section-title">Preguntas Frecuentes</h2>
-    
+    <p class="section-subtitle">Todo lo que necesitas saber para empezar.</p>
+    <div class="faq-list">
     <div class="faq-item">
       <div class="faq-question">
         <span>¿Cómo me registro en Synergy?</span>
@@ -260,6 +267,7 @@
         </div>
       </div>
     </div>
+    </div><!-- /.faq-list -->
   </section>
 
   <footer>
