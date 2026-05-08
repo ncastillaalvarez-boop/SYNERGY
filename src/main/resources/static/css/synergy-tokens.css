@@ -1,0 +1,55 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  /* ── Fondos ── */
+  --bg-base:     #0B0E14;
+  --bg-surface:  #111827;
+  --bg-elevated: #1A2235;
+  --bg-overlay:  rgba(255, 255, 255, 0.04);
+
+  /* ── Texto ── */
+  --text-primary:   #F1F5F9;
+  --text-secondary: #94A3B8;
+  --text-muted:     #64748B;
+
+  /* ── Acento (marca Synergy) ── */
+  --accent:      #10B981;
+  --accent-light: #34D399;
+  --accent-dark:  #059669;
+  --accent-glow:  rgba(16, 185, 129, 0.12);
+
+  /* ── Bordes ── */
+  --border-subtle:  rgba(255, 255, 255, 0.07);
+  --border-default: rgba(255, 255, 255, 0.12);
+  --border-focus:   rgba(16, 185, 129, 0.5);
+
+  /* ── Estados ── */
+  --error:      #EF4444;
+  --error-bg:   rgba(239, 68, 68, 0.10);
+  --error-text: #FCA5A5;
+  --success-bg: rgba(16, 185, 129, 0.10);
+
+  /* ── Tipografía ── */
+  --font-family: 'Inter', system-ui, sans-serif;
+  --text-xs:   0.75rem;
+  --text-sm:   0.875rem;
+  --text-base: 1rem;
+  --text-lg:   1.125rem;
+  --text-xl:   1.25rem;
+  --text-2xl:  1.5rem;
+  --text-4xl:  2.25rem;
+
+  /* ── Radios ── */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+
+  /* ── Espaciado ── */
+  --space-xs:  0.5rem;
+  --space-sm:  0.75rem;
+  --space-md:  1rem;
+  --space-lg:  1.5rem;
+  --space-xl:  2rem;
+  --space-2xl: 3rem;
+}
