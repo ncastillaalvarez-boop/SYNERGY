@@ -247,11 +247,8 @@ public class LiderController {
         // Tareas del proyecto
         List<Tarea> tareas = tareaService.obtenerTareasPorProyecto(id);
 
-        // Nombres de integrantes
-        List<Usuarios> integrantes = proyecto.getParticipantes().stream()
-            .map(uid -> usuarioService.obtenerUsuarioPorId(uid))
-            .filter(u -> u != null)
-            .collect(java.util.stream.Collectors.toList());
+        // Integrantes desde la colección participaciones (fuente de verdad)
+        List<Usuarios> integrantes = participacionService.listarUsuariosPorProyecto(id);
 
         model.addAttribute("proyecto", proyecto);
         model.addAttribute("tareas", tareas);

@@ -157,7 +157,8 @@
                 <span th:text="${i.rol}" style="font-size:11px; color:#888; text-transform:uppercase;">ROL</span>
             </div>
             <button type="button"
-                    th:onclick="'asignarTareaA(\'' + ${i.id} + '\'')"
+                    class="btn-asignar-individual"
+                    th:attr="data-uid=${i.id}"
                     style="background:#0F6E56; color:white; border:none; border-radius:8px;
                            padding:6px 14px; font-size:12px; cursor:pointer; font-weight:600;
                            white-space:nowrap;">
@@ -264,11 +265,21 @@
 
 <script>
 function asignarTareaA(usuarioId) {
-    document.querySelectorAll('input[name="usuariosSeleccionados"]').forEach(cb => cb.checked = false);
-    const cb = document.getElementById('chk-' + usuarioId);
+    document.querySelectorAll('input[name="usuariosSeleccionados"]').forEach(function(cb) {
+        cb.checked = false;
+    });
+    var cb = document.getElementById('chk-' + usuarioId);
     if (cb) cb.checked = true;
     document.getElementById('form-nueva-tarea').scrollIntoView({ behavior: 'smooth' });
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.btn-asignar-individual').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            asignarTareaA(this.getAttribute('data-uid'));
+        });
+    });
+});
 </script>
 
 </body>
