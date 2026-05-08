@@ -17,95 +17,73 @@
         <!-- ENCABEZADO -->
         <div class="header">
           <h1>Proyectos Disponibles</h1>
-          <p class="subtitle">Participa en cualquiera de los proyectos publicados.</p>
+          <p class="subtitle">Explora los proyectos publicados y únete al que más te interese.</p>
         </div>
 
         <!-- BUSCADOR -->
-        <div class="search-container" style="margin-bottom: 20px; display: flex; justify-content: flex-end;">
-            <input type="text" id="buscador" onkeyup="buscarProyectos()" placeholder="🔍 Buscar por nombre o descripción..." style="padding: 10px; width: 100%; max-width: 400px; border-radius: 8px; border: 1px solid #ccc;">
+        <div class="buscador-wrapper" style="margin-bottom: 24px;">
+          <input type="text" id="buscador" onkeyup="buscarProyectos()"
+                 placeholder="🔍 Buscar por nombre o descripción..."
+                 class="buscador-input">
         </div>
 
-        <!-- TABLA -->
-        <table class="project-table" id="tablaProyectos">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Nombre</th>
-              <th>Descripción</th>
-              <th>Fecha Inicio</th>
-              <th>Acción</th>
-            </tr>
-          </thead>
+        <!-- SIN PROYECTOS -->
+        <div th:if="${#lists.isEmpty(proyectos)}" class="empty-invitado">
+          No hay proyectos disponibles en este momento.
+        </div>
 
-          <tbody>
-            <tr th:each="p : ${proyectos}">
-              <td th:text="${pStat.index + 1}"></td>
-              <td th:text="${p.nombre}"></td>
-              <td th:text="${p.descripcion}"></td>
+        <!-- GRILLA DE TARJETAS -->
+        <div class="proyectos-grid" id="gridProyectos">
 
-              <!-- Fecha -->
-              <td th:text="${p.fechaInicio}"></td>
+          <div th:each="p : ${proyectos}" class="proy-card">
 
-              <td>
-                <div class="acciones">
+            <!-- Encabezado de tarjeta -->
+            <div class="proy-card-top">
+              <h3 class="proy-nombre" th:text="${p.nombre}">Nombre</h3>
+              <span class="proy-fecha"
+                    th:text="${p.fechaInicio != null ? '📅 ' + p.fechaInicio : ''}">
+              </span>
+            </div>
 
-                  <!-- SI HAY USUARIO LOGUEADO PUEDE PARTICIPAR -->
-                  <form th:if="${usuario != null and usuario.getId() != null}"
-                        th:action="@{'/proyectos/participacion/inscribir/' + ${p.id} + '/' + ${usuario.id}}" 
-                        method="post">
-                    <button type="submit" class="btn-participar">Participar</button>
-                  </form>
+            <!-- Descripción -->
+            <p class="proy-desc" th:text="${p.descripcion}">Descripción del proyecto.</p>
 
-                  <!--SI ES INVITADO LO REDIRIGE A LOGIN-->
-                   <button th:if="${usuario == null or usuario.getId() == null}"
+            <!-- Botón al fondo -->
+            <div class="proy-footer">
+
+              <!-- Usuario autenticado: formulario de inscripción -->
+              <form th:if="${usuario != null and usuario.getId() != null}"
+                    th:action="@{'/proyectos/participacion/inscribir/' + ${p.id} + '/' + ${usuario.id}}"
+                    method="post" style="width: 100%;">
+                <button type="submit" class="btn-participar">Participar</button>
+              </form>
+
+              <!-- Invitado: redirige a seleccionar rol -->
+              <button th:if="${usuario == null or usuario.getId() == null}"
                       class="btn-participar"
                       onclick="window.location.href='/seleccionar-rol'">
-                      Participar
-                   </button>
+                Participar
+              </button>
 
-                </div>
-              </td>
+            </div>
+          </div>
 
-            </tr>
-          </tbody>
+        </div>
 
-        </table>
       </div>
     </div>
   </div>
 
   <script>
     function buscarProyectos() {
-        let input = document.getElementById("buscador");
-        let filter = input.value.toLowerCase();
-        let table = document.getElementById("tablaProyectos");
-        let tr = table.getElementsByTagName("tr");
-
-        for (let i = 1; i < tr.length; i++) {
-            let tdNombre = tr[i].getElementsByTagName("td")[1];
-            let tdDesc = tr[i].getElementsByTagName("td")[2];
-            if (tdNombre || tdDesc) {
-                let txtValue = (tdNombre.textContent || tdNombre.innerText) + " " + (tdDesc.textContent || tdDesc.innerText);
-                if (txtValue.toLowerCase().indexOf(filter) > -1) {
-                    tr[i].style.display = "";
-                } else {
-                    tr[i].style.display = "none";
-                }
-            }       
-        }
+      const filter = document.getElementById("buscador").value.toLowerCase();
+      document.querySelectorAll(".proy-card").forEach(card => {
+        const nombre = card.querySelector(".proy-nombre").textContent.toLowerCase();
+        const desc   = card.querySelector(".proy-desc").textContent.toLowerCase();
+        card.style.display = (nombre.includes(filter) || desc.includes(filter)) ? "" : "none";
+      });
     }
-    function showToast(message, type) {
-        const toast = document.getElementById("toast");
-        toast.textContent = message;
-
-        toast.className = "toast " + type; // success / error
-
-        setTimeout(() => {
-            toast.classList.add("hidden");
-        }, 2800); // Duración en pantalla
-    }
-</script>
-
+  </script>
 
 </body>
 </html>

@@ -310,8 +310,114 @@ h2 {
 .alert-success { background: rgba(16, 185, 129, 0.1); color: #34D399; border: 1px solid rgba(16, 185, 129, 0.2); }
 .alert-error { background: rgba(239, 68, 68, 0.1); color: #F87171; border: 1px solid rgba(239, 68, 68, 0.2); }
 
+/* ===== Buscador ===== */
+.buscador-wrapper { width: 100%; }
+
+.buscador-input {
+  width: 100%;
+  padding: 11px 16px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(15, 23, 42, 0.6);
+  color: #E2E8F0;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.buscador-input:focus { border-color: #10B981; }
+
+/* ===== Grilla de tarjetas de proyecto (invitado) ===== */
+.proyectos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.proy-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  transition: background 0.2s, border-color 0.2s, transform 0.2s;
+}
+
+.proy-card:hover {
+  background: rgba(16, 185, 129, 0.04);
+  border-color: rgba(16, 185, 129, 0.25);
+  transform: translateY(-2px);
+}
+
+.proy-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.proy-nombre {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #10B981;
+  margin: 0;
+  flex: 1;
+  line-height: 1.3;
+}
+
+.proy-fecha {
+  font-size: 0.75rem;
+  color: #475569;
+  white-space: nowrap;
+}
+
+.proy-desc {
+  font-size: 0.88rem;
+  color: #94A3B8;
+  line-height: 1.55;
+  flex: 1;
+  margin: 0 0 18px 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.proy-footer {
+  margin-top: auto;
+}
+
+/* ===== Botón participar ===== */
+.btn-participar {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  background: rgba(16, 185, 129, 0.1);
+  color: #34D399;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: background 0.2s, border-color 0.2s;
+}
+.btn-participar:hover {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: #10B981;
+  color: #6EE7B7;
+}
+
+/* ===== Sin proyectos ===== */
+.empty-invitado {
+  text-align: center;
+  color: #475569;
+  padding: 48px 0;
+  font-size: 0.95rem;
+}
+
 @media (max-width: 768px) {
   .card { padding: 30px 20px; }
-  .project-table { display: block; overflow-x: auto; }
-  .project-table th, .project-table td { padding: 12px 10px; }
+  .proyectos-grid { grid-template-columns: 1fr; }
 }

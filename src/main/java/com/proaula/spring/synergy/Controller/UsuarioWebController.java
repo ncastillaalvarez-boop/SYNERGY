@@ -327,7 +327,13 @@ public class UsuarioWebController {
 
     @GetMapping("/publico/proyectos")
     public String verProyectosPublico(Model model) {
-        model.addAttribute("proyectos", proyectoService.listar());
+        List<com.proaula.spring.synergy.Model.Proyecto> proyectos = proyectoService.listar();
+        proyectos.sort((a, b) -> {
+            if (a.getFechaCreacion() == null) return 1;
+            if (b.getFechaCreacion() == null) return -1;
+            return b.getFechaCreacion().compareTo(a.getFechaCreacion());
+        });
+        model.addAttribute("proyectos", proyectos);
         return "Participacion_Proyecto_Usuario";
     }
 }
