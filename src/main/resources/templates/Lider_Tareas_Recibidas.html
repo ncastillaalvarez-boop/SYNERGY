@@ -3,52 +3,138 @@
 <head>
     <meta charset="UTF-8" />
     <title>Tareas Recibidas – Synergy</title>
-    <link rel="stylesheet" href="/css/Tareas_Proyecto.css" />
+    <link rel="stylesheet" href="/css/Lider_Asignar_Tareas.css" />
+    <style>
+        .card {
+            background: rgba(255,255,255,0.95);
+            border-radius: 20px;
+            padding: 30px;
+            width: 95%;
+            max-width: 960px;
+            margin: 0 auto;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+        }
+        .btn-volver {
+            background: #f0f0f0; border: none; border-radius: 8px;
+            padding: 8px 16px; cursor: pointer; font-size: 13px;
+            margin-bottom: 20px;
+        }
+        .entrega-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: #fafafa;
+        }
+        .entrega-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .entrega-titulo {
+            font-size: 17px;
+            font-weight: 700;
+            color: #1a1a2e;
+        }
+        .entrega-meta {
+            font-size: 12px;
+            color: #888;
+        }
+        .badge-proyecto {
+            background: #e8f5f1;
+            color: #0F6E56;
+            border-radius: 20px;
+            padding: 3px 10px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .entrega-descripcion {
+            background: #f0f9f6;
+            border-left: 4px solid #0F6E56;
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 14px;
+            white-space: pre-wrap;
+        }
+        .entrega-imagen {
+            max-width: 100%;
+            max-height: 320px;
+            border-radius: 10px;
+            border: 2px solid #e0e0e0;
+            object-fit: contain;
+        }
+        .empty-msg {
+            text-align: center;
+            color: #aaa;
+            padding: 40px;
+            font-size: 15px;
+        }
+        h1 { color: #1a1a2e; font-size: 24px; margin-bottom: 4px; }
+        .subtitle { color: #666; font-size: 14px; margin-bottom: 24px; }
+    </style>
 </head>
-
 <body>
 
 <div class="hero">
     <div class="overlay"></div>
+    <div class="card">
 
-    <div class="container">
-        <div class="card">
+        <button class="btn-volver" onclick="location.href='/lider/dashboard'">⬅ Volver</button>
 
-            <div class="header">
-                <div class="top-buttons">
-                    <button class="btn-volver" onclick="location.href='/lider/dashboard'">⬅ Volver</button>
+        <h1>Tareas Recibidas</h1>
+        <p class="subtitle">Evidencias enviadas por los participantes de tus proyectos.</p>
+
+        <div th:if="${#lists.isEmpty(entregas)}" class="empty-msg">
+            No hay tareas entregadas aún.
+        </div>
+
+        <div th:each="e : ${entregas}" class="entrega-card">
+
+            <div class="entrega-header">
+                <div>
+                    <div class="entrega-titulo" th:text="${e['titulo']}">Título tarea</div>
+                    <div class="entrega-meta">
+                        👤 <span th:text="${e['usuarioNombre']}">Usuario</span>
+                        &nbsp;·&nbsp;
+                        🕐 <span th:text="${e['fechaEntrega']}">Fecha</span>
+                    </div>
                 </div>
-
-                <h1>Tareas Recibidas</h1>
-                <p class="subtitle">Estas son las tareas enviadas por los participantes.</p>
+                <span class="badge-proyecto" th:text="${e['proyectoNombre']}">Proyecto</span>
             </div>
 
-            <table>
-                <thead>
-                    <tr>
-                        <th>Título</th>
-                        <th>Descripción</th>
-                        <th>Usuario</th>
-                        <th>Archivo</th>
-                        <th>Acción</th>
-                    </tr>
-                </thead>
+            <!-- Descripción de evidencia -->
+            <div th:if="${e['descripcionEvidencia'] != null and !#strings.isEmpty(e['descripcionEvidencia'])}"
+                 class="entrega-descripcion"
+                 th:text="${e['descripcionEvidencia']}">
+                Descripción de la evidencia
+            </div>
+            <div th:unless="${e['descripcionEvidencia'] != null and !#strings.isEmpty(e['descripcionEvidencia'])}"
+                 style="color:#aaa; font-size:13px; margin-bottom:12px; font-style:italic;">
+                Sin descripción adjunta.
+            </div>
 
-                <tbody>
-                    <tr th:each="t : ${tareas}">
-                        <td th:text="${t.titulo}"></td>
-                        <td th:text="${t.descripcion}"></td>
-                        <td th:text="${t.usuario.nombre}"></td>
-                        <td><a th:href="@{/tareas/archivo/{id}(id=${t.id})}" class="link">Descargar</a></td>
-                        <td><a th:href="@{/tareas/detalles/{id}(id=${t.id})}" class="btn-ver">Ver</a></td>
-                    </tr>
-                </tbody>
-
-            </table>
+            <!-- Imagen de evidencia -->
+            <div th:if="${e['nombreArchivo'] != null}">
+                <p style="font-size:12px; color:#888; margin-bottom:6px;">
+                    📎 <span th:text="${e['nombreArchivo']}">archivo.jpg</span>
+                </p>
+                <img th:src="@{/tareas/entrega/{id}/imagen(id=${e['entregaId']})}"
+                     class="entrega-imagen"
+                     alt="Evidencia fotográfica">
+            </div>
+            <div th:unless="${e['nombreArchivo'] != null}"
+                 style="color:#aaa; font-size:13px; font-style:italic;">
+                Sin imagen adjunta.
+            </div>
 
         </div>
-    </div>
 
+    </div>
 </div>
 
 </body>

@@ -12,10 +12,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import com.proaula.spring.synergy.Model.EntregaTarea;
 import com.proaula.spring.synergy.Model.Proyecto;
 import com.proaula.spring.synergy.Model.Tarea;
-
 import com.proaula.spring.synergy.Model.Usuarios;
+import com.proaula.spring.synergy.Service.EntregaTareaService;
 import com.proaula.spring.synergy.Service.ParticipacionService;
 import com.proaula.spring.synergy.Service.ProyectoService;
 import com.proaula.spring.synergy.Service.UsuarioService;
@@ -39,6 +40,9 @@ public class LiderController {
 
     @Autowired
     private ParticipacionService participacionService;
+
+    @Autowired
+    private EntregaTareaService entregaTareaService;
 
     // =======================================================
     // VALIDAR QUE EL USUARIO SEA LÍDER
@@ -201,6 +205,32 @@ public class LiderController {
         if (lider == null)
             return "redirect:/login";
 
+        List<Proyecto> proyectos = proyectoService.obtenerProyectosDeLider(lider.getId());
+
+        java.util.List<java.util.Map<String, Object>> entregas = new java.util.ArrayList<>();
+        for (Proyecto proyecto : proyectos) {
+            List<Tarea> tareas = tareaService.obtenerTareasPorProyecto(proyecto.getId());
+            for (Tarea tarea : tareas) {
+                List<EntregaTarea> entregasTarea = entregaTareaService.obtenerEntregasPorTarea(tarea.getId());
+                for (EntregaTarea entrega : entregasTarea) {
+                    Usuarios usuario = entrega.getIdUsuario() != null
+                            ? usuarioService.obtenerUsuarioPorId(entrega.getIdUsuario())
+                            : null;
+                    java.util.Map<String, Object> item = new java.util.HashMap<>();
+                    item.put("entregaId",           entrega.getId());
+                    item.put("titulo",              tarea.getTitulo());
+                    item.put("proyectoNombre",      proyecto.getNombre());
+                    item.put("usuarioNombre",       usuario != null ? usuario.getNombre() : "Desconocido");
+                    item.put("descripcionEvidencia",entrega.getDescripcionEvidencia());
+                    item.put("nombreArchivo",       entrega.getNombreArchivo());
+                    item.put("tipoArchivo",         entrega.getTipoArchivo());
+                    item.put("fechaEntrega",        entrega.getFechaEntrega());
+                    entregas.add(item);
+                }
+            }
+        }
+
+        model.addAttribute("entregas", entregas);
         return "Lider_Tareas_Recibidas";
     }
 
