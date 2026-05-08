@@ -95,18 +95,14 @@ public String guardarProyecto(
     @GetMapping("/participar")
     public String mostrarListaParticipacion(Principal principal, Model model) {
 
-        if (principal == null) {
-            return "redirect:/login";
+        if (principal != null) {
+            Usuarios usuario = usuarioService.buscarPorCorreo(principal.getName());
+            if (usuario != null) {
+                model.addAttribute("usuario", usuario);
+            }
         }
 
-        Usuarios usuario = usuarioService.buscarPorCorreo(principal.getName());
-        if (usuario == null) {
-            return "redirect:/login";
-        }
-
-        model.addAttribute("usuario", usuario);
         model.addAttribute("proyectos", proyectoService.listar());
-
         return "Participacion_Proyecto_Usuario";
     }
 

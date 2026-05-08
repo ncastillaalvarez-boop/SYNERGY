@@ -326,12 +326,8 @@ public class UsuarioWebController {
     }
 
     @GetMapping("/publico/proyectos")
-    public String verProyectosPublico(Model model, Principal principal) {
+    public String verProyectosPublico(Model model) {
         model.addAttribute("proyectos", proyectoService.listar());
-        if (principal != null) {
-             Usuarios usuario = usuarioService.buscarPorCorreo(principal.getName());
-             model.addAttribute("usuario", usuario);
-        }
-       return "Participacion_Proyecto_Usuario";
+        return "Participacion_Proyecto_Usuario";
     }
 }
