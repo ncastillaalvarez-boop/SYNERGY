@@ -23,22 +23,28 @@
                 <p class="subtitle">Lista de participantes registrados en este proyecto.</p>
             </div>
 
-            <table>
+            <table class="project-table">
                 <thead>
                     <tr>
                         <th>ID</th>
                         <th>Nombre</th>
                         <th>Correo</th>
                         <th>Rol</th>
+                        <th>Proyecto(s)</th>
                     </tr>
                 </thead>
 
                 <tbody>
                     <tr th:each="u : ${usuarios}">
-                        <td th:text="${u.id}"></td>
+                        <td class="cell-id" th:text="${u.id}"></td>
                         <td th:text="${u.nombre}"></td>
                         <td th:text="${u.correo}"></td>
-                        <td th:text="${u.rol}"></td>
+                        <td><span class="badge-rol" th:text="${u.rol}"></span></td>
+                        <td>
+                            <span th:each="pNombre, iter : ${proyectosDeUsuario[u.id]}">
+                                <span class="badge-proyecto" th:text="${pNombre}"></span>
+                            </span>
+                        </td>
                     </tr>
                 </tbody>
             </table>

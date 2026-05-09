@@ -79,7 +79,7 @@ body {
   margin-bottom: 24px;
 }
 
-.btn-inicio, .btn-usuarios, .btn-logout {
+.btn-volver, .btn-inicio, .btn-usuarios, .btn-logout {
   background: var(--bg-overlay);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
@@ -94,7 +94,7 @@ body {
   align-items: center;
 }
 
-.btn-inicio:hover, .btn-usuarios:hover {
+.btn-volver:hover, .btn-inicio:hover, .btn-usuarios:hover {
   background: rgba(255, 255, 255, 0.1);
   color: var(--text-primary);
 }
@@ -322,6 +322,46 @@ h2 {
 
 .alert-success { background: var(--success-bg); color: var(--accent-light); border: 1px solid rgba(16,185,129,0.2); }
 .alert-error   { background: var(--error-bg);   color: #F87171;             border: 1px solid rgba(239,68,68,0.2); }
+
+/* ===== ID truncado ===== */
+.cell-id {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: 'Courier New', monospace;
+  font-size: 0.8rem;
+  color: var(--text-secondary) !important;
+  cursor: default;
+}
+
+/* ===== Badge de Proyecto ===== */
+.badge-proyecto {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background: rgba(59, 130, 246, 0.15);
+  color: #60A5FA;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  margin: 2px 4px 2px 0;
+  white-space: nowrap;
+}
+
+/* ===== Badge de Rol ===== */
+.badge-rol {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--accent-light);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
 
 @media (max-width: 768px) {
   .card { padding: 30px 20px; }

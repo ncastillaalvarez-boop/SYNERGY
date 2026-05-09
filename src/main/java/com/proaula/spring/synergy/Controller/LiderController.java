@@ -187,17 +187,20 @@ public class LiderController {
 
         List<Proyecto> proyectos = proyectoService.obtenerProyectosDeLider(lider.getId());
 
-        java.util.Set<String> vistos = new java.util.HashSet<>();
-        java.util.List<Usuarios> usuarios = new java.util.ArrayList<>();
+        java.util.LinkedHashMap<String, Usuarios> vistos = new java.util.LinkedHashMap<>();
+        java.util.Map<String, java.util.List<String>> proyectosDeUsuario = new java.util.HashMap<>();
+
         for (Proyecto p : proyectos) {
             for (Usuarios u : participacionService.listarUsuariosPorProyecto(p.getId())) {
-                if (vistos.add(u.getId())) {
-                    usuarios.add(u);
-                }
+                vistos.putIfAbsent(u.getId(), u);
+                proyectosDeUsuario
+                    .computeIfAbsent(u.getId(), k -> new java.util.ArrayList<>())
+                    .add(p.getNombre());
             }
         }
 
-        model.addAttribute("usuarios", usuarios);
+        model.addAttribute("usuarios", new java.util.ArrayList<>(vistos.values()));
+        model.addAttribute("proyectosDeUsuario", proyectosDeUsuario);
         return "Lider_Usuarios_Proyecto";
     }
 
