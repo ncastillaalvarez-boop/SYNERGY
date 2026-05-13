@@ -51,13 +51,6 @@ public class ParticipacionServiceImpl implements ParticipacionService {
         participacion.setIdProyecto(proyectoId);
         participacionRepository.save(participacion);
 
-        // Sincronizar el campo participantes del Proyecto
-        Proyecto proyecto = proyectoRepository.findById(proyectoId).orElse(null);
-        if (proyecto != null) {
-            proyecto.addParticipante(usuarioId);
-            proyectoRepository.save(proyecto);
-        }
-
         return true; // INSCRIPCIÓN EXITOSA
     }
 
@@ -74,13 +67,6 @@ public class ParticipacionServiceImpl implements ParticipacionService {
                 .findByIdUsuarioAndIdProyecto(usuarioId, proyectoId);
         if (participacion != null) {
             participacionRepository.delete(participacion);
-
-            // Sincronizar el campo participantes del Proyecto
-            Proyecto proyecto = proyectoRepository.findById(proyectoId).orElse(null);
-            if (proyecto != null) {
-                proyecto.removeParticipante(usuarioId);
-                proyectoRepository.save(proyecto);
-            }
         }
     }
 
@@ -96,9 +82,7 @@ public class ParticipacionServiceImpl implements ParticipacionService {
         List<Participacion> participaciones = participacionRepository.findByIdProyecto(proyectoId);
         return participaciones.stream()
                 .map(p -> usuarioRepository.findById(p.getIdUsuario()).orElse(null))
-                .filter(u -> u != null && 
-                             !"ADMINISTRADOR".equalsIgnoreCase(u.getRol()) &&
-                             !"LIDER".equalsIgnoreCase(u.getRol()))
+                .filter(u -> u != null)
                 .collect(Collectors.toList());
     }
 

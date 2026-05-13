@@ -42,14 +42,6 @@ public class ProyectoServiceImpl implements ProyectoService {
                 throw new RuntimeException("El proyecto debe tener un líder asignado");
             }
 
-            Usuarios lider = usuarioRepository.findById(proyecto.getIdLider())
-                    .orElseThrow(() -> new RuntimeException("El líder asignado no existe"));
-
-            if (!"LIDER".equals(lider.getRol())) {
-                lider.setRol("LIDER");
-                usuarioRepository.save(lider);
-            }
-
             proyecto.setFechaActualizacion(LocalDateTime.now());
             return proyectoRepository.save(proyecto);
 

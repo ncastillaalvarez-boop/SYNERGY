@@ -1,13 +1,16 @@
 package com.proaula.spring.synergy.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.proaula.spring.synergy.Model.Rol;
 import com.proaula.spring.synergy.Model.Usuarios;
+import com.proaula.spring.synergy.Repository.RolRepository;
 import com.proaula.spring.synergy.Repository.UsuarioRepository;
 
 @Service
@@ -22,13 +25,28 @@ public class UsuarioService {
     @Autowired
     private RolPrivilegioService rolPrivilegioService;
 
+    @Autowired
+    private RolRepository rolRepository;
+
+    // Popula el nombre del rol (transient) leyendo la colección roles
+    private void cargarRolNombre(Usuarios usuario) {
+        if (usuario != null && usuario.getIdRol() != null) {
+            rolRepository.findById(usuario.getIdRol())
+                    .ifPresent(rol -> usuario.setRol(rol.getNombre()));
+        }
+    }
+
     public List<Usuarios> obtenerTodosUsuarios() {
-        return usuarioRepository.findAll();
+        List<Usuarios> usuarios = usuarioRepository.findAll();
+        usuarios.forEach(this::cargarRolNombre);
+        return usuarios;
     }
 
     public Usuarios obtenerUsuarioPorId(String id) {
-        return usuarioRepository.findById(id)
+        Usuarios usuario = usuarioRepository.findById(id)
             .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        cargarRolNombre(usuario);
+        return usuario;
     }
 
     public Usuarios obtenerUsuarioPorCorreo(String correo) {
@@ -36,6 +54,7 @@ public class UsuarioService {
         if (usuario == null) {
             throw new RuntimeException("Usuario no encontrado");
         }
+        cargarRolNombre(usuario);
         return usuario;
     }
 
@@ -45,12 +64,13 @@ public class UsuarioService {
         }
 
         usuario.setContrasena(passwordEncoder.encode(usuario.getContrasena()));
-        usuario.setActivo(true);
         usuario.setEstado("ACTIVO");
         usuario.setFechaCreacion(LocalDateTime.now());
-        usuario.setUltimaCambioContrasena(LocalDateTime.now());
+        usuario.setUltimoCambioContrasena(LocalDateTime.now());
 
-        return usuarioRepository.save(usuario);
+        Usuarios guardado = usuarioRepository.save(usuario);
+        cargarRolNombre(guardado);
+        return guardado;
     }
 
     public Usuarios actualizarUsuario(String id, Usuarios usuarioActualizado) {
@@ -63,30 +83,26 @@ public class UsuarioService {
             usuario.setCorreo(usuarioActualizado.getCorreo());
         }
         usuario.setEstado(usuarioActualizado.getEstado());
-        usuario.setActivo(usuarioActualizado.getActivo());
-        return usuarioRepository.save(usuario);
+        Usuarios guardado = usuarioRepository.save(usuario);
+        cargarRolNombre(guardado);
+        return guardado;
     }
 
-    public void cambiarRolUsuario(String usuarioId, String nuevoRol) {
+    public void cambiarRolUsuario(String usuarioId, String nombreRol) {
         Usuarios usuario = obtenerUsuarioPorId(usuarioId);
-        
-        // Validar que el rol exista
-        rolPrivilegioService.obtenerRolPorNombre(nuevoRol);
-        
-        usuario.setRol(nuevoRol);
+        Rol rol = rolPrivilegioService.obtenerRolPorNombre(nombreRol);
+        usuario.setIdRol(rol.getId());
         usuarioRepository.save(usuario);
     }
 
     public void desactivarUsuario(String usuarioId) {
         Usuarios usuario = obtenerUsuarioPorId(usuarioId);
-        usuario.setActivo(false);
         usuario.setEstado("INACTIVO");
         usuarioRepository.save(usuario);
     }
 
     public void activarUsuario(String usuarioId) {
         Usuarios usuario = obtenerUsuarioPorId(usuarioId);
-        usuario.setActivo(true);
         usuario.setEstado("ACTIVO");
         usuarioRepository.save(usuario);
     }
@@ -95,35 +111,41 @@ public class UsuarioService {
         usuarioRepository.deleteById(usuarioId);
     }
 
-    public List<Usuarios> obtenerUsuariosPorRol(String rol) {
-        return usuarioRepository.findByRol(rol);
-    }
-
-    public List<Usuarios> obtenerUsuariosActivos() {
-        return usuarioRepository.findByActivo(true);
-    }
-
-    public List<Usuarios> obtenerUsuariosPorEstado(String estado) {
-        return usuarioRepository.findByEstado(estado);
-    }
-
-    public void agregarPrivilegioAlUsuario(String usuarioId, String privilegioId) {
-        Usuarios usuario = obtenerUsuarioPorId(usuarioId);
-        if (!usuario.getPrivilegios().contains(privilegioId)) {
-            usuario.getPrivilegios().add(privilegioId);
-            usuarioRepository.save(usuario);
+    public List<Usuarios> obtenerUsuariosPorRol(String nombreRol) {
+        try {
+            Rol rol = rolPrivilegioService.obtenerRolPorNombre(nombreRol);
+            List<Usuarios> usuarios = usuarioRepository.findByIdRol(rol.getId());
+            usuarios.forEach(this::cargarRolNombre);
+            return usuarios;
+        } catch (Exception e) {
+            return new ArrayList<>();
         }
     }
 
+    public List<Usuarios> obtenerUsuariosActivos() {
+        List<Usuarios> usuarios = usuarioRepository.findByEstado("ACTIVO");
+        usuarios.forEach(this::cargarRolNombre);
+        return usuarios;
+    }
+
+    public List<Usuarios> obtenerUsuariosPorEstado(String estado) {
+        List<Usuarios> usuarios = usuarioRepository.findByEstado(estado);
+        usuarios.forEach(this::cargarRolNombre);
+        return usuarios;
+    }
+
+    // Los privilegios ahora viven en el Rol, no en el usuario
+    public void agregarPrivilegioAlUsuario(String usuarioId, String privilegioId) {
+        // privilegios de usuario eliminados del modelo; gestionar desde el Rol
+    }
+
     public void removerPrivilegioDelUsuario(String usuarioId, String privilegioId) {
-        Usuarios usuario = obtenerUsuarioPorId(usuarioId);
-        usuario.getPrivilegios().remove(privilegioId);
-        usuarioRepository.save(usuario);
+        // privilegios de usuario eliminados del modelo; gestionar desde el Rol
     }
 
     public boolean usuarioTienePrivilegio(String usuarioId, String nombrePrivilegio) {
         Usuarios usuario = obtenerUsuarioPorId(usuarioId);
-        return rolPrivilegioService.usuarioTienePrivilegio(usuario.getRol(), nombrePrivilegio);
+        return rolPrivilegioService.usuarioTienePrivilegio(usuario.getIdRol(), nombrePrivilegio);
     }
 
     public void actualizarUltimoAcceso(String usuarioId) {
@@ -133,10 +155,18 @@ public class UsuarioService {
     }
 
     public Usuarios buscarPorCorreo(String correo) {
-        return usuarioRepository.findByCorreo(correo);
+        Usuarios usuario = usuarioRepository.findByCorreo(correo);
+        cargarRolNombre(usuario);
+        return usuario;
     }
 
     public Usuarios guardarUsuario(Usuarios usuario) {
-        return usuarioRepository.save(usuario);
+        Usuarios guardado = usuarioRepository.save(usuario);
+        cargarRolNombre(guardado);
+        return guardado;
+    }
+
+    public String obtenerIdRolPorNombre(String nombreRol) {
+        return rolPrivilegioService.obtenerRolPorNombre(nombreRol).getId();
     }
 }

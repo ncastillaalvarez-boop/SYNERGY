@@ -6,8 +6,9 @@ import java.util.Collection;
 import java.util.List;
 
 import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -25,203 +26,101 @@ public class Usuarios implements UserDetails {
 
     private String contrasena;
 
-    private String salt;
+    @Indexed
+    private String idRol;
+
+    @Transient
+    private String rolNombre;
 
     @Indexed
-    private String rol; // ADMINISTRADOR, LIDER, PARTICIPANTE
-
-    @Indexed
-    private String estado; // ACTIVO, INACTIVO
-
-    @Indexed
-    private Boolean activo;
-
-    private List<String> privilegios = new ArrayList<>();
-    private List<String> proyectos = new ArrayList<>();
-    private List<String> tareasAsignadas = new ArrayList<>();
+    private String estado;
 
     private LocalDateTime fechaCreacion;
     private LocalDateTime ultimoAcceso;
-    private LocalDateTime ultimaCambioContrasena;
+    private LocalDateTime ultimoCambioContrasena;
+    private LocalDateTime fechaActualizacion;
 
     public Usuarios() {
-        this.activo = true;
         this.estado = "ACTIVO";
         this.fechaCreacion = LocalDateTime.now();
-        this.ultimaCambioContrasena = LocalDateTime.now();
+        this.ultimoCambioContrasena = LocalDateTime.now();
     }
 
-    public Usuarios(String nombre, String correo, String contrasena, String salt, String rol) {
+    public Usuarios(String nombre, String correo, String contrasena) {
         this();
         this.nombre = nombre;
         this.correo = correo;
         this.contrasena = contrasena;
-        this.salt = salt;
-        this.rol = rol;
     }
 
     // UserDetails implementation
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         List<GrantedAuthority> authorities = new ArrayList<>();
-        authorities.add(new SimpleGrantedAuthority("ROLE_" + this.rol));
+        if (rolNombre != null && !rolNombre.isEmpty()) {
+            authorities.add(new SimpleGrantedAuthority("ROLE_" + rolNombre));
+        }
         return authorities;
     }
 
     @Override
-    public String getPassword() {
-        return this.contrasena;
-    }
+    public String getPassword() { return this.contrasena; }
 
     @Override
-    public String getUsername() {
-        return this.correo;
-    }
+    public String getUsername() { return this.correo; }
 
     @Override
-    public boolean isAccountNonExpired() {
-        return true;
-    }
+    public boolean isAccountNonExpired() { return true; }
 
     @Override
-    public boolean isAccountNonLocked() {
-        return this.activo;
-    }
+    public boolean isAccountNonLocked() { return !"INACTIVO".equals(this.estado); }
 
     @Override
-    public boolean isCredentialsNonExpired() {
-        return true;
-    }
+    public boolean isCredentialsNonExpired() { return true; }
 
     @Override
-    public boolean isEnabled() {
-        return this.activo && "ACTIVO".equals(this.estado);
-    }
+    public boolean isEnabled() { return "ACTIVO".equals(this.estado); }
 
     // Getters y Setters
-    public String getId() {
-        return id;
-    }
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
 
-    public void setId(String id) {
-        this.id = id;
-    }
+    public String getNombre() { return nombre; }
+    public void setNombre(String nombre) { this.nombre = nombre; }
 
-    public String getNombre() {
-        return nombre;
-    }
+    public String getCorreo() { return correo; }
+    public void setCorreo(String correo) { this.correo = correo; }
 
-    public void setNombre(String nombre) {
-        this.nombre = nombre;
-    }
-
-    public String getCorreo() {
-        return correo;
-    }
-
-    public void setCorreo(String correo) {
-        this.correo = correo;
-    }
-
-    public String getContrasena() {
-        return contrasena;
-    }
-
+    public String getContrasena() { return contrasena; }
     public void setContrasena(String contrasena) {
         this.contrasena = contrasena;
-        this.ultimaCambioContrasena = LocalDateTime.now();
+        this.ultimoCambioContrasena = LocalDateTime.now();
     }
 
-    public String getSalt() {
-        return salt;
+    public String getIdRol() { return idRol; }
+    public void setIdRol(String idRol) { this.idRol = idRol; }
+
+    // getRol/setRol operan sobre el campo transient (no persistido)
+    // para mantener compatibilidad con Spring Security y controladores
+    public String getRol() { return rolNombre; }
+    public void setRol(String rolNombre) { this.rolNombre = rolNombre; }
+
+    public String getEstado() { return estado; }
+    public void setEstado(String estado) { this.estado = estado; }
+
+    public LocalDateTime getFechaCreacion() { return fechaCreacion; }
+    public void setFechaCreacion(LocalDateTime fechaCreacion) { this.fechaCreacion = fechaCreacion; }
+
+    public LocalDateTime getUltimoAcceso() { return ultimoAcceso; }
+    public void setUltimoAcceso(LocalDateTime ultimoAcceso) { this.ultimoAcceso = ultimoAcceso; }
+
+    public LocalDateTime getUltimoCambioContrasena() { return ultimoCambioContrasena; }
+    public void setUltimoCambioContrasena(LocalDateTime ultimoCambioContrasena) {
+        this.ultimoCambioContrasena = ultimoCambioContrasena;
     }
 
-    public void setSalt(String salt) {
-        this.salt = salt;
-    }
-
-    public String getRol() {
-        return rol;
-    }
-
-    public void setRol(String rol) {
-        this.rol = rol;
-    }
-
-    public String getEstado() {
-        return estado;
-    }
-
-    public void setEstado(String estado) {
-        this.estado = estado;
-    }
-
-    public Boolean getActivo() {
-        return activo;
-    }
-
-    public void setActivo(Boolean activo) {
-        this.activo = activo;
-    }
-
-    public List<String> getPrivilegios() {
-        return privilegios;
-    }
-
-    public void setPrivilegios(List<String> privilegios) {
-        this.privilegios = privilegios;
-    }
-
-    public List<String> getProyectos() {
-        return proyectos;
-    }
-
-    public void setProyectos(List<String> proyectos) {
-        this.proyectos = proyectos;
-    }
-
-    public List<String> getTareasAsignadas() {
-        return tareasAsignadas;
-    }
-
-    public void setTareasAsignadas(List<String> tareasAsignadas) {
-        this.tareasAsignadas = tareasAsignadas;
-    }
-
-    public LocalDateTime getFechaCreacion() {
-        return fechaCreacion;
-    }
-
-    public void setFechaCreacion(LocalDateTime fechaCreacion) {
-        this.fechaCreacion = fechaCreacion;
-    }
-
-    public LocalDateTime getUltimoAcceso() {
-        return ultimoAcceso;
-    }
-
-    public void setUltimoAcceso(LocalDateTime ultimoAcceso) {
-        this.ultimoAcceso = ultimoAcceso;
-    }
-
-    public LocalDateTime getUltimaCambioContrasena() {
-        return ultimaCambioContrasena;
-    }
-
-    public void setUltimaCambioContrasena(LocalDateTime ultimaCambioContrasena) {
-        this.ultimaCambioContrasena = ultimaCambioContrasena;
-    }
-
-    // Métodos de utilidad
-    public void addProyecto(String idProyecto) {
-        if (!this.proyectos.contains(idProyecto)) {
-            this.proyectos.add(idProyecto);
-        }
-    }
-
-    public void addTareaAsignada(String idTarea) {
-        if (!this.tareasAsignadas.contains(idTarea)) {
-            this.tareasAsignadas.add(idTarea);
-        }
+    public LocalDateTime getFechaActualizacion() { return fechaActualizacion; }
+    public void setFechaActualizacion(LocalDateTime fechaActualizacion) {
+        this.fechaActualizacion = fechaActualizacion;
     }
 }

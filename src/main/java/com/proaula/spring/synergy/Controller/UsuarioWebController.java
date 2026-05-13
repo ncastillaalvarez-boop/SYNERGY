@@ -77,17 +77,22 @@ public class UsuarioWebController {
         String contrasenaEncriptada = passwordEncoder.encode(usuario.getContrasena());
         usuario.setContrasena(contrasenaEncriptada);
 
-       // Si no viene rol del formulario, asignar Participante por defecto
-       if (usuario.getRol() == null || usuario.getRol().isEmpty()) {
-           usuario.setRol("PARTICIPANTE");
-       }
+        // Determinar nombre del rol (viene del formulario o PARTICIPANTE por defecto)
+        String nombreRol = (usuario.getRol() != null && !usuario.getRol().isEmpty())
+                ? usuario.getRol().toUpperCase()
+                : "PARTICIPANTE";
+        usuario.setRol(nombreRol);
 
-       // Campos requeridos por MongoDB
-       usuario.setActivo(true);
-       usuario.setEstado("ACTIVO");
+        // Buscar el ObjectId del rol en la colección roles y asignarlo
+        try {
+            String idRol = usuarioService.obtenerIdRolPorNombre(nombreRol);
+            usuario.setIdRol(idRol);
+        } catch (Exception ignored) { }
 
-       // Guardar en BD
-       usuarioService.guardarUsuario(usuario);
+        usuario.setEstado("ACTIVO");
+
+        // Guardar en BD
+        usuarioService.guardarUsuario(usuario);
 
       // Iniciar sesión automáticamente (JWT)
       String token = jwtTokenProvider.generateToken(usuario.getCorreo(), usuario.getRol());

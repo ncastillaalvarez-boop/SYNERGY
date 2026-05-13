@@ -122,8 +122,9 @@ public class RolPrivilegioService {
         return privilegioRepository.findByActivo(true);
     }
 
-    public boolean usuarioTienePrivilegio(String usuarioRol, String nombrePrivilegio) {
-        Optional<Rol> rolOpt = rolRepository.findByNombre(usuarioRol);
+    public boolean usuarioTienePrivilegio(String idRol, String nombrePrivilegio) {
+        if (idRol == null) return false;
+        Optional<Rol> rolOpt = rolRepository.findById(idRol);
         if (!rolOpt.isPresent()) {
             return false;
         }

@@ -38,7 +38,7 @@ public class ComentarioController {
         }
 
         model.addAttribute("proyecto", proyecto);
-        model.addAttribute("comentarios", proyecto.getComentarios());
+        model.addAttribute("comentarios", comentarioService.listarPorProyecto(id));
         model.addAttribute("nuevoComentario", new Comentario());
 
         return "Comentarios_Proyectos"; // nombre EXACTO DEL HTML
@@ -61,12 +61,7 @@ public class ComentarioController {
         comentario.setIdProyecto(proyecto.getId());
         comentario.setIdUsuario(usuario.getId());
 
-        Comentario comentarioGuardado = comentarioService.guardarComentario(comentario);
-        
-        // Asignar el comentario al proyecto (assuming there's a reference list, check if it works or will need manual add via service)
-        // Since we are referencing by ID in Comentario and Proyecto, we should probably add the ID to Proyecto and save it.
-        proyecto.getComentarios().add(comentarioGuardado.getId());
-        proyectoService.guardar(proyecto, null);
+        comentarioService.guardarComentario(comentario);
 
         return "redirect:/proyectos/" + proyectoId + "/comentarios";
     }
@@ -78,13 +73,6 @@ public class ComentarioController {
             @RequestParam String proyectoId) {
 
         comentarioService.eliminarComentario(id);
-        
-        // Opcional: remover id de comentario de la lista del proyecto
-        Proyecto proyecto = proyectoService.buscarPorId(proyectoId);
-        if (proyecto != null) {
-            proyecto.getComentarios().remove(id);
-            proyectoService.guardar(proyecto, null);
-        }
 
         return "redirect:/proyectos/" + proyectoId + "/comentarios";
     }

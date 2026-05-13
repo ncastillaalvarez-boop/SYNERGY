@@ -219,14 +219,13 @@ public class AdminController {
         if (admin == null)
             return "redirect:/login";
 
-        Usuarios usuario = usuarioService.obtenerUsuarioPorId(id);
-
-        if (usuario != null) {
-            usuario.setRol(nuevoRol);
-            usuarioService.guardarUsuario(usuario);
-
+        try {
+            Usuarios usuario = usuarioService.obtenerUsuarioPorId(id);
+            usuarioService.cambiarRolUsuario(id, nuevoRol);
             redirectAttributes.addFlashAttribute("mensaje",
                     "✅ Rol de '" + usuario.getNombre() + "' cambiado a " + nuevoRol);
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Error al cambiar rol: " + e.getMessage());
         }
 
         return "redirect:/admin/usuarios";

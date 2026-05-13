@@ -3,8 +3,8 @@ package com.proaula.spring.synergy.Model;
 import java.time.LocalDateTime;
 
 import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 @Document(collection = "participaciones")
 public class Participacion {
@@ -18,60 +18,28 @@ public class Participacion {
     @Indexed
     private String idProyecto;
 
-    private String rol; // LIDER, PARTICIPANTE
-
     private LocalDateTime fechaUnion;
 
     public Participacion() {
         this.fechaUnion = LocalDateTime.now();
     }
 
-    public Participacion(String idUsuario, String idProyecto, String rol) {
+    public Participacion(String idUsuario, String idProyecto) {
         this();
         this.idUsuario = idUsuario;
         this.idProyecto = idProyecto;
-        this.rol = rol;
     }
 
     // Getters y Setters
-    public String getId() {
-        return id;
-    }
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
 
-    public void setId(String id) {
-        this.id = id;
-    }
+    public String getIdUsuario() { return idUsuario; }
+    public void setIdUsuario(String idUsuario) { this.idUsuario = idUsuario; }
 
-    public String getIdUsuario() {
-        return idUsuario;
-    }
+    public String getIdProyecto() { return idProyecto; }
+    public void setIdProyecto(String idProyecto) { this.idProyecto = idProyecto; }
 
-    public void setIdUsuario(String idUsuario) {
-        this.idUsuario = idUsuario;
-    }
-
-    public String getIdProyecto() {
-        return idProyecto;
-    }
-
-    public void setIdProyecto(String idProyecto) {
-        this.idProyecto = idProyecto;
-    }
-
-    public String getRol() {
-        return rol;
-    }
-
-    public void setRol(String rol) {
-        this.rol = rol;
-    }
-
-    public LocalDateTime getFechaUnion() {
-        return fechaUnion;
-    }
-
-    public void setFechaUnion(LocalDateTime fechaUnion) {
-        this.fechaUnion = fechaUnion;
-    }
+    public LocalDateTime getFechaUnion() { return fechaUnion; }
+    public void setFechaUnion(LocalDateTime fechaUnion) { this.fechaUnion = fechaUnion; }
 }
-

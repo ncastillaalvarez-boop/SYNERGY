@@ -11,8 +11,5 @@ public interface ProyectoRepository extends MongoRepository<Proyecto, String> {
 
     List<Proyecto> findByIdLider(String idLider);
 
-    List<Proyecto> findByParticipantesContains(String idUsuario);
-
     List<Proyecto> findByEstado(String estado);
 }
-

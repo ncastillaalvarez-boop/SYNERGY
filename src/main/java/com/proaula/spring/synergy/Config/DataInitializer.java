@@ -54,7 +54,6 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        // Verificar si ya hay datos inicializados
         if (usuarioRepository.count() > 0) {
             System.out.println("✔ Base de datos ya inicializada");
             return;
@@ -62,25 +61,12 @@ public class DataInitializer implements CommandLineRunner {
 
         System.out.println("🔧 Inicializando base de datos...");
 
-        // 1. Crear Privilegios
         createPrivilegios();
-
-        // 2. Crear Roles
         createRoles();
-
-        // 3. Crear Usuarios
         createUsuarios();
-
-        // 4. Crear Proyectos
         createProyectos();
-
-        // 5. Crear Participaciones
         createParticipaciones();
-
-        // 6. Crear Tareas
         createTareas();
-
-        // 7. Crear Comentarios
         createComentarios();
 
         System.out.println("✔ Base de datos inicializada correctamente");
@@ -126,18 +112,15 @@ public class DataInitializer implements CommandLineRunner {
     private void createRoles() {
         System.out.println("👤 Creando roles...");
 
-        // Obtener los IDs de privilegios
         List<Privilegio> privilegios = privilegioRepository.findByActivo(true);
 
-        // Rol ADMINISTRADOR
         Rol admin = new Rol("ADMINISTRADOR", "Acceso total al sistema");
         admin.setPrivilegios(privilegios.stream().map(Privilegio::getId).toList());
         rolRepository.save(admin);
 
-        // Rol LIDER
         Rol lider = new Rol("LIDER", "Líder de proyecto - puede crear tareas y asignar usuarios");
         List<String> privilegiosLider = privilegios.stream()
-            .filter(p -> !p.getNombre().startsWith("ELIMINAR_USUARIO") && 
+            .filter(p -> !p.getNombre().startsWith("ELIMINAR_USUARIO") &&
                          !p.getNombre().startsWith("ELIMINAR_PROYECTO") &&
                          !p.getNombre().equals("ACCESO_ADMIN") &&
                          !p.getNombre().equals("CREAR_USUARIO"))
@@ -146,10 +129,9 @@ public class DataInitializer implements CommandLineRunner {
         lider.setPrivilegios(privilegiosLider);
         rolRepository.save(lider);
 
-        // Rol PARTICIPANTE
         Rol participante = new Rol("PARTICIPANTE", "Participante - acceso limitado a proyectos asignados");
         List<String> privilegiosParticipante = privilegios.stream()
-            .filter(p -> p.getAccion().equals("READ") || p.getNombre().equals("CREAR_COMENTARIO") || 
+            .filter(p -> p.getAccion().equals("READ") || p.getNombre().equals("CREAR_COMENTARIO") ||
                          p.getNombre().equals("CREAR_ENTREGA"))
             .map(Privilegio::getId)
             .toList();
@@ -164,23 +146,24 @@ public class DataInitializer implements CommandLineRunner {
 
         String passwordEncriptada = passwordEncoder.encode("123456");
 
-        // Admin
-        Usuarios admin = new Usuarios("Administrador", "admin@synergy.com", passwordEncriptada, "salt", "ADMINISTRADOR");
-        admin.setActivo(true);
+        Rol adminRol      = rolRepository.findByNombre("ADMINISTRADOR").orElse(null);
+        Rol liderRol      = rolRepository.findByNombre("LIDER").orElse(null);
+        Rol participanteRol = rolRepository.findByNombre("PARTICIPANTE").orElse(null);
+
+        Usuarios admin = new Usuarios("Administrador", "admin@synergy.com", passwordEncriptada);
+        if (adminRol != null) admin.setIdRol(adminRol.getId());
         admin.setEstado("ACTIVO");
         admin.setFechaCreacion(LocalDateTime.now());
         usuarioRepository.save(admin);
 
-        // Lider
-        Usuarios lider = new Usuarios("Líder de Proyecto", "lider@synergy.com", passwordEncriptada, "salt", "LIDER");
-        lider.setActivo(true);
+        Usuarios lider = new Usuarios("Líder de Proyecto", "lider@synergy.com", passwordEncriptada);
+        if (liderRol != null) lider.setIdRol(liderRol.getId());
         lider.setEstado("ACTIVO");
         lider.setFechaCreacion(LocalDateTime.now());
         usuarioRepository.save(lider);
 
-        // Participante
-        Usuarios participante = new Usuarios("Usuario Participante", "usuario@synergy.com", passwordEncriptada, "salt", "PARTICIPANTE");
-        participante.setActivo(true);
+        Usuarios participante = new Usuarios("Usuario Participante", "usuario@synergy.com", passwordEncriptada);
+        if (participanteRol != null) participante.setIdRol(participanteRol.getId());
         participante.setEstado("ACTIVO");
         participante.setFechaCreacion(LocalDateTime.now());
         usuarioRepository.save(participante);
@@ -195,7 +178,6 @@ public class DataInitializer implements CommandLineRunner {
         System.out.println("📦 Creando proyectos de ejemplo...");
 
         Usuarios lider = usuarioRepository.findByCorreo("lider@synergy.com");
-        Usuarios participante = usuarioRepository.findByCorreo("usuario@synergy.com");
 
         Proyecto proyecto = new Proyecto(
             "Proyecto de Gestión de Inventario",
@@ -204,14 +186,7 @@ public class DataInitializer implements CommandLineRunner {
             LocalDate.of(2024, 6, 30),
             lider.getId()
         );
-        proyecto.addParticipante(participante.getId());
         proyectoRepository.save(proyecto);
-
-        // Actualizar proyectos para los usuarios
-        lider.addProyecto(proyecto.getId());
-        participante.addProyecto(proyecto.getId());
-        usuarioRepository.save(lider);
-        usuarioRepository.save(participante);
 
         System.out.println("  ✓ 1 proyecto creado");
     }
@@ -219,15 +194,12 @@ public class DataInitializer implements CommandLineRunner {
     private void createParticipaciones() {
         System.out.println("📝 Creando participaciones...");
 
-        Usuarios lider = usuarioRepository.findByCorreo("lider@synergy.com");
+        Usuarios lider       = usuarioRepository.findByCorreo("lider@synergy.com");
         Usuarios participante = usuarioRepository.findByCorreo("usuario@synergy.com");
-        Proyecto proyecto = proyectoRepository.findAll().get(0);
+        Proyecto proyecto    = proyectoRepository.findAll().get(0);
 
-        Participacion part1 = new Participacion(lider.getId(), proyecto.getId(), "LIDER");
-        Participacion part2 = new Participacion(participante.getId(), proyecto.getId(), "PARTICIPANTE");
-
-        participacionRepository.save(part1);
-        participacionRepository.save(part2);
+        participacionRepository.save(new Participacion(lider.getId(), proyecto.getId()));
+        participacionRepository.save(new Participacion(participante.getId(), proyecto.getId()));
 
         System.out.println("  ✓ 2 participaciones creadas");
     }
@@ -236,7 +208,7 @@ public class DataInitializer implements CommandLineRunner {
         System.out.println("📌 Creando tareas de ejemplo...");
 
         Usuarios participante = usuarioRepository.findByCorreo("usuario@synergy.com");
-        Proyecto proyecto = proyectoRepository.findAll().get(0);
+        Proyecto proyecto     = proyectoRepository.findAll().get(0);
 
         Tarea tarea = new Tarea(
             "Implementar módulo de autenticación",
@@ -247,13 +219,6 @@ public class DataInitializer implements CommandLineRunner {
         );
         tarea.addUsuarioAsignado(participante.getId());
         tareaRepository.save(tarea);
-
-        // Actualizar referencias
-        proyecto.addTarea(tarea.getId());
-        proyectoRepository.save(proyecto);
-
-        participante.addTareaAsignada(tarea.getId());
-        usuarioRepository.save(participante);
 
         System.out.println("  ✓ 1 tarea creada");
     }
@@ -270,10 +235,6 @@ public class DataInitializer implements CommandLineRunner {
             lider.getId()
         );
         comentarioRepository.save(comentario);
-
-        // Actualizar proyecto
-        proyecto.addComentario(comentario.getId());
-        proyectoRepository.save(proyecto);
 
         System.out.println("  ✓ 1 comentario creado");
     }
