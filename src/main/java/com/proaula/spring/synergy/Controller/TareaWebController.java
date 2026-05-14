@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.proaula.spring.synergy.Model.Proyecto;
 import com.proaula.spring.synergy.Model.Tarea;
@@ -62,13 +63,22 @@ public class TareaWebController {
             @ModelAttribute Tarea tarea,
             @RequestParam String proyectoId,
             @RequestParam(value = "usuariosSeleccionados", required = false) List<String> usuariosIds,
-            @RequestParam("fechaEntrega") String fechaEntregaStr) {
+            @RequestParam("fechaEntrega") String fechaEntregaStr,
+            RedirectAttributes redirectAttributes) {
 
         Proyecto proyecto = proyectoService.buscarPorId(proyectoId);
         tarea.setIdProyecto(proyecto.getId());
 
-        // Fecha de entrega
-        tarea.setFechaEntrega(LocalDate.parse(fechaEntregaStr));
+        LocalDate fechaEntrega = LocalDate.parse(fechaEntregaStr);
+        tarea.setFechaEntrega(fechaEntrega);
+
+        // Validar que la fecha de entrega no supere la fecha fin del proyecto
+        if (proyecto.getFechaFin() != null && fechaEntrega.isAfter(proyecto.getFechaFin())) {
+            redirectAttributes.addFlashAttribute("errorFecha",
+                    "La fecha de entrega (" + fechaEntrega + ") supera la fecha de fin del proyecto ("
+                    + proyecto.getFechaFin() + "). Por favor elige una fecha válida.");
+            return "redirect:/tareas/asignar/" + proyectoId;
+        }
 
         // Estado por defecto
         tarea.setEstado("Pendiente");

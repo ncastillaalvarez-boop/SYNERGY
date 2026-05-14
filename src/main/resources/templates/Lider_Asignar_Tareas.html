@@ -95,6 +95,13 @@
     <div class="overlay"></div>
     <div class="card">
 
+        <!-- Advertencia de fecha inválida -->
+        <div th:if="${errorFecha}"
+             style="background:#fff3cd;border:1px solid #ffc107;border-radius:10px;
+                    padding:12px 18px;margin-bottom:18px;color:#856404;font-size:14px;">
+            ⚠️ <span th:text="${errorFecha}"></span>
+        </div>
+
         <button class="btn-volver" onclick="location.href='/lider/dashboard'">⬅ Volver</button>
 
         <h1>Vista general de proyectos</h1>
