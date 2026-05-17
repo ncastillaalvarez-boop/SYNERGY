@@ -35,6 +35,9 @@ public class Usuarios implements UserDetails {
     @Indexed
     private String estado;
 
+    private String googleId;
+    private String authProvider; // "local", "google", "both"
+
     private LocalDateTime fechaCreacion;
     private LocalDateTime ultimoAcceso;
     private LocalDateTime ultimoCambioContrasena;
@@ -123,4 +126,10 @@ public class Usuarios implements UserDetails {
     public void setFechaActualizacion(LocalDateTime fechaActualizacion) {
         this.fechaActualizacion = fechaActualizacion;
     }
+
+    public String getGoogleId() { return googleId; }
+    public void setGoogleId(String googleId) { this.googleId = googleId; }
+
+    public String getAuthProvider() { return authProvider; }
+    public void setAuthProvider(String authProvider) { this.authProvider = authProvider; }
 }

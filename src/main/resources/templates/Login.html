@@ -31,6 +31,11 @@
              Tu sesión ha expirado. Por favor inicia sesión nuevamente.
       </p>
 
+      <p th:if="${param.oauthError}" style="color:#b91c1c; background:#fef2f2; border:1px solid #fecaca;
+         border-radius:8px; padding:10px 14px; margin-bottom:10px; text-align:center; font-size:14px;">
+        Esta cuenta no puede iniciar sesión con Google. Usa tu contraseña.
+      </p>
+
       <div class="input-group">
         <input type="email" name="correo" required>
         <label>Correo electrónico</label>
