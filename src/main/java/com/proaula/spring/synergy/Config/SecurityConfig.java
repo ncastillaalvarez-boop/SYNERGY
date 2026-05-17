@@ -17,6 +17,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 import com.proaula.spring.synergy.Security.JwtAuthenticationFilter;
 import com.proaula.spring.synergy.Security.UserDetailsServiceImpl;
+import com.proaula.spring.synergy.Security.CustomOAuth2SuccessHandler;
 
 @Configuration
 @EnableWebSecurity
@@ -30,16 +31,14 @@ public class SecurityConfig {
     @Autowired
     private UserDetailsServiceImpl userDetailsService;
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+    @Autowired
+    private CustomOAuth2SuccessHandler customOAuth2SuccessHandler;
 
     @Bean
-    public DaoAuthenticationProvider authenticationProvider() {
+    public DaoAuthenticationProvider authenticationProvider(PasswordEncoder passwordEncoder) {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
         authProvider.setUserDetailsService(userDetailsService);
-        authProvider.setPasswordEncoder(passwordEncoder());
+        authProvider.setPasswordEncoder(passwordEncoder);
         return authProvider;
     }
 
@@ -54,7 +53,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http, DaoAuthenticationProvider authenticationProvider) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session
@@ -82,7 +81,11 @@ public class SecurityConfig {
                 // ── Rutas Thymeleaf controladas por sesión ──
                 .anyRequest().permitAll()
             )
-            .authenticationProvider(authenticationProvider())
+            .oauth2Login(oauth2 -> oauth2
+                .loginPage("/login")
+                .successHandler(customOAuth2SuccessHandler)
+            )
+            .authenticationProvider(authenticationProvider)
             .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
             .logout(logout -> logout
                 .logoutUrl("/logout")

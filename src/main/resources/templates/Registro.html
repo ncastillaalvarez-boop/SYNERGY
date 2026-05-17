@@ -54,6 +54,11 @@
 
         <button type="submit">Registrarse</button>
 
+        <a th:href="@{/oauth2/authorization/google}" class="btn-google" style="display:flex; align-items:center; justify-content:center; gap:10px; margin-top:10px; background-color:#fff; color:#333; padding:10px; border-radius:5px; text-decoration:none; font-weight:bold; border: 1px solid #ccc;">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google" width="20" height="20">
+          Registrarse con Google
+        </a>
+
         <p class="login-text">
           ¿Ya tienes una cuenta? <a th:href="@{/login}">Inicia sesión</a>
         </p>
