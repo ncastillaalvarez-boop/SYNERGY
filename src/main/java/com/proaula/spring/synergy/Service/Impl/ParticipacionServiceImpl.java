@@ -11,6 +11,7 @@ import com.proaula.spring.synergy.Model.Proyecto;
 import com.proaula.spring.synergy.Model.Usuarios;
 import com.proaula.spring.synergy.Repository.ParticipacionRepository;
 import com.proaula.spring.synergy.Repository.ProyectoRepository;
+import com.proaula.spring.synergy.Repository.RolRepository;
 import com.proaula.spring.synergy.Repository.UsuarioRepository;
 import com.proaula.spring.synergy.Service.ParticipacionService;
 
@@ -25,6 +26,16 @@ public class ParticipacionServiceImpl implements ParticipacionService {
 
     @Autowired
     private UsuarioRepository usuarioRepository;
+
+    @Autowired
+    private RolRepository rolRepository;
+
+    private void cargarRolNombre(Usuarios usuario) {
+        if (usuario != null && usuario.getIdRol() != null) {
+            rolRepository.findById(usuario.getIdRol())
+                .ifPresent(rol -> usuario.setRol(rol.getNombre()));
+        }
+    }
 
     public boolean inscribirUsuario(String proyectoId, String usuarioId) {
         
@@ -78,11 +89,18 @@ public class ParticipacionServiceImpl implements ParticipacionService {
                 .collect(Collectors.toList());
     }
 
+    public java.util.Set<String> obtenerIdsProyectosPorUsuario(String usuarioId) {
+        return participacionRepository.findByIdUsuario(usuarioId).stream()
+                .map(Participacion::getIdProyecto)
+                .collect(Collectors.toSet());
+    }
+
     public List<Usuarios> listarUsuariosPorProyecto(String proyectoId) {
         List<Participacion> participaciones = participacionRepository.findByIdProyecto(proyectoId);
         return participaciones.stream()
                 .map(p -> usuarioRepository.findById(p.getIdUsuario()).orElse(null))
                 .filter(u -> u != null)
+                .peek(this::cargarRolNombre)
                 .collect(Collectors.toList());
     }
 

@@ -64,6 +64,7 @@ public class TareaWebController {
             @RequestParam String proyectoId,
             @RequestParam(value = "usuariosSeleccionados", required = false) List<String> usuariosIds,
             @RequestParam("fechaEntrega") String fechaEntregaStr,
+            @RequestParam(value = "subtareasTitulo", required = false) List<String> subtareasTitulos,
             RedirectAttributes redirectAttributes) {
 
         Proyecto proyecto = proyectoService.buscarPorId(proyectoId);
@@ -75,18 +76,78 @@ public class TareaWebController {
         // Validar que la fecha de entrega no supere la fecha fin del proyecto
         if (proyecto.getFechaFin() != null && fechaEntrega.isAfter(proyecto.getFechaFin())) {
             redirectAttributes.addFlashAttribute("errorFecha",
-                    "La fecha de entrega (" + fechaEntrega + ") supera la fecha de fin del proyecto ("
+                    "La fecha de entrega (" + fechaEntrega + ") supera la fecha límite del proyecto ("
                     + proyecto.getFechaFin() + "). Por favor elige una fecha válida.");
-            return "redirect:/tareas/asignar/" + proyectoId;
+            return "redirect:/lider/proyecto/" + proyectoId + "/detalle";
         }
 
         // Estado por defecto
-        tarea.setEstado("Pendiente");
+        tarea.setEstado("PENDIENTE");
 
-        // Guardado con usuarios asignados
+        // Subtareas
+        if (subtareasTitulos != null) {
+            List<com.proaula.spring.synergy.Model.Tarea.Subtarea> subtareas = subtareasTitulos.stream()
+                .filter(t -> t != null && !t.trim().isEmpty())
+                .map(com.proaula.spring.synergy.Model.Tarea.Subtarea::new)
+                .collect(java.util.stream.Collectors.toList());
+            tarea.setSubtareas(subtareas);
+        }
+
         tareaService.guardarTarea(tarea, usuariosIds);
 
         return "redirect:/lider/proyecto/" + proyectoId + "/detalle";
+    }
+
+    // ============================================
+    //               ELIMINAR TAREA
+    // ============================================
+    @PostMapping("/{id}/eliminar")
+    public String eliminarTarea(
+            @PathVariable String id,
+            @RequestParam String proyectoId) {
+        tareaService.eliminar(id);
+        return "redirect:/lider/proyecto/" + proyectoId + "/detalle";
+    }
+
+    // ============================================
+    //       TOGGLE SUBTAREA (vista del líder)
+    // ============================================
+    @PostMapping("/{id}/subtarea/{subtareaId}/toggle")
+    public String toggleSubtarea(
+            @PathVariable String id,
+            @PathVariable String subtareaId,
+            @RequestParam String proyectoId) {
+
+        toggleSubtareaLogic(id, subtareaId);
+        return "redirect:/lider/proyecto/" + proyectoId + "/detalle";
+    }
+
+    // ============================================
+    //       TOGGLE SUBTAREA (vista del usuario)
+    // ============================================
+    @PostMapping("/{id}/subtarea/{subtareaId}/toggle-usuario")
+    public String toggleSubtareaUsuario(
+            @PathVariable String id,
+            @PathVariable String subtareaId,
+            @RequestParam(required = false) String proyectoId) {
+
+        toggleSubtareaLogic(id, subtareaId);
+        String redirect = "/tareas/buzon";
+        if (proyectoId != null && !proyectoId.isEmpty()) {
+            redirect += "?proyectoId=" + proyectoId;
+        }
+        return "redirect:" + redirect;
+    }
+
+    private void toggleSubtareaLogic(String tareaId, String subtareaId) {
+        Tarea tarea = tareaService.obtenerTareaPorId(tareaId);
+        if (tarea != null && tarea.getSubtareas() != null) {
+            tarea.getSubtareas().stream()
+                .filter(s -> subtareaId.equals(s.getId()))
+                .findFirst()
+                .ifPresent(s -> s.setCompletada(!s.isCompletada()));
+            tareaService.guardarTarea(tarea, null);
+        }
     }
 
 

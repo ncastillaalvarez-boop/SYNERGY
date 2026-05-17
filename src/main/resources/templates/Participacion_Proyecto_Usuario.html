@@ -14,9 +14,9 @@
     <div class="container">
       <div class="card">
 
-        <!-- BOTÓN VOLVER -->
+        <!-- BOTÓN VOLVER (dinámico: panel de usuario o página principal) -->
         <div class="top-buttons">
-          <a th:href="@{/dashboard}" class="btn-inicio">← Volver</a>
+          <a th:href="${returnUrl != null ? returnUrl : '/'}" class="btn-inicio">← Volver</a>
         </div>
 
         <!-- ENCABEZADO -->
@@ -25,11 +25,30 @@
           <p class="subtitle">Explora los proyectos publicados y únete al que más te interese.</p>
         </div>
 
-        <!-- BUSCADOR -->
-        <div class="buscador-wrapper" style="margin-bottom: 24px;">
-          <input type="text" id="buscador" onkeyup="buscarProyectos()"
+        <!-- FILTROS -->
+        <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px; align-items:center;">
+          <input type="text" id="filtroTexto" oninput="aplicarFiltros()"
                  placeholder="🔍 Buscar por nombre o descripción..."
-                 class="buscador-input">
+                 style="flex:1; min-width:180px; padding:8px 14px; border:1px solid #ccc;
+                        border-radius:20px; font-size:13px;">
+          <select id="filtroEstado" onchange="aplicarFiltros()"
+                  style="padding:8px 14px; border:1px solid #ccc; border-radius:20px; font-size:13px;">
+            <option value="">Todos los estados</option>
+            <option value="ACTIVO">Activo</option>
+            <option value="COMPLETADO">Completado</option>
+            <option value="CANCELADO">Cancelado</option>
+          </select>
+          <select id="filtroOrg" onchange="aplicarFiltros()"
+                  style="padding:8px 14px; border:1px solid #ccc; border-radius:20px; font-size:13px;">
+            <option value="">Todas las organizaciones</option>
+            <option value="Empresa">Empresa</option>
+            <option value="Proyecto estudiantil">Proyecto estudiantil</option>
+            <option value="ONG">ONG</option>
+            <option value="Institución educativa">Institución educativa</option>
+            <option value="Entidad gubernamental">Entidad gubernamental</option>
+            <option value="Comunidad">Comunidad</option>
+            <option value="Otro">Otro</option>
+          </select>
         </div>
 
         <!-- SIN PROYECTOS -->
@@ -40,7 +59,14 @@
         <!-- GRILLA DE TARJETAS -->
         <div class="proyectos-grid" id="gridProyectos">
 
-          <div th:each="p : ${proyectos}" class="proy-card">
+          <div th:each="p : ${proyectos}" class="proy-card"
+               th:attr="data-nombre=${p.nombre},data-desc=${p.descripcion},data-estado=${p.estado},data-org=${p.tipoOrganizacion}">
+
+            <!-- Imagen del proyecto -->
+            <img th:if="${p.nombreArchivo != null}"
+                 th:src="@{/proyectos/{id}/imagen(id=${p.id})}"
+                 alt="Imagen del proyecto"
+                 style="width:100%; height:140px; object-fit:cover; border-radius:10px; margin-bottom:12px;">
 
             <!-- Encabezado de tarjeta -->
             <div class="proy-card-top">
@@ -50,14 +76,50 @@
               </span>
             </div>
 
+            <!-- Badge organización -->
+            <div style="margin-bottom:6px;">
+              <span th:if="${p.tipoOrganizacion != null}"
+                    th:text="${p.tipoOrganizacion}"
+                    style="background:rgba(16,185,129,0.15); color:#34D399;
+                           border-radius:20px; padding:2px 10px; font-size:11px; font-weight:700;">
+              </span>
+              <span th:if="${p.tipoOrganizacion == null}"
+                    style="background:rgba(255,255,255,0.06); color:#64748B;
+                           border-radius:20px; padding:2px 10px; font-size:11px;">
+                Sin organización definida
+              </span>
+            </div>
+
+            <!-- Líder -->
+            <div style="margin-bottom:10px;">
+              <span th:text="'👤 ' + ${liderPorProyecto[p.id]}"
+                    style="font-size:12px; color:#94A3B8;">
+              </span>
+            </div>
+
             <!-- Descripción -->
             <p class="proy-desc" th:text="${p.descripcion}">Descripción del proyecto.</p>
+
+            <!-- Audiencia -->
+            <p th:if="${p.audiencia != null}"
+               style="font-size:15px; color:#ffffff; font-weight:600; margin-bottom:8px;">
+              🎯 <span th:text="${p.audiencia}"></span>
+            </p>
 
             <!-- Botón al fondo -->
             <div class="proy-footer">
 
+              <!-- Ya inscrito -->
+              <div th:if="${inscritosSet != null and inscritosSet.contains(p.id)}"
+                   style="width:100%; text-align:center; padding:10px;
+                          background:#d4edda; border-radius:10px;
+                          color:#155724; font-weight:700; font-size:14px;">
+                ✅ Ya estás inscrito en este proyecto
+              </div>
+
               <!-- Usuario autenticado: formulario de inscripción -->
-              <form th:if="${usuario != null and usuario.getId() != null}"
+              <form th:if="${usuario != null and usuario.getId() != null
+                             and (inscritosSet == null or !inscritosSet.contains(p.id))}"
                     th:action="@{'/proyectos/participacion/inscribir/' + ${p.id} + '/' + ${usuario.id}}"
                     method="post" style="width: 100%;">
                 <button type="submit" class="btn-participar">Participar</button>
@@ -73,6 +135,58 @@
             </div>
           </div>
 
+        <!-- PAGINACIÓN -->
+        <div th:if="${totalPages != null and totalPages > 1}"
+             style="display:flex; justify-content:center; align-items:center;
+                    gap:8px; margin-top:32px; flex-wrap:wrap;">
+
+          <a th:if="${hasPrev}"
+             th:href="${baseUrl + '?page=' + (currentPage - 1)}"
+             style="padding:8px 16px; border:1px solid rgba(255,255,255,0.1);
+                    border-radius:8px; background:rgba(255,255,255,0.05);
+                    color:#CBD5E1; text-decoration:none; font-size:13px;">
+            ⬅ Anterior
+          </a>
+          <span th:unless="${hasPrev}"
+                style="padding:8px 16px; border:1px solid rgba(255,255,255,0.05);
+                       border-radius:8px; color:#475569; font-size:13px; cursor:default;">
+            ⬅ Anterior
+          </span>
+
+          <th:block th:with="
+              startPage=${T(java.lang.Math).max(0, currentPage - 2)},
+              endPage=${T(java.lang.Math).min(totalPages - 1, currentPage + 2)}">
+            <th:block th:each="i : ${#numbers.sequence(startPage, endPage)}">
+              <a th:if="${i != currentPage}"
+                 th:href="${baseUrl + '?page=' + i}"
+                 th:text="${i + 1}"
+                 style="padding:8px 14px; border:1px solid rgba(255,255,255,0.1);
+                        border-radius:8px; background:rgba(255,255,255,0.05);
+                        color:#CBD5E1; text-decoration:none; font-size:13px; min-width:36px; text-align:center;">
+              </a>
+              <span th:if="${i == currentPage}"
+                    th:text="${i + 1}"
+                    style="padding:8px 14px; border:1px solid rgba(16,185,129,0.4);
+                           border-radius:8px; background:rgba(16,185,129,0.15);
+                           color:#34D399; font-size:13px; font-weight:700;
+                           min-width:36px; text-align:center;">
+              </span>
+            </th:block>
+          </th:block>
+
+          <a th:if="${hasNext}"
+             th:href="${baseUrl + '?page=' + (currentPage + 1)}"
+             style="padding:8px 16px; border:1px solid rgba(255,255,255,0.1);
+                    border-radius:8px; background:rgba(255,255,255,0.05);
+                    color:#CBD5E1; text-decoration:none; font-size:13px;">
+            Siguiente ➡
+          </a>
+          <span th:unless="${hasNext}"
+                style="padding:8px 16px; border:1px solid rgba(255,255,255,0.05);
+                       border-radius:8px; color:#475569; font-size:13px; cursor:default;">
+            Siguiente ➡
+          </span>
+
         </div>
 
       </div>
@@ -80,12 +194,19 @@
   </div>
 
   <script>
-    function buscarProyectos() {
-      const filter = document.getElementById("buscador").value.toLowerCase();
-      document.querySelectorAll(".proy-card").forEach(card => {
-        const nombre = card.querySelector(".proy-nombre").textContent.toLowerCase();
-        const desc   = card.querySelector(".proy-desc").textContent.toLowerCase();
-        card.style.display = (nombre.includes(filter) || desc.includes(filter)) ? "" : "none";
+    function aplicarFiltros() {
+      var texto  = document.getElementById('filtroTexto').value.toLowerCase();
+      var estado = document.getElementById('filtroEstado').value.toLowerCase();
+      var org    = document.getElementById('filtroOrg').value.toLowerCase();
+      document.querySelectorAll('.proy-card').forEach(function(card) {
+        var nombre  = (card.getAttribute('data-nombre') || '').toLowerCase();
+        var desc    = (card.getAttribute('data-desc')   || '').toLowerCase();
+        var est     = (card.getAttribute('data-estado') || '').toLowerCase();
+        var orgVal  = (card.getAttribute('data-org')    || '').toLowerCase();
+        var ok = (nombre.includes(texto) || desc.includes(texto))
+              && (estado === '' || est === estado)
+              && (org    === '' || orgVal.includes(org));
+        card.style.display = ok ? '' : 'none';
       });
     }
   </script>

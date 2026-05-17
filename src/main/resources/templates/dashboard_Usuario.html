@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard de Usuario – Synergy</title>
-  <link rel="stylesheet" href="/css/Usuarios_Dashboard.css">
+  <link rel="stylesheet" href="/css/Lista_Proyectos.css">
 </head>
 <body>
 
@@ -17,35 +17,93 @@
         <!-- ENCABEZADO -->
         <div class="header">
           <div class="top-buttons">
-            
-            <!-- Inicio -->
             <a th:href="@{/index}" class="btn-inicio">🏠 Inicio</a>
-
-            <!-- Logout -->
-            <a th:href="@{/logout}" class="btn-usuarios">🚪 Cerrar sesión</a>
-
+            <a th:href="@{/logout}" class="btn-usuarios btn-logout">🚪 Cerrar sesión</a>
           </div>
-
-          <h1>Bienvenido <span th:text="${usuario.nombre}">Usuario</span></h1>
+          <h1>Bienvenido, <span th:text="${usuario.nombre}">Usuario</span></h1>
           <p class="subtitle">Selecciona una acción para continuar.</p>
         </div>
 
-        <!-- MENÚ PRINCIPAL DE OPCIONES -->
+        <!-- MENSAJE DE INSCRIPCIÓN (flash) -->
+        <div th:if="${popup == 'success'}" class="alert alert-success" th:text="${mensaje}"></div>
+        <div th:if="${popup == 'yaInscrito'}" class="alert alert-error" th:text="${mensaje}"></div>
+
+        <!-- MENÚ PRINCIPAL -->
         <div class="menu-options">
-        
-        <a th:href="@{/proyectos/participar}" class="menu-btn">
-           📁 Proyectos disponibles
-        </a>
+          <a th:href="@{/proyectos/participar}" class="menu-btn">📁 Proyectos disponibles</a>
+          <a th:href="@{/usuario/credenciales}" class="menu-btn">🔐 Cambiar mis credenciales</a>
+        </div>
 
-          <!-- BUZÓN DE TAREAS -->
-          <a th:href="@{/tareas/buzon}" class="menu-btn">
-            📬 Buzón de tareas
-          </a>
+        <!-- MIS PROYECTOS INSCRITOS -->
+        <h2>📌 Mis proyectos</h2>
 
-          <!-- CAMBIAR CREDENCIALES -->
-          <a th:href="@{/usuario/credenciales}" class="menu-btn">
-            🔐 Cambiar mis credenciales
+        <div th:if="${#lists.isEmpty(proyectosInscritos)}"
+             style="text-align:center; color:#475569; padding:40px 0; font-size:0.95rem;">
+          Aún no te has inscrito en ningún proyecto.
+          <a th:href="@{/proyectos/participar}"
+             style="display:block; margin-top:10px; color:#10B981; font-weight:600;">
+            Ver proyectos disponibles →
           </a>
+        </div>
+
+        <div class="proyectos-grid" th:if="${!#lists.isEmpty(proyectosInscritos)}">
+
+          <div th:each="p : ${proyectosInscritos}" class="proy-card">
+
+            <!-- Imagen del proyecto -->
+            <img th:if="${p.nombreArchivo != null}"
+                 th:src="@{/proyectos/{id}/imagen(id=${p.id})}"
+                 alt="Imagen del proyecto"
+                 style="width:100%; height:140px; object-fit:cover; border-radius:10px; margin-bottom:12px;">
+
+            <!-- Encabezado de tarjeta -->
+            <div class="proy-card-top">
+              <h3 class="proy-nombre" th:text="${p.nombre}">Proyecto</h3>
+              <span class="proy-fecha"
+                    th:text="${p.fechaInicio != null ? '📅 ' + p.fechaInicio : ''}"></span>
+            </div>
+
+            <!-- Badge organización -->
+            <div style="margin-bottom:8px;">
+              <span th:if="${p.tipoOrganizacion != null}"
+                    th:text="${p.tipoOrganizacion}"
+                    style="background:rgba(16,185,129,0.15); color:#34D399;
+                           border-radius:20px; padding:2px 10px; font-size:11px; font-weight:700;">
+              </span>
+              <span th:if="${p.tipoOrganizacion == null}"
+                    style="background:rgba(255,255,255,0.06); color:#64748B;
+                           border-radius:20px; padding:2px 10px; font-size:11px;">
+                Sin organización definida
+              </span>
+            </div>
+
+            <!-- Descripción -->
+            <p class="proy-desc" th:text="${p.descripcion}">Descripción</p>
+
+            <!-- Audiencia -->
+            <p th:if="${p.audiencia != null}"
+               style="font-size:13px; color:#94A3B8; margin-bottom:10px;">
+              🎯 <span th:text="${p.audiencia}"></span>
+            </p>
+
+            <!-- Badge estado -->
+            <div style="margin-bottom:14px;">
+              <span th:text="${p.estado}"
+                    th:style="${p.estado == 'ACTIVO'} ? 'background:rgba(16,185,129,0.15);color:#34D399;' :
+                                (${p.estado == 'COMPLETADO'} ? 'background:rgba(59,130,246,0.15);color:#60A5FA;' :
+                                'background:rgba(239,68,68,0.15);color:#F87171;')"
+                    style="font-size:11px; font-weight:700; border-radius:20px; padding:2px 10px;">
+              </span>
+            </div>
+
+            <!-- Buzón de tareas -->
+            <div class="proy-footer">
+              <a th:href="@{/tareas/buzon(proyectoId=${p.id})}" class="btn-participar">
+                📬 Buzón de tareas
+              </a>
+            </div>
+
+          </div>
 
         </div>
 

@@ -34,6 +34,10 @@ public class Proyecto {
     private String nombreArchivo;
     private String tipoArchivo;
 
+    private String tipoOrganizacion;
+
+    private String audiencia;
+
     public Proyecto() {
         this.fechaCreacion = LocalDateTime.now();
         this.fechaActualizacion = LocalDateTime.now();
@@ -88,4 +92,10 @@ public class Proyecto {
 
     public String getTipoArchivo() { return tipoArchivo; }
     public void setTipoArchivo(String tipoArchivo) { this.tipoArchivo = tipoArchivo; }
+
+    public String getTipoOrganizacion() { return tipoOrganizacion; }
+    public void setTipoOrganizacion(String tipoOrganizacion) { this.tipoOrganizacion = tipoOrganizacion; }
+
+    public String getAudiencia() { return audiencia; }
+    public void setAudiencia(String audiencia) { this.audiencia = audiencia; }
 }

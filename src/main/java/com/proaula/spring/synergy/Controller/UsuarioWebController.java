@@ -1,6 +1,12 @@
 package com.proaula.spring.synergy.Controller;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -12,13 +18,14 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import com.proaula.spring.synergy.Model.Proyecto;
 import com.proaula.spring.synergy.Model.Tarea;
 import com.proaula.spring.synergy.Model.Usuarios;
+import com.proaula.spring.synergy.Service.ParticipacionService;
 import com.proaula.spring.synergy.Service.ProyectoService;
 import com.proaula.spring.synergy.Service.TareaService;
 import com.proaula.spring.synergy.Service.UsuarioService;
 
-import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpServletResponse;
 import java.security.Principal;
 import com.proaula.spring.synergy.Security.JwtTokenProvider;
@@ -38,6 +45,9 @@ public class UsuarioWebController {
 
     @Autowired
     private TareaService tareaService;
+
+    @Autowired
+    private ParticipacionService participacionService;
 
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
@@ -165,11 +175,13 @@ public class UsuarioWebController {
         if (principal == null) return "redirect:/login";
 
         Usuarios usuario = usuarioService.buscarPorCorreo(principal.getName());
-        if (usuario == null) {
-            return "redirect:/login";
-        }
+        if (usuario == null) return "redirect:/login";
+
+        List<Proyecto> proyectosInscritos =
+            participacionService.listarProyectosPorUsuario(usuario.getId());
 
         model.addAttribute("usuario", usuario);
+        model.addAttribute("proyectosInscritos", proyectosInscritos);
         return "dashboard_Usuario";
     }
 
@@ -189,20 +201,28 @@ public class UsuarioWebController {
     // BUZÓN DE TAREAS
     // ============================================
     @GetMapping("/tareas/buzon")
-    public String mostrarBuzonTareas(Principal principal, Model model) {
+    public String mostrarBuzonTareas(
+            Principal principal,
+            @RequestParam(required = false) String proyectoId,
+            Model model) {
 
         if (principal == null) return "redirect:/login";
 
         Usuarios usuario = usuarioService.buscarPorCorreo(principal.getName());
-        if (usuario == null) {
-            return "redirect:/login";
-        }
+        if (usuario == null) return "redirect:/login";
 
         List<Tarea> tareas = tareaService.obtenerTareasPorUsuario(usuario.getId());
 
+        if (proyectoId != null && !proyectoId.isEmpty()) {
+            tareas = tareas.stream()
+                .filter(t -> proyectoId.equals(t.getIdProyecto()))
+                .collect(java.util.stream.Collectors.toList());
+            Proyecto proyecto = proyectoService.buscarPorId(proyectoId);
+            model.addAttribute("proyectoFiltro", proyecto);
+        }
+
         model.addAttribute("usuario", usuario);
         model.addAttribute("tareas", tareas);
-
         return "Buzon_Tareas_Usuario";
     }
 
@@ -331,14 +351,47 @@ public class UsuarioWebController {
     }
 
     @GetMapping("/publico/proyectos")
-    public String verProyectosPublico(Model model) {
-        List<com.proaula.spring.synergy.Model.Proyecto> proyectos = proyectoService.listar();
-        proyectos.sort((a, b) -> {
-            if (a.getFechaCreacion() == null) return 1;
-            if (b.getFechaCreacion() == null) return -1;
-            return b.getFechaCreacion().compareTo(a.getFechaCreacion());
-        });
+    public String verProyectosPublico(
+            @RequestParam(defaultValue = "0") int page,
+            Principal principal, Model model) {
+
+        PageRequest pageable = PageRequest.of(
+                Math.max(page, 0), 12,
+                Sort.by(Sort.Direction.DESC, "fechaCreacion"));
+        Page<Proyecto> pagina = proyectoService.listarPaginadoSinDatos(pageable);
+        List<Proyecto> proyectos = pagina.getContent();
+
+        Map<String, String> liderPorProyecto = new HashMap<>();
+        for (Proyecto p : proyectos) {
+            if (p.getIdLider() != null) {
+                try {
+                    Usuarios lider = usuarioService.obtenerUsuarioPorId(p.getIdLider());
+                    liderPorProyecto.put(p.getId(), lider != null ? lider.getNombre() : "—");
+                } catch (Exception e) {
+                    liderPorProyecto.put(p.getId(), "—");
+                }
+            } else {
+                liderPorProyecto.put(p.getId(), "—");
+            }
+        }
+
+        if (principal != null) {
+            Usuarios usuario = usuarioService.buscarPorCorreo(principal.getName());
+            if (usuario != null) {
+                model.addAttribute("usuario", usuario);
+                model.addAttribute("inscritosSet",
+                        participacionService.obtenerIdsProyectosPorUsuario(usuario.getId()));
+            }
+        }
+
         model.addAttribute("proyectos", proyectos);
+        model.addAttribute("liderPorProyecto", liderPorProyecto);
+        model.addAttribute("currentPage", pagina.getNumber());
+        model.addAttribute("totalPages", pagina.getTotalPages());
+        model.addAttribute("hasPrev", pagina.hasPrevious());
+        model.addAttribute("hasNext", pagina.hasNext());
+        model.addAttribute("returnUrl", "/");
+        model.addAttribute("baseUrl", "/publico/proyectos");
         return "Participacion_Proyecto_Usuario";
     }
 }

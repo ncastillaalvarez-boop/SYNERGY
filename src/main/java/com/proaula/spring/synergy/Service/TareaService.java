@@ -17,4 +17,6 @@ public interface TareaService {
 
     void marcarComoCompletada(String idTarea);
 
+    void eliminar(String id);
+
 }

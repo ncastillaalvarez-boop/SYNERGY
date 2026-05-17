@@ -16,6 +16,8 @@ public interface ParticipacionService {
 
     List<Proyecto> listarProyectosPorUsuario(String usuarioId);
 
+    java.util.Set<String> obtenerIdsProyectosPorUsuario(String usuarioId);
+
     List<Usuarios> listarUsuariosPorProyecto(String proyectoId);
 
 }

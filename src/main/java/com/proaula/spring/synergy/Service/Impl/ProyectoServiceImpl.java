@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -65,6 +67,22 @@ public class ProyectoServiceImpl implements ProyectoService {
 
     public List<Proyecto> listarProyectos() {
         return proyectoRepository.findAll();
+    }
+
+    public List<Proyecto> listarSinDatos() {
+        return proyectoRepository.findAllWithoutData();
+    }
+
+    public Page<Proyecto> listarPaginado(Pageable pageable) {
+        return proyectoRepository.findAll(pageable);
+    }
+
+    public Page<Proyecto> listarPaginadoSinDatos(Pageable pageable) {
+        return proyectoRepository.findAllPagedWithoutData(pageable);
+    }
+
+    public List<Proyecto> obtenerProyectosDeLiderSinDatos(String idLider) {
+        return proyectoRepository.findByIdLiderWithoutData(idLider);
     }
 }
 

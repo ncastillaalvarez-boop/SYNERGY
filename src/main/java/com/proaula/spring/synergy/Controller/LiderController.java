@@ -72,7 +72,7 @@ public class LiderController {
         if (lider == null)
             return "redirect:/login";
 
-        List<Proyecto> proyectos = proyectoService.obtenerProyectosDeLider(lider.getId());
+        List<Proyecto> proyectos = proyectoService.obtenerProyectosDeLiderSinDatos(lider.getId());
 
         model.addAttribute("usuario", lider);
         model.addAttribute("proyectos", proyectos);
@@ -140,6 +140,7 @@ public class LiderController {
     @PostMapping("/proyecto/{id}/actualizar")
     public String actualizarProyecto(@PathVariable String id,
                                      @ModelAttribute Proyecto proyecto,
+                                     @RequestParam(value = "archivo", required = false) MultipartFile archivo,
                                      Principal principal) {
 
         Usuarios lider = validarLider(principal);
@@ -149,9 +150,19 @@ public class LiderController {
         proyecto.setId(id);
         proyecto.setIdLider(lider.getId());
 
-        proyectoService.guardar(proyecto, null);
+        // Si no se sube un archivo nuevo, preservar la imagen existente
+        if (archivo == null || archivo.isEmpty()) {
+            Proyecto existing = proyectoService.buscarPorId(id);
+            if (existing != null && existing.getDatos() != null) {
+                proyecto.setDatos(existing.getDatos());
+                proyecto.setNombreArchivo(existing.getNombreArchivo());
+                proyecto.setTipoArchivo(existing.getTipoArchivo());
+            }
+        }
 
-        return "redirect:/lider/dashboard";  // ← CORREGIDO
+        proyectoService.guardar(proyecto, archivo);
+
+        return "redirect:/lider/dashboard";
     }
 
     // =======================================================
@@ -165,7 +176,7 @@ public class LiderController {
         if (lider == null)
             return "redirect:/login";
 
-        List<Proyecto> proyectos = proyectoService.obtenerProyectosDeLider(lider.getId());
+        List<Proyecto> proyectos = proyectoService.obtenerProyectosDeLiderSinDatos(lider.getId());
         model.addAttribute("proyectos", proyectos);
 
         java.util.Map<String, java.util.List<Usuarios>> participantesPorProyecto = new java.util.HashMap<>();

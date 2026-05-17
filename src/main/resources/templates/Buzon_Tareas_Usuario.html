@@ -6,7 +6,6 @@
   <title>Mis Tareas – Synergy</title>
   <link rel="stylesheet" href="/css/Usuarios_Dashboard.css">
 </head>
-
 <body>
 
 <div class="hero">
@@ -18,63 +17,120 @@
       <!-- ENCABEZADO -->
       <div class="header">
         <div class="top-buttons">
-
-          <!-- Volver al dashboard -->
-          <a th:href="@{/dashboard}" class="btn-inicio">⬅ Volver al panel de usuario</a>
-
-          <!-- Logout -->
+          <a th:href="@{/dashboard}" class="btn-inicio">⬅ Volver al panel</a>
           <a th:href="@{/logout}" class="btn-usuarios">🚪 Cerrar sesión</a>
-
         </div>
 
-        <h1>Mis Tareas</h1>
-        <p class="subtitle">Aquí aparecen las tareas que te asignó tu líder de proyecto.</p>
+        <!-- Título dinámico según si viene filtrado por proyecto -->
+        <h1 th:if="${proyectoFiltro == null}">📬 Mis Tareas</h1>
+        <h1 th:if="${proyectoFiltro != null}">
+          📬 Tareas de: <span th:text="${proyectoFiltro.nombre}" style="color:#0F6E56;"></span>
+        </h1>
+        <p class="subtitle">
+          Aquí aparecen las tareas que te asignaron.
+        </p>
       </div>
 
+      <!-- MENSAJE DE ÉXITO AL ENTREGAR -->
+      <div th:if="${mensajeExito}"
+           style="display:flex; align-items:center; gap:12px;
+                  background:#d4edda; border:1px solid #b7dece; border-radius:12px;
+                  padding:14px 18px; margin-bottom:20px; color:#155724; font-size:14px; font-weight:600;">
+        <span style="font-size:20px;">✅</span>
+        <span th:text="${mensajeExito}"></span>
+      </div>
+
+      <!-- SIN TAREAS -->
+      <p th:if="${#lists.isEmpty(tareas)}"
+         style="text-align:center; color:#aaa; padding:30px; font-size:15px;">
+        No tienes tareas asignadas en este momento.
+      </p>
+
       <!-- LISTADO DE TAREAS -->
-      <div class="menu-options" style="display:flex; flex-direction:column; gap:20px;">
+      <div style="display:flex; flex-direction:column; gap:14px;">
 
-        <!-- Si no hay tareas -->
-        <p th:if="${tareas.size() == 0}" style="color:white; text-align:center;">
-          No tienes tareas asignadas actualmente.
-        </p>
+        <div th:each="t : ${tareas}"
+             style="background:white; border-radius:14px; padding:16px 20px;
+                    border:1px solid #e8e8e8; box-shadow:0 2px 8px rgba(0,0,0,0.05);">
 
-        <!-- Cada tarea -->
-        <div th:each="t : ${tareas}" class="menu-btn"
-             style="
-                display:flex;
-                justify-content:space-between;
-                align-items:center;
-                padding:15px;
-                border:1px solid rgba(255,255,255,0.3);
-                border-radius:15px;
-             ">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
 
-          <div style="display:flex; flex-direction:column;">
-            <span style="font-size:18px; font-weight:bold;" th:text="${t.titulo}">Título</span>
+            <!-- Info de la tarea -->
+            <div style="flex:1;">
+              <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+                <strong style="font-size:16px; color:#1a1a2e;" th:text="${t.titulo}">Título</strong>
+                <!-- Badge estado con color -->
+                <span th:text="${t.estado}"
+                      th:style="${t.estado == 'PENDIENTE'} ? 'background:#f8d7da;color:#721c24;' :
+                                  (${t.estado == 'EN_PROGRESO'} ? 'background:#fff3cd;color:#856404;' :
+                                  (${t.estado == 'COMPLETADA'} ? 'background:#d4edda;color:#155724;' :
+                                  'background:#e2e3e5;color:#383d41;'))"
+                      style="font-size:11px; font-weight:700; border-radius:12px;
+                             padding:2px 10px; white-space:nowrap;">
+                </span>
+              </div>
 
-            <span style="font-size:14px; opacity:0.8;" th:text="${t.descripcion}">
-              Descripción de la tarea
-            </span>
+              <p style="font-size:13px; color:#555; margin-bottom:6px;" th:text="${t.descripcion}">
+                Descripción
+              </p>
 
-            <span style="margin-top:5px; font-size:14px;">
-              ⏳ Fecha límite:
-              <strong th:text="${t.fechaEntrega}"></strong>
-            </span>
+              <span style="font-size:13px; color:#888;">
+                ⏳ Fecha límite: <strong th:text="${t.fechaEntrega}">—</strong>
+              </span>
 
-            <span style="margin-top:5px; font-size:14px;">
-              📌 Estado:
-              <strong th:text="${t.estado}"></strong>
-            </span>
+              <!-- Subtareas (si las hay) -->
+              <div th:if="${!#lists.isEmpty(t.subtareas)}"
+                   style="margin-top:14px; background:#f4faf7; border-radius:12px; padding:14px 16px; border:1px solid #d0ece4;">
+
+                <!-- Cabecera: título + progreso -->
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                  <span style="font-size:12px; font-weight:700; color:#0F6E56; text-transform:uppercase; letter-spacing:0.5px;">
+                    Subtareas
+                  </span>
+                  <span style="font-size:12px; color:#555; font-weight:600;"
+                        th:text="${t.subtareasCompletadas} + '/' + ${#lists.size(t.subtareas)} + ' (' + ${t.porcentajeSubtareas} + '%)'">
+                  </span>
+                </div>
+
+                <!-- Barra de progreso -->
+                <div style="background:#d0ece4; border-radius:99px; height:6px; margin-bottom:12px;">
+                  <div th:style="'background:#0F6E56; border-radius:99px; height:6px; transition:width 0.3s; width:' + ${t.porcentajeSubtareas} + '%;'"></div>
+                </div>
+
+                <!-- Lista de subtareas -->
+                <div style="display:flex; flex-direction:column; gap:6px;">
+                  <label th:each="s : ${t.subtareas}"
+                         th:style="${s.completada}
+                             ? 'display:flex; align-items:flex-start; gap:10px; padding:8px 12px; border-radius:8px; cursor:pointer; background:#e6f4ee; border:1px solid #b7dece;'
+                             : 'display:flex; align-items:flex-start; gap:10px; padding:8px 12px; border-radius:8px; cursor:pointer; background:white; border:1px solid #e2e8e5;'">
+                    <form th:action="@{/tareas/{tid}/subtarea/{sid}/toggle-usuario(tid=${t.id},sid=${s.id})}"
+                          method="post" style="margin:0; line-height:0;">
+                      <input type="hidden" name="proyectoId" th:value="${proyectoFiltro != null ? proyectoFiltro.id : ''}">
+                      <input type="checkbox"
+                             th:checked="${s.completada}"
+                             onchange="this.form.submit()"
+                             style="cursor:pointer; width:17px; height:17px; accent-color:#0F6E56; margin-top:1px; flex-shrink:0;">
+                    </form>
+                    <span th:text="${s.titulo}"
+                          th:style="${s.completada}
+                              ? 'font-size:13px; color:#888; text-decoration:line-through; line-height:1.5;'
+                              : 'font-size:13px; color:#333; line-height:1.5;'">
+                    </span>
+                  </label>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- Botón entregar -->
+            <a th:href="@{/tareas/entregar/{id}(id=${t.id})}"
+               style="background:#0F6E56; color:white; border-radius:10px;
+                      padding:10px 18px; font-size:13px; font-weight:700;
+                      text-decoration:none; white-space:nowrap; align-self:center;">
+              📤 Entregar
+            </a>
+
           </div>
-
-          <!-- 📤 BOTÓN PARA ENTREGAR LA TAREA -->
-          <a th:href="@{/tareas/entregar/{id}(id=${t.id})}"
-             class="btn-usuarios"
-             style="padding:10px 15px; font-size:14px; background:#00aaff;">
-              📤 Entregar tarea
-          </a>
-
         </div>
 
       </div>
@@ -86,4 +142,3 @@
 
 </body>
 </html>
-

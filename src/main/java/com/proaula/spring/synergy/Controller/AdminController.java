@@ -5,6 +5,9 @@ import java.util.Map;
 import java.util.HashMap;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -98,34 +101,52 @@ public class AdminController {
         return "Admin_Ver_Proyecto";
     }
 
+    private static final int PAGE_SIZE = 12;
+
     @GetMapping("/proyectos")
-    public String verProyectos(Principal principal, Model model) {
+    public String verProyectos(
+            @RequestParam(defaultValue = "0") int page,
+            Principal principal, Model model) {
 
         Usuarios admin = validarAdmin(principal);
         if (admin == null)
             return "redirect:/login";
 
-        List<Proyecto> proyectos = proyectoService.listar();
+        PageRequest pageable = PageRequest.of(
+                Math.max(page, 0), PAGE_SIZE,
+                Sort.by(Sort.Direction.DESC, "fechaCreacion"));
 
-        // Ordenar por fechaCreacion descendente (más recientes primero)
-        proyectos.sort((a, b) -> {
-            if (a.getFechaCreacion() == null) return 1;
-            if (b.getFechaCreacion() == null) return -1;
-            return b.getFechaCreacion().compareTo(a.getFechaCreacion());
-        });
+        Page<Proyecto> pagina = proyectoService.listarPaginadoSinDatos(pageable);
+        List<Proyecto> proyectos = pagina.getContent();
 
-        // Mapa proyectoId → lista de participantes inscritos
         Map<String, List<Usuarios>> participantesPorProyecto = new HashMap<>();
+        Map<String, String> liderPorProyecto = new HashMap<>();
+
         for (Proyecto p : proyectos) {
             participantesPorProyecto.put(p.getId(),
                     participacionService.listarUsuariosPorProyecto(p.getId()));
+            if (p.getIdLider() != null) {
+                try {
+                    Usuarios lider = usuarioService.obtenerUsuarioPorId(p.getIdLider());
+                    liderPorProyecto.put(p.getId(), lider != null ? lider.getNombre() : "—");
+                } catch (Exception e) {
+                    liderPorProyecto.put(p.getId(), "—");
+                }
+            } else {
+                liderPorProyecto.put(p.getId(), "—");
+            }
         }
 
         model.addAttribute("usuario", admin);
         model.addAttribute("proyectos", proyectos);
         model.addAttribute("participantesPorProyecto", participantesPorProyecto);
+        model.addAttribute("liderPorProyecto", liderPorProyecto);
+        model.addAttribute("currentPage", pagina.getNumber());
+        model.addAttribute("totalPages", pagina.getTotalPages());
+        model.addAttribute("totalElements", pagina.getTotalElements());
+        model.addAttribute("hasPrev", pagina.hasPrevious());
+        model.addAttribute("hasNext", pagina.hasNext());
 
-        // Vista: Administrador_Dashboard.html
         return "Administrador_Dashboard";
     }
 

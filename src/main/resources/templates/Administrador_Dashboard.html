@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Panel de Administración – Synergy</title>
-  <link rel="stylesheet" href="/css/Administrador_Dashboard.css" />
+  <link rel="stylesheet" href="/css/Lista_Proyectos.css" />
 </head>
 <body>
 
@@ -27,90 +27,222 @@
         <!-- Mensaje de éxito o error -->
         <div th:if="${mensaje}" class="alert-success" th:text="${mensaje}"></div>
 
-        <!-- Sección de proyectos -->
-        <div class="seccion-panel">
+        <!-- Contador + info de página -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:8px;">
+          <span style="color:#94A3B8; font-size:14px;">
+            📋 <span th:text="${totalElements}">0</span> proyectos en total ·
+            Página <span th:text="${currentPage + 1}">1</span> de <span th:text="${totalPages}">1</span>
+          </span>
+          <span style="color:#475569; font-size:12px;">
+            (mostrando 12 por página · ordenados más recientes primero)
+          </span>
+        </div>
 
-          <div class="seccion-panel-header">
-            <span>📋 Proyectos registrados</span>
-            <span class="seccion-count"
-                  th:text="${#lists.size(proyectos)} + ' proyecto(s)'">0 proyectos</span>
-          </div>
+        <!-- Filtros (aplican sobre la página actual) -->
+        <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px; align-items:center;">
+          <input type="text" id="buscadorProyectos" oninput="filtrarProyectos()"
+                 placeholder="🔍 Buscar en esta página..."
+                 class="buscador-input" style="flex:1; min-width:160px;">
+          <select id="filtroEstadoAdmin" onchange="filtrarProyectos()"
+                  style="padding:8px 14px; border:1px solid rgba(255,255,255,0.1);
+                         border-radius:20px; font-size:13px;
+                         background:rgba(15,23,42,0.6); color:#CBD5E1;">
+            <option value="">Todos los estados</option>
+            <option value="ACTIVO">Activo</option>
+            <option value="COMPLETADO">Completado</option>
+            <option value="CANCELADO">Cancelado</option>
+          </select>
+          <select id="filtroOrgAdmin" onchange="filtrarProyectos()"
+                  style="padding:8px 14px; border:1px solid rgba(255,255,255,0.1);
+                         border-radius:20px; font-size:13px;
+                         background:rgba(15,23,42,0.6); color:#CBD5E1;">
+            <option value="">Todas las organizaciones</option>
+            <option value="Empresa">Empresa</option>
+            <option value="Proyecto estudiantil">Proyecto estudiantil</option>
+            <option value="ONG">ONG</option>
+            <option value="Institución educativa">Institución educativa</option>
+            <option value="Entidad gubernamental">Entidad gubernamental</option>
+            <option value="Comunidad">Comunidad</option>
+            <option value="Otro">Otro</option>
+          </select>
+          <input type="text" id="filtroLiderAdmin" oninput="filtrarProyectos()"
+                 placeholder="👤 Líder..."
+                 style="padding:8px 14px; border:1px solid rgba(255,255,255,0.1);
+                        border-radius:20px; font-size:13px; min-width:130px;
+                        background:rgba(15,23,42,0.6); color:#CBD5E1;">
+        </div>
 
-          <div class="seccion-panel-body">
+        <!-- Sin proyectos -->
+        <div th:if="${#lists.isEmpty(proyectos)}" class="empty-invitado">
+          No hay proyectos registrados.
+        </div>
 
-            <!-- Buscador -->
-            <div class="buscador-wrapper">
-              <input type="text" id="buscadorProyectos" onkeyup="filtrarProyectos()"
-                     placeholder="🔍 Buscar por nombre o estado..."
-                     class="buscador-input">
+        <!-- Grilla de tarjetas -->
+        <div class="proyectos-grid" id="gridProyectos">
+
+          <div th:each="proyecto : ${proyectos}" class="proy-card"
+               th:attr="data-nombre=${proyecto.nombre},
+                        data-estado=${proyecto.estado},
+                        data-org=${proyecto.tipoOrganizacion},
+                        data-lider=${liderPorProyecto[proyecto.id]}">
+
+            <!-- Imagen del proyecto -->
+            <img th:if="${proyecto.nombreArchivo != null}"
+                 th:src="@{/proyectos/{id}/imagen(id=${proyecto.id})}"
+                 alt="Imagen del proyecto"
+                 style="width:100%; height:140px; object-fit:cover; border-radius:10px; margin-bottom:12px;">
+
+            <!-- Encabezado de tarjeta -->
+            <div class="proy-card-top">
+              <h3 class="proy-nombre" th:text="${proyecto.nombre}">Proyecto</h3>
+              <span class="proy-fecha"
+                    th:text="${proyecto.fechaInicio != null ? '📅 ' + proyecto.fechaInicio : ''}"></span>
             </div>
 
-            <!-- Sin proyectos -->
-            <div th:if="${#lists.isEmpty(proyectos)}" class="seccion-empty">
-              No hay proyectos registrados.
+            <!-- Badge organización -->
+            <div style="margin-bottom:6px;">
+              <span th:if="${proyecto.tipoOrganizacion != null}"
+                    th:text="${proyecto.tipoOrganizacion}"
+                    style="background:rgba(16,185,129,0.15); color:#34D399;
+                           border-radius:20px; padding:2px 10px; font-size:11px; font-weight:700;">
+              </span>
+              <span th:if="${proyecto.tipoOrganizacion == null}"
+                    style="background:rgba(255,255,255,0.06); color:#64748B;
+                           border-radius:20px; padding:2px 10px; font-size:11px;">
+                Sin organización definida
+              </span>
             </div>
 
-            <!-- Tarjeta por proyecto -->
-            <div th:each="proyecto : ${proyectos}" class="proyecto-card" th:id="'card-' + ${proyecto.id}">
+            <!-- Líder -->
+            <div style="margin-bottom:10px;">
+              <span th:text="'👤 ' + ${liderPorProyecto[proyecto.id]}"
+                    style="font-size:12px; color:#94A3B8;">
+              </span>
+            </div>
 
-              <!-- Header: nombre + badge estado -->
-              <div class="proyecto-card-header">
-                <h3 class="proyecto-nombre" th:text="${proyecto.nombre}">Nombre</h3>
-                <span class="badge-estado"
-                      th:classappend="${proyecto.estado == 'ACTIVO'} ? ' badge-activo' :
-                                      (${proyecto.estado == 'COMPLETADO'} ? ' badge-completado' : ' badge-otro')"
-                      th:text="${proyecto.estado ?: 'SIN ESTADO'}">Estado</span>
+            <!-- Descripción -->
+            <p class="proy-desc" th:text="${proyecto.descripcion}">Descripción</p>
+
+            <!-- Participantes -->
+            <div style="margin-bottom:14px;">
+              <span style="font-size:12px; color:#64748B; font-weight:600;">
+                👥 Participantes (<span th:text="${#lists.size(participantesPorProyecto[proyecto.id])}">0</span>):
+              </span>
+              <div th:if="${#lists.isEmpty(participantesPorProyecto[proyecto.id])}"
+                   style="font-size:12px; color:#475569; margin-top:4px;">
+                Sin participantes inscritos
               </div>
-
-              <!-- Descripción -->
-              <p class="proyecto-desc" th:text="${proyecto.descripcion}">Descripción</p>
-
-              <!-- Meta: fechas -->
-              <div class="proyecto-meta">
-                <span>📅 Inicio: <strong th:text="${proyecto.fechaInicio ?: '—'}">—</strong></span>
-                <span th:if="${proyecto.fechaFin != null}">
-                  · Fin: <strong th:text="${proyecto.fechaFin}">—</strong>
+              <div th:unless="${#lists.isEmpty(participantesPorProyecto[proyecto.id])}"
+                   style="display:flex; flex-wrap:wrap; gap:4px; margin-top:6px;">
+                <span th:each="u : ${participantesPorProyecto[proyecto.id]}"
+                      th:text="${u.nombre}"
+                      style="background:rgba(255,255,255,0.05); color:#CBD5E1;
+                             border-radius:12px; padding:2px 8px; font-size:11px;">
                 </span>
               </div>
+            </div>
 
-              <!-- Participantes -->
-              <div class="proyecto-participantes">
-                <span class="part-label">
-                  👥 Participantes (<span th:text="${#lists.size(participantesPorProyecto[proyecto.id])}">0</span>):
-                </span>
-                <div th:if="${#lists.isEmpty(participantesPorProyecto[proyecto.id])}" class="part-empty">
-                  Sin participantes inscritos
-                </div>
-                <div class="part-tags" th:unless="${#lists.isEmpty(participantesPorProyecto[proyecto.id])}">
-                  <span class="part-tag"
-                        th:each="u : ${participantesPorProyecto[proyecto.id]}"
-                        th:text="${u.nombre}">Usuario</span>
-                </div>
-              </div>
+            <!-- Badge estado -->
+            <div style="margin-bottom:14px;">
+              <span th:text="${proyecto.estado ?: 'SIN ESTADO'}"
+                    th:style="${proyecto.estado == 'ACTIVO'} ? 'background:rgba(16,185,129,0.15);color:#34D399;' :
+                               (${proyecto.estado == 'COMPLETADO'} ? 'background:rgba(59,130,246,0.15);color:#60A5FA;' :
+                               'background:rgba(239,68,68,0.15);color:#F87171;')"
+                    style="font-size:11px; font-weight:700; border-radius:20px; padding:2px 10px;">
+              </span>
+            </div>
 
-              <!-- Acciones -->
-              <div class="proyecto-acciones">
+            <!-- Acciones -->
+            <div class="proy-footer">
+              <div style="display:flex; gap:8px; flex-wrap:wrap;">
                 <a th:href="@{/admin/proyecto/{id}(id=${proyecto.id})}" class="btn-ver">👁 Ver detalle</a>
 
                 <form th:action="@{/admin/proyecto/{id}/aceptar(id=${proyecto.id})}" method="post"
-                      style="display:inline;">
+                      style="margin:0;">
                   <button type="submit" class="btn-aceptar">✅ Aceptar</button>
                 </form>
 
                 <form th:action="@{/admin/proyecto/{id}/eliminar(id=${proyecto.id})}" method="post"
-                      style="display:inline;">
+                      style="margin:0;">
                   <button type="submit" class="btn-eliminar"
-                    onclick="return confirm('¿Seguro que deseas eliminar este proyecto?')">
+                          onclick="return confirm('¿Seguro que deseas eliminar este proyecto?')">
                     🗑 Eliminar
                   </button>
                 </form>
               </div>
-
             </div>
-            <!-- fin th:each -->
 
           </div>
+
         </div>
+
+        <!-- PAGINACIÓN -->
+        <div th:if="${totalPages > 1}"
+             style="display:flex; justify-content:center; align-items:center;
+                    gap:8px; margin-top:32px; flex-wrap:wrap;">
+
+          <!-- Anterior -->
+          <a th:if="${hasPrev}"
+             th:href="@{/admin/proyectos(page=${currentPage - 1})}"
+             style="padding:8px 16px; border:1px solid rgba(255,255,255,0.1);
+                    border-radius:8px; background:rgba(255,255,255,0.05);
+                    color:#CBD5E1; text-decoration:none; font-size:13px;
+                    transition:background 0.2s;"
+             onmouseover="this.style.background='rgba(255,255,255,0.1)'"
+             onmouseout="this.style.background='rgba(255,255,255,0.05)'">
+            ⬅ Anterior
+          </a>
+          <span th:unless="${hasPrev}"
+                style="padding:8px 16px; border:1px solid rgba(255,255,255,0.05);
+                       border-radius:8px; color:#475569; font-size:13px; cursor:default;">
+            ⬅ Anterior
+          </span>
+
+          <!-- Números de página (ventana de 5 alrededor de la actual) -->
+          <th:block th:with="
+              startPage=${T(java.lang.Math).max(0, currentPage - 2)},
+              endPage=${T(java.lang.Math).min(totalPages - 1, currentPage + 2)}">
+            <th:block th:each="i : ${#numbers.sequence(startPage, endPage)}">
+              <a th:if="${i != currentPage}"
+                 th:href="@{/admin/proyectos(page=${i})}"
+                 th:text="${i + 1}"
+                 style="padding:8px 14px; border:1px solid rgba(255,255,255,0.1);
+                        border-radius:8px; background:rgba(255,255,255,0.05);
+                        color:#CBD5E1; text-decoration:none; font-size:13px;
+                        min-width:36px; text-align:center;
+                        transition:background 0.2s;"
+                 onmouseover="this.style.background='rgba(255,255,255,0.1)'"
+                 onmouseout="this.style.background='rgba(255,255,255,0.05)'">
+              </a>
+              <span th:if="${i == currentPage}"
+                    th:text="${i + 1}"
+                    style="padding:8px 14px; border:1px solid rgba(16,185,129,0.4);
+                           border-radius:8px; background:rgba(16,185,129,0.15);
+                           color:#34D399; font-size:13px; font-weight:700;
+                           min-width:36px; text-align:center;">
+              </span>
+            </th:block>
+          </th:block>
+
+          <!-- Siguiente -->
+          <a th:if="${hasNext}"
+             th:href="@{/admin/proyectos(page=${currentPage + 1})}"
+             style="padding:8px 16px; border:1px solid rgba(255,255,255,0.1);
+                    border-radius:8px; background:rgba(255,255,255,0.05);
+                    color:#CBD5E1; text-decoration:none; font-size:13px;
+                    transition:background 0.2s;"
+             onmouseover="this.style.background='rgba(255,255,255,0.1)'"
+             onmouseout="this.style.background='rgba(255,255,255,0.05)'">
+            Siguiente ➡
+          </a>
+          <span th:unless="${hasNext}"
+                style="padding:8px 16px; border:1px solid rgba(255,255,255,0.05);
+                       border-radius:8px; color:#475569; font-size:13px; cursor:default;">
+            Siguiente ➡
+          </span>
+
+        </div>
+        <!-- fin paginación -->
 
       </div>
     </div>
@@ -118,11 +250,22 @@
 
   <script>
     function filtrarProyectos() {
-      const filter = document.getElementById("buscadorProyectos").value.toLowerCase();
-      document.querySelectorAll(".proyecto-card").forEach(card => {
-        const nombre = card.querySelector(".proyecto-nombre").textContent.toLowerCase();
-        const badge  = card.querySelector(".badge-estado").textContent.toLowerCase();
-        card.style.display = (nombre.includes(filter) || badge.includes(filter)) ? "" : "none";
+      var texto  = document.getElementById("buscadorProyectos").value.toLowerCase();
+      var estado = document.getElementById("filtroEstadoAdmin").value.toLowerCase();
+      var org    = document.getElementById("filtroOrgAdmin").value.toLowerCase();
+      var lider  = document.getElementById("filtroLiderAdmin").value.toLowerCase();
+
+      document.querySelectorAll(".proy-card").forEach(function(card) {
+        var nombre   = (card.getAttribute("data-nombre") || "").toLowerCase();
+        var est      = (card.getAttribute("data-estado") || "").toLowerCase();
+        var orgVal   = (card.getAttribute("data-org")    || "").toLowerCase();
+        var liderVal = (card.getAttribute("data-lider")  || "").toLowerCase();
+
+        var ok = nombre.includes(texto)
+              && (estado === "" || est === estado)
+              && (org    === "" || orgVal.includes(org))
+              && (lider  === "" || liderVal.includes(lider));
+        card.style.display = ok ? "" : "none";
       });
     }
   </script>

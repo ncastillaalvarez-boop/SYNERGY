@@ -28,17 +28,44 @@
         </div>
 
         <!-- FORMULARIO -->
-        <form th:action="@{/lider/proyecto/{id}/actualizar(id=${proyecto.id})}" 
-              th:object="${proyecto}" method="post">
+        <form th:action="@{/lider/proyecto/{id}/actualizar(id=${proyecto.id})}"
+              th:object="${proyecto}" method="post" enctype="multipart/form-data">
 
           <div class="form-group">
             <label>Nombre del proyecto</label>
             <input type="text" th:field="*{nombre}" placeholder="Nombre del proyecto" required />
           </div>
 
+          <!-- AUDIENCIA — campo destacado -->
+          <div class="form-group" style="background:#f0f9f6; border:2px solid #0F6E56; border-radius:12px; padding:16px 20px; margin-bottom:20px;">
+            <label style="font-size:17px; font-weight:700; color:#0F6E56; display:block; margin-bottom:6px;">
+              ¿A quién va dirigido este proyecto?
+            </label>
+            <p style="font-size:13px; color:#555; margin-bottom:10px;">
+              Describe la audiencia o público objetivo del proyecto.
+            </p>
+            <textarea th:field="*{audiencia}" placeholder="Ej: Jóvenes universitarios de primer año, comunidades rurales..."
+                      rows="3" required
+                      style="width:100%; padding:10px 14px; border:1px solid #ccc; border-radius:8px; font-size:14px; resize:vertical;"></textarea>
+          </div>
+
           <div class="form-group">
             <label>Descripción</label>
             <textarea th:field="*{descripcion}" placeholder="Descripción del proyecto..." rows="4" required></textarea>
+          </div>
+
+          <div class="form-group">
+            <label>Tipo de organización</label>
+            <select th:field="*{tipoOrganizacion}" required>
+              <option value="">— Selecciona el tipo —</option>
+              <option value="Empresa">Empresa</option>
+              <option value="Proyecto estudiantil">Proyecto estudiantil</option>
+              <option value="ONG">ONG</option>
+              <option value="Institución educativa">Institución educativa</option>
+              <option value="Entidad gubernamental">Entidad gubernamental</option>
+              <option value="Comunidad">Comunidad</option>
+              <option value="Otro">Otro</option>
+            </select>
           </div>
 
           <div class="form-row">
@@ -59,6 +86,20 @@
               <option value="COMPLETADO">Completado</option>
               <option value="CANCELADO">Cancelado</option>
             </select>
+          </div>
+
+          <!-- Imagen del proyecto -->
+          <div class="form-group">
+            <label>Imagen del proyecto</label>
+            <div th:if="${proyecto.nombreArchivo != null}"
+                 style="margin-bottom:10px;">
+              <img th:src="@{/proyectos/{id}/imagen(id=${proyecto.id})}"
+                   alt="Imagen actual"
+                   style="max-height:160px; border-radius:10px; object-fit:cover; display:block; margin-bottom:6px;">
+              <span style="font-size:12px; color:#888;">Imagen actual · Sube una nueva para reemplazarla</span>
+            </div>
+            <input type="file" name="archivo" accept="image/*"
+                   style="padding:6px 0; font-size:13px;" />
           </div>
 
           <div class="form-actions">

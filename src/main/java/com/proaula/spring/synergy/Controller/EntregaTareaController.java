@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.proaula.spring.synergy.Model.EntregaTarea;
 import com.proaula.spring.synergy.Model.Tarea;
@@ -61,7 +62,8 @@ public class EntregaTareaController {
             @RequestParam("archivo") MultipartFile archivo,
             @RequestParam(value = "descripcionEvidencia", required = false) String descripcionEvidencia,
             Principal principal,
-            Model model) {
+            Model model,
+            RedirectAttributes redirectAttributes) {
 
         Tarea tarea = tareaService.obtenerTareaPorId(id);
         model.addAttribute("tarea", tarea);
@@ -85,7 +87,9 @@ public class EntregaTareaController {
             return "Formulario_Entrega_Tarea";
         }
 
-        return "redirect:/tareas/buzon?entregaExitosa=true";
+        redirectAttributes.addFlashAttribute("mensajeExito",
+                "✅ Tu tarea \"" + tarea.getTitulo() + "\" ha sido enviada correctamente.");
+        return "redirect:/tareas/buzon";
     }
 
     @GetMapping("/entrega/{id}/imagen")

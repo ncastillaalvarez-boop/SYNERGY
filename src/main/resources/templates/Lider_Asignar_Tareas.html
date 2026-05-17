@@ -112,20 +112,47 @@
             No tienes proyectos creados aún.
         </div>
 
+        <!-- FILTROS -->
+        <div th:if="${!#lists.isEmpty(proyectos)}" style="margin-bottom:16px; display:flex; flex-wrap:wrap; gap:10px; align-items:center;">
+            <input type="text" id="filtroTexto" oninput="aplicarFiltros()"
+                   placeholder="🔍 Buscar por nombre..."
+                   style="padding:7px 14px; border:1px solid #ccc; border-radius:20px; font-size:13px; min-width:180px;">
+            <select id="filtroEstado" onchange="aplicarFiltros()"
+                    style="padding:7px 14px; border:1px solid #ccc; border-radius:20px; font-size:13px;">
+                <option value="">Todos los estados</option>
+                <option value="ACTIVO">Activo</option>
+                <option value="COMPLETADO">Completado</option>
+                <option value="CANCELADO">Cancelado</option>
+            </select>
+            <select id="filtroOrg" onchange="aplicarFiltros()"
+                    style="padding:7px 14px; border:1px solid #ccc; border-radius:20px; font-size:13px;">
+                <option value="">Todas las organizaciones</option>
+                <option value="Empresa">Empresa</option>
+                <option value="Proyecto estudiantil">Proyecto estudiantil</option>
+                <option value="ONG">ONG</option>
+                <option value="Institución educativa">Institución educativa</option>
+                <option value="Entidad gubernamental">Entidad gubernamental</option>
+                <option value="Comunidad">Comunidad</option>
+                <option value="Otro">Otro</option>
+            </select>
+        </div>
+
         <!-- Tabla de proyectos -->
         <div th:if="${!#lists.isEmpty(proyectos)}" class="proyecto-section">
             <h2>Proyectos</h2>
-            <table class="project-table">
+            <table class="project-table" id="tablaProyectos">
                 <thead>
                     <tr>
                         <th>Nombre del Proyecto</th>
+                        <th>Organización</th>
                         <th>Integrantes</th>
                         <th>Estado</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr th:each="p : ${proyectos}">
+                    <tr th:each="p : ${proyectos}"
+                        th:attr="data-nombre=${p.nombre},data-estado=${p.estado},data-org=${p.tipoOrganizacion}">
 
                         <!-- Nombre clickeable -->
                         <td>
@@ -134,6 +161,20 @@
                                style="color:#0F6E56; font-weight:700; text-decoration:none;">
                                Proyecto
                             </a>
+                        </td>
+
+                        <!-- Tipo de organización -->
+                        <td>
+                            <span th:if="${p.tipoOrganizacion != null}"
+                                  th:text="${p.tipoOrganizacion}"
+                                  style="background:#e8f5f1; color:#0F6E56; border-radius:12px;
+                                         padding:3px 10px; font-size:12px; font-weight:600;">
+                            </span>
+                            <span th:if="${p.tipoOrganizacion == null}"
+                                  style="background:#f0f0f0; color:#999; border-radius:12px;
+                                         padding:3px 10px; font-size:12px; font-weight:600;">
+                              Sin definir
+                            </span>
                         </td>
 
                         <!-- Integrantes como avatares -->
@@ -187,6 +228,23 @@
 
     </div>
 </div>
+
+<script>
+function aplicarFiltros() {
+    var texto  = document.getElementById('filtroTexto').value.toLowerCase();
+    var estado = document.getElementById('filtroEstado').value.toLowerCase();
+    var org    = document.getElementById('filtroOrg').value.toLowerCase();
+    document.querySelectorAll('#tablaProyectos tbody tr').forEach(function(row) {
+        var nombre  = (row.getAttribute('data-nombre') || '').toLowerCase();
+        var est     = (row.getAttribute('data-estado') || '').toLowerCase();
+        var orgVal  = (row.getAttribute('data-org')    || '').toLowerCase();
+        var ok = nombre.includes(texto)
+              && (estado === '' || est === estado)
+              && (org    === '' || orgVal.includes(org));
+        row.style.display = ok ? '' : 'none';
+    });
+}
+</script>
 
 </body>
 </html>

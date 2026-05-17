@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -32,6 +33,24 @@ public class Tarea {
 
     private List<String> entregas = new ArrayList<>();
     private List<String> comentarios = new ArrayList<>();
+
+    private List<Subtarea> subtareas = new ArrayList<>();
+
+    public static class Subtarea {
+        private String id;
+        private String titulo;
+        private boolean completada;
+
+        public Subtarea() { this.id = UUID.randomUUID().toString(); }
+        public Subtarea(String titulo) { this(); this.titulo = titulo; }
+
+        public String getId() { return id; }
+        public void setId(String id) { this.id = id; }
+        public String getTitulo() { return titulo; }
+        public void setTitulo(String titulo) { this.titulo = titulo; }
+        public boolean isCompletada() { return completada; }
+        public void setCompletada(boolean completada) { this.completada = completada; }
+    }
 
     private LocalDateTime fechaCreacion;
     private LocalDateTime fechaActualizacion;
@@ -162,6 +181,19 @@ public class Tarea {
         if (!this.comentarios.contains(comentarioId)) {
             this.comentarios.add(comentarioId);
         }
+    }
+
+    public List<Subtarea> getSubtareas() { return subtareas; }
+    public void setSubtareas(List<Subtarea> subtareas) { this.subtareas = subtareas; }
+
+    public int getSubtareasCompletadas() {
+        if (subtareas == null) return 0;
+        return (int) subtareas.stream().filter(Subtarea::isCompletada).count();
+    }
+
+    public int getPorcentajeSubtareas() {
+        if (subtareas == null || subtareas.isEmpty()) return 0;
+        return (int) Math.round(100.0 * getSubtareasCompletadas() / subtareas.size());
     }
 }
 
