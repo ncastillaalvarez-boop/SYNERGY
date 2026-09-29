@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\odont\\\\Downloads\\\\Proyecto 2026\\\\OneDrive_2026-02-21\\\\Proyecto De Aula\\\\Synergy\" -Recurse -Force)",
-      "Bash(Select-Object -First 100)",
-      "Bash(Format-Table -Property FullName)"
-    ]
-  }
-}
