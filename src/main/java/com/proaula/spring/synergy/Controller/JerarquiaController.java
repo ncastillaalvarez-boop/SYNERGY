@@ -1,72 +1,47 @@
 package com.proaula.spring.synergy.Controller;
 
-import com.proaula.spring.synergy.Service.JerarquiaProyectoService;
-import com.proaula.spring.synergy.Service.JerarquiaProyectoService.NodoProyecto;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
-import java.util.List;
+import com.proaula.spring.synergy.Model.Catalogos;
+import com.proaula.spring.synergy.Security.SesionUtil;
+import com.proaula.spring.synergy.Service.JerarquiaProyectoService;
+import com.proaula.spring.synergy.Service.JerarquiaProyectoService.NodoProyecto;
 
+import jakarta.servlet.http.HttpSession;
+
+/**
+ * Jerarquía de proyectos (árbol: organización → categoría → barrio → proyecto),
+ * construida con los datos reales. Solo la ve el administrador.
+ */
 @Controller
 @RequestMapping("/jerarquia")
 public class JerarquiaController {
-    
-    @Autowired
-    private JerarquiaProyectoService jerarquiaService;
-    
-    // Ver jerarquía completa
+
+    private final JerarquiaProyectoService jerarquiaService;
+
+    public JerarquiaController(JerarquiaProyectoService jerarquiaService) {
+        this.jerarquiaService = jerarquiaService;
+    }
+
     @GetMapping
-    public String verJerarquia(Model model) {
-        List<String> jerarquia = jerarquiaService.obtenerJerarquiaCompleta();
-        NodoProyecto raiz = jerarquiaService.getRaiz();
-        
-        model.addAttribute("jerarquia", jerarquia);
-        model.addAttribute("raiz", raiz);
-        
-        // Visualizar en consola también
-        jerarquiaService.visualizarArbol();
-        
+    public String verJerarquia(@RequestParam(required = false) String categoria,
+                               HttpSession session, Model model) {
+        if (!SesionUtil.esAdmin(SesionUtil.usuario(session))) {
+            return "redirect:/login";
+        }
+        String abierta = categoria != null && Catalogos.CATEGORIAS.contains(categoria) ? categoria : null;
+
+        NodoProyecto raiz = jerarquiaService.construir(abierta);
+        NodoProyecto nodoAbierto = abierta == null ? null : jerarquiaService.buscar(raiz, "cat:" + abierta);
+
+        model.addAttribute("nodos", jerarquiaService.preorden(raiz));
+        model.addAttribute("categoriaAbierta", abierta);
+        model.addAttribute("ruta", nodoAbierto == null ? null : jerarquiaService.ruta(nodoAbierto));
+        model.addAttribute("tareasCategoria", nodoAbierto == null ? 0 : jerarquiaService.contarTareas(nodoAbierto));
         return "jerarquia";
-    }
-    
-    // Agregar proyecto a la jerarquía
-    @PostMapping("/agregar-proyecto")
-    public String agregarProyecto(@RequestParam String nombre, @RequestParam Long id) {
-        jerarquiaService.agregarProyecto(id, nombre);
-        return "redirect:/jerarquia";
-    }
-    
-    // Agregar subproyecto
-    @PostMapping("/agregar-subproyecto")
-    public String agregarSubproyecto(@RequestParam Long proyectoId, 
-                                    @RequestParam Long subproyectoId,
-                                    @RequestParam String nombre) {
-        jerarquiaService.agregarSubproyecto(proyectoId, subproyectoId, nombre);
-        return "redirect:/jerarquia";
-    }
-    
-    // Agregar tarea
-    @PostMapping("/agregar-tarea")
-    public String agregarTarea(@RequestParam Long proyectoId, 
-                              @RequestParam Long tareaId,
-                              @RequestParam String nombre) {
-        jerarquiaService.agregarTarea(proyectoId, tareaId, nombre);
-        return "redirect:/jerarquia";
-    }
-    
-    // Ver ruta (breadcrumb) de un proyecto
-    @GetMapping("/ruta/{id}")
-    @ResponseBody
-    public List<String> obtenerRuta(@PathVariable Long id) {
-        return jerarquiaService.obtenerRuta(id);
-    }
-    
-    // Contar tareas de un proyecto
-    @GetMapping("/contar-tareas/{id}")
-    @ResponseBody
-    public int contarTareas(@PathVariable Long id) {
-        return jerarquiaService.contarTareasTotales(id);
     }
 }

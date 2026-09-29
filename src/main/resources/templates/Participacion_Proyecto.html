@@ -3,60 +3,80 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>try{var t=localStorage.getItem('synergy-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
   <title>Buzón del Proyecto – Synergy</title>
-  <link rel="stylesheet" href="/css/Comentarios_Proyectos.css">
+  <link rel="icon" type="image/png" href="../static/img/logo-mark.png" th:href="@{/img/logo-mark.png}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <link rel="stylesheet" href="../static/css/core.css" th:href="@{/css/core.css}">
+  <link rel="stylesheet" href="../static/css/dashboard.css" th:href="@{/css/dashboard.css}">
 </head>
 <body>
-  <section class="hero">
-    <div class="overlay"></div>
+  <div class="bg-ambient" aria-hidden="true"></div>
 
-    <div class="card">
-      <img src="Logo.png" alt="Logo Synergy" class="Logo">
-      <h1>Buzón del Proyecto</h1>
-      <p class="subtitle">Comenta y gestiona tus tareas asignadas</p>
+  <main class="app-container is-narrow">
+    <section class="app-card">
+
+      <header class="page-header">
+        <nav class="page-toolbar">
+          <div class="toolbar-group">
+            <a th:href="@{/menu}" class="btn btn-secondary btn-sm"><i class="fa-solid fa-arrow-left"></i> Volver al menú principal</a>
+          </div>
+          <a th:href="@{/}" class="mini-brand"><span class="mini-brand-mark"><img src="../static/img/logo-mark.png" th:src="@{/img/logo-mark.png}" alt=""></span><span>Synergy</span></a>
+        </nav>
+        <div class="page-heading">
+          <span class="page-icon has-img"><img src="../static/img/icons/notificaciones.png" th:src="@{/img/icons/notificaciones.png}" alt="" loading="lazy"></span>
+          <div>
+            <h1 class="page-title">Buzón del Proyecto</h1>
+            <p class="page-subtitle">Comenta y gestiona tus tareas asignadas</p>
+          </div>
+        </div>
+      </header>
 
       <!-- Formulario para enviar comentario -->
-      <form th:action="@{/guardarComentario}" method="post" enctype="multipart/form-data">
-        <div class="input-group">
-          <input type="text" id="nombreProyecto" name="nombreProyecto"
-                 th:value="${proyecto.nombre}" readonly required>
-          <label for="nombreProyecto">Nombre del Proyecto</label>
-        </div>
+      <div class="panel">
+        <form th:action="@{/guardarComentario}" method="post" enctype="multipart/form-data" class="stack" data-loading>
+          <div class="field">
+            <label for="nombreProyecto"><i class="fa-solid fa-diagram-project"></i> Nombre del Proyecto</label>
+            <input type="text" id="nombreProyecto" name="nombreProyecto"
+                   th:value="${proyecto.nombre}" readonly required>
+          </div>
 
-        <div class="input-group">
-          <textarea id="comentario" name="comentario" rows="4" required
-            style="width:100%; padding:12px; border:1px solid #dadce0; border-radius:4px; resize:none;"></textarea>
-          <label for="comentario" style="top:-8px; left:8px; font-size:0.75rem; color:#1a73e8; background:white; padding:0 4px;">
-            Escribe tu comentario
+          <div class="field">
+            <label for="comentario"><i class="fa-regular fa-comment"></i> Escribe tu comentario</label>
+            <textarea id="comentario" name="comentario" rows="4" required placeholder="Comparte avances, dudas o ideas..."></textarea>
+          </div>
+
+          <!-- Subir archivo -->
+          <label class="file-drop" for="archivo">
+            <input type="file" id="archivo" name="archivo" accept=".pdf,.docx,.jpg,.png">
+            <span class="file-drop-icon"><i class="fa-solid fa-paperclip"></i></span>
+            <span class="file-drop-title">Subir archivo (opcional)</span>
+            <span class="file-drop-name">PDF, DOCX, JPG o PNG</span>
           </label>
-        </div>
 
-        <!-- Subir archivo -->
-        <div class="input-group">
-          <input type="file" id="archivo" name="archivo" accept=".pdf,.docx,.jpg,.png">
-          <label for="archivo">Subir archivo (opcional)</label>
-        </div>
-
-        <!-- Botón -->
-        <button type="submit">Enviar Comentario</button>
-      </form>
+          <div>
+            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-paper-plane"></i> Enviar Comentario</button>
+          </div>
+        </form>
+      </div>
 
       <!-- Sección de tareas del usuario -->
-      <div style="margin-top: 30px; text-align: left;">
-        <h2 style="font-size: 1.1rem; color: #202124; margin-bottom: 10px;">Tareas Asignadas</h2>
-        <ul id="listaTareas" style="list-style: none; padding-left: 10px; color:#333;">
-          <!-- Iterar sobre tareas -->
+      <h2 class="section-heading"><i class="fa-solid fa-list-check"></i> Tareas Asignadas</h2>
+      <div class="panel">
+        <ul id="listaTareas" class="task-list">
           <li th:each="tarea : ${tareas}">
-            📌 <span th:text="${tarea.descripcion}">Descripción de la tarea</span>
+            <span th:text="${tarea.descripcion}">Descripción de la tarea</span>
           </li>
         </ul>
+        <p th:if="${#lists.isEmpty(tareas)}" class="text-subtle">No tienes tareas asignadas en este proyecto.</p>
       </div>
 
-      <!-- Botón para volver -->
-      <div style="margin-top: 25px;">
-        <a th:href="@{/dashboard}" style="color:#1a73e8; font-weight:500; text-decoration:none;">⬅ Volver al panel de usuario</a>
-      </div>
-    </div>
-  </section>
+    </section>
+  </main>
+
+  <script src="../static/js/script.js" th:src="@{/js/script.js}"></script>
 </body>
 </html>

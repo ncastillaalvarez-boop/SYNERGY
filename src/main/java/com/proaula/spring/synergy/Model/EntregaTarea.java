@@ -6,6 +6,8 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.index.Indexed;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Document(collection = "entregas_tareas")
 public class EntregaTarea {
 
@@ -22,12 +24,11 @@ public class EntregaTarea {
 
     private String tipoArchivo;
 
+    @JsonIgnore
     private byte[] datos;
 
     @Indexed
     private LocalDateTime fechaEntrega;
-
-    private String descripcionEvidencia;
 
     private String estado; // ENTREGADO, REVISADO, CALIFICADO, RECHAZADO
     private String calificacion;
@@ -127,13 +128,5 @@ public class EntregaTarea {
 
     public void setComentariosRevisor(String comentariosRevisor) {
         this.comentariosRevisor = comentariosRevisor;
-    }
-
-    public String getDescripcionEvidencia() {
-        return descripcionEvidencia;
-    }
-
-    public void setDescripcionEvidencia(String descripcionEvidencia) {
-        this.descripcionEvidencia = descripcionEvidencia;
     }
 }

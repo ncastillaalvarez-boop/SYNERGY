@@ -6,6 +6,7 @@ import com.proaula.spring.synergy.Service.UsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.List;
 
@@ -17,11 +18,13 @@ public class usuarioController {
     private UsuarioService usuarioService;
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public List<Usuarios> listar() {
         return usuarioService.obtenerTodosUsuarios();
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMINISTRADOR') or #id == authentication.principal.id")
     public ResponseEntity<Usuarios> obtener(@PathVariable String id) {
         try {
             Usuarios usuario = usuarioService.obtenerUsuarioPorId(id);
@@ -32,11 +35,13 @@ public class usuarioController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public Usuarios guardar(@RequestBody Usuarios usuario) {
         return usuarioService.guardarUsuario(usuario);
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<Void> eliminar(@PathVariable String id) {
         try {
             usuarioService.obtenerUsuarioPorId(id);

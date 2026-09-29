@@ -12,7 +12,10 @@ public interface UsuarioRepository extends MongoRepository<Usuarios, String> {
 
     Usuarios findByCorreo(String correo);
 
-    List<Usuarios> findByIdRol(String idRol);
+    List<Usuarios> findByRol(String rol);
+
+    List<Usuarios> findByActivo(Boolean activo);
 
     List<Usuarios> findByEstado(String estado);
 }
+

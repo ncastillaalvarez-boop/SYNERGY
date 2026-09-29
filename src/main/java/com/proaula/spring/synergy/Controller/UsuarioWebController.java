@@ -1,12 +1,9 @@
 package com.proaula.spring.synergy.Controller;
 
-import java.util.HashMap;
+import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
-
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -21,18 +18,20 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import com.proaula.spring.synergy.Model.Proyecto;
 import com.proaula.spring.synergy.Model.Tarea;
 import com.proaula.spring.synergy.Model.Usuarios;
-import com.proaula.spring.synergy.Service.ParticipacionService;
+import com.proaula.spring.synergy.Repository.EntregaTareaRepository;
+import com.proaula.spring.synergy.Security.GoogleLoginSuccessHandler;
+import com.proaula.spring.synergy.Security.SesionUtil;
+import com.proaula.spring.synergy.Service.HistorialService;
 import com.proaula.spring.synergy.Service.ProyectoService;
 import com.proaula.spring.synergy.Service.TareaService;
 import com.proaula.spring.synergy.Service.UsuarioService;
 
-import jakarta.servlet.http.HttpServletResponse;
-import java.security.Principal;
-import com.proaula.spring.synergy.Security.JwtTokenProvider;
-import com.proaula.spring.synergy.Security.JwtCookieService;
+import jakarta.servlet.http.HttpSession;
 
 @Controller
 public class UsuarioWebController {
+
+    private static final int MIN_CONTRASENA = 6;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -47,23 +46,15 @@ public class UsuarioWebController {
     private TareaService tareaService;
 
     @Autowired
-    private ParticipacionService participacionService;
+    private EntregaTareaRepository entregaTareaRepository;
 
     @Autowired
-    private JwtTokenProvider jwtTokenProvider;
-
-    @Autowired
-    private JwtCookieService jwtCookieService;
+    private HistorialService historialService;
 
     // ============================================
     // PÁGINA PRINCIPAL
     // ============================================
-    @GetMapping("/")
-    public String mostrarIndex() {
-        return "index";
-    }
-
-    @GetMapping("/index")
+    @GetMapping({"/", "/index"})
     public String index() {
         return "index";
     }
@@ -71,327 +62,261 @@ public class UsuarioWebController {
     // ============================================
     // REGISTRO
     // ============================================
-    @GetMapping("/registrarse")
-    public String mostrarRegistro(Model model) {
-        model.addAttribute("usuario", new Usuarios());
-        return "Registro";
-    }
-    @PostMapping("/registrarse")
-    public String registrar(
-            @ModelAttribute Usuarios usuario,
-            @RequestParam(required = false) String confirmarContrasena,
-            HttpServletResponse response,
-            RedirectAttributes ra) {
-
-        // Encriptar contraseña antes de guardar
-        String contrasenaEncriptada = passwordEncoder.encode(usuario.getContrasena());
-        usuario.setContrasena(contrasenaEncriptada);
-
-        // Determinar nombre del rol (viene del formulario o PARTICIPANTE por defecto)
-        String nombreRol = (usuario.getRol() != null && !usuario.getRol().isEmpty())
-                ? usuario.getRol().toUpperCase()
-                : "PARTICIPANTE";
-        usuario.setRol(nombreRol);
-
-        // Buscar el ObjectId del rol en la colección roles y asignarlo
-        try {
-            String idRol = usuarioService.obtenerIdRolPorNombre(nombreRol);
-            usuario.setIdRol(idRol);
-        } catch (Exception ignored) { }
-
-        usuario.setEstado("ACTIVO");
-
-        // Guardar en BD
-        usuarioService.guardarUsuario(usuario);
-
-      // Iniciar sesión automáticamente (JWT)
-      String token = jwtTokenProvider.generateToken(usuario.getCorreo(), usuario.getRol());
-      jwtCookieService.addJwtCookie(response, token);
-
-      // Redirigir según el rol
-      return switch (usuario.getRol()) {
-          case "ADMINISTRADOR" -> "redirect:/admin/proyectos";
-          case "LIDER"         -> "redirect:/lider/dashboard";
-          case "PARTICIPANTE"  -> "redirect:/dashboard";
-          default              -> "redirect:/login";
-      };
-    }
-
-   
-
-    // ============================================
-    // LOGIN
-    // ============================================
-    @GetMapping("/login")
-    public String mostrarLogin(Model model) {
-        model.addAttribute("loginDTO", new Object());
-        return "Login";
-    }
-
-    @PostMapping("/login")
-    public String procesarLogin(
-            @RequestParam String correo,
-            @RequestParam String contrasena,
-            HttpServletResponse response,
-            Model model) {
-
-        Usuarios usuario = usuarioService.buscarPorCorreo(correo);
-
-        if (usuario == null || !passwordEncoder.matches(contrasena, usuario.getContrasena())) {
-            model.addAttribute("error", "Correo o contraseña incorrectos");
-            return "Login";
-        }
-
-        // Guardar en Cookie usando JWT STATELESS
-        String token = jwtTokenProvider.generateToken(usuario.getCorreo(), usuario.getRol());
-        jwtCookieService.addJwtCookie(response, token);
-
-        String rol = usuario.getRol().toUpperCase();
-
-        return switch (rol) {
-            case "ADMINISTRADOR", "ADMINISTRADOR_ROL", "ADMIN" -> "redirect:/admin/proyectos";
-            case "LIDER", "LIDER_ROL" -> "redirect:/lider/dashboard";
-            case "PARTICIPANTE", "PARTICIPANTE_ROL", "USUARIO" -> "redirect:/dashboard";
-            default -> "redirect:/login?error=RoleInvalido";
-        };
-    }
-
-    // ============================================
-    // LOGOUT
-    // ============================================
-    @GetMapping("/logout")
-    public String logout(HttpServletResponse response, RedirectAttributes redirectAttributes) {
-        jwtCookieService.clearJwtCookie(response);
-        redirectAttributes.addFlashAttribute("mensaje", "Sesión cerrada correctamente");
-        return "redirect:/login";
-    }
-
-    // ============================================
-    // DASHBOARD PRINCIPAL
-    // ============================================
-    @GetMapping("/dashboard")
-    public String dashboard(Principal principal, Model model) {
-
-        if (principal == null) return "redirect:/login";
-
-        Usuarios usuario = usuarioService.buscarPorCorreo(principal.getName());
-        if (usuario == null) return "redirect:/login";
-
-        List<Proyecto> proyectosInscritos =
-            participacionService.listarProyectosPorUsuario(usuario.getId());
-
-        model.addAttribute("usuario", usuario);
-        model.addAttribute("proyectosInscritos", proyectosInscritos);
-        return "dashboard_Usuario";
-    }
-
-    @GetMapping("/administrador_dashboard")
-    public String adminDashboard(Principal principal, Model model) {
-
-        if (principal == null) return "redirect:/login";
-        Usuarios usuario = usuarioService.buscarPorCorreo(principal.getName());
-        if (usuario == null)
-            return "redirect:/login";
-
-        model.addAttribute("usuario", usuario);
-        return "Administrador_Dashboard"; // nombre EXACTO del HTML
-    }
-
-    // ============================================
-    // BUZÓN DE TAREAS
-    // ============================================
-    @GetMapping("/tareas/buzon")
-    public String mostrarBuzonTareas(
-            Principal principal,
-            @RequestParam(required = false) String proyectoId,
-            Model model) {
-
-        if (principal == null) return "redirect:/login";
-
-        Usuarios usuario = usuarioService.buscarPorCorreo(principal.getName());
-        if (usuario == null) return "redirect:/login";
-
-        List<Tarea> tareas = tareaService.obtenerTareasPorUsuario(usuario.getId());
-
-        if (proyectoId != null && !proyectoId.isEmpty()) {
-            tareas = tareas.stream()
-                .filter(t -> proyectoId.equals(t.getIdProyecto()))
-                .collect(java.util.stream.Collectors.toList());
-            Proyecto proyecto = proyectoService.buscarPorId(proyectoId);
-            model.addAttribute("proyectoFiltro", proyecto);
-        }
-
-        model.addAttribute("usuario", usuario);
-        model.addAttribute("tareas", tareas);
-        return "Buzon_Tareas_Usuario";
-    }
-
-    // ============================================
-    // VER CREDENCIALES (PERFIL)
-    // ============================================
-    @GetMapping("/usuario/credenciales")
-    public String verCredenciales(Principal principal, Model model) {
-
-        if (principal == null) return "redirect:/login";
-
-        Usuarios usuario = usuarioService.buscarPorCorreo(principal.getName());
-        if (usuario == null) {
-            return "redirect:/login";
-        }
-
-        model.addAttribute("usuario", usuario);
-        return "usuario_credenciales";
-    }
-
-    // ============================================
-    // ACTUALIZAR CREDENCIALES
-    // ============================================
-    @PostMapping("/usuario/actualizar-credenciales")
-    public String actualizarCredenciales(
-            @RequestParam(required = false) String nombre,
-            @RequestParam(required = false) String correo,
-            @RequestParam(required = false) String contrasenaActual,
-            @RequestParam(required = false) String contrasenaNueva,
-            @RequestParam(required = false) String contrasenaConfirmacion,
-            Principal principal,
-            RedirectAttributes redirectAttributes) {
-
-        if (principal == null) return "redirect:/login";
-
-        Usuarios usuario = usuarioService.buscarPorCorreo(principal.getName());
-        if (usuario == null) {
-            return "redirect:/login";
-        }
-
-        // Actualizar nombre si se proporciona
-        if (nombre != null && !nombre.trim().isEmpty()) {
-            usuario.setNombre(nombre.trim());
-        }
-
-        // Actualizar correo si se proporciona y no existe
-        if (correo != null && !correo.trim().isEmpty() && !correo.equals(usuario.getCorreo())) {
-            Usuarios usuarioExistente = usuarioService.buscarPorCorreo(correo.trim());
-            if (usuarioExistente != null) {
-                redirectAttributes.addFlashAttribute("error", "El correo ya está en uso");
-                return "redirect:/usuario/credenciales";
-            }
-            usuario.setCorreo(correo.trim());
-        }
-
-        // Cambiar contraseña si se solicita
-        if (contrasenaNueva != null && !contrasenaNueva.isEmpty()) {
-
-            // Validar contraseña actual
-            if (contrasenaActual == null || !usuario.getContrasena().equals(contrasenaActual)) {
-                redirectAttributes.addFlashAttribute("error", "Contraseña actual incorrecta");
-                return "redirect:/usuario/credenciales";
-            }
-
-            // Validar confirmación
-            if (!contrasenaNueva.equals(contrasenaConfirmacion)) {
-                redirectAttributes.addFlashAttribute("error", "Las contraseñas nuevas no coinciden");
-                return "redirect:/usuario/credenciales";
-            }
-
-            // Validar longitud mínima
-            if (contrasenaNueva.length() < 6) {
-                redirectAttributes.addFlashAttribute("error", "La contraseña debe tener al menos 6 caracteres");
-                return "redirect:/usuario/credenciales";
-            }
-
-            // Encriptar la contraseña nueva usando BCrypt
-            usuario.setContrasena(passwordEncoder.encode(contrasenaNueva));
-        }
-
-        // Guardar cambios
-        usuarioService.guardarUsuario(usuario);
-
-        redirectAttributes.addFlashAttribute("mensaje", "✅ Credenciales actualizadas correctamente");
-        return "redirect:/usuario/credenciales";
-    }
-
-    // ============================================
-    // ASIGNACIÓN DE TAREAS (LÍDER)
-    // ============================================
-    @GetMapping("/lider/asignar-tareas")
-    public String mostrarAsignacionTareas(Principal principal, Model model) {
-
-        if (principal == null) return "redirect:/login";
-
-        Usuarios usuario = usuarioService.buscarPorCorreo(principal.getName());
-        if (usuario == null) {
-            return "redirect:/login";
-        }
-
-        // Validar que sea líder
-        if (!"LIDER".equals(usuario.getRol())) {
-            return "redirect:/dashboard";
-        }
-
-        return "Lider_AsignarTareas";
-    }
-
-    //seleccionar-rol
     @GetMapping("/seleccionar-rol")
     public String seleccionarRol() {
         return "seleccionar-rol";
     }
 
-    //Registro Lider
+    @GetMapping({"/registrarse", "/registro/voluntario"})
+    public String registroVoluntario(Model model) {
+        model.addAttribute("usuario", new Usuarios());
+        return "Registro";
+    }
+
     @GetMapping("/registro/lider")
     public String registroLider(Model model) {
         model.addAttribute("usuario", new Usuarios());
         return "registro-lider";
     }
 
-    @GetMapping("/registro/voluntario")
-    public String registroVoluntario(Model model) {
-        model.addAttribute("usuario", new Usuarios());
-        return "Registro";
+    @PostMapping("/registrarse")
+    public String registrar(@ModelAttribute("usuario") Usuarios usuario,
+                            @RequestParam(required = false) String confirmarContrasena,
+                            HttpSession session,
+                            Model model) {
+
+        // Solo se permite registrarse como LIDER o PARTICIPANTE (nunca ADMINISTRADOR)
+        String rol = "LIDER".equalsIgnoreCase(usuario.getRol()) ? "LIDER" : "PARTICIPANTE";
+        String vista = "LIDER".equals(rol) ? "registro-lider" : "Registro";
+
+        String correo = usuario.getCorreo() == null ? "" : usuario.getCorreo().trim().toLowerCase();
+        String nombre = usuario.getNombre() == null ? "" : usuario.getNombre().trim();
+        String contrasena = usuario.getContrasena() == null ? "" : usuario.getContrasena();
+
+        String error = null;
+        if (nombre.isEmpty() || correo.isEmpty()) {
+            error = "Completa tu nombre y tu correo.";
+        } else if (contrasena.length() < MIN_CONTRASENA) {
+            error = "La contraseña debe tener al menos " + MIN_CONTRASENA + " caracteres.";
+        } else if (!contrasena.equals(confirmarContrasena)) {
+            error = "Las contraseñas no coinciden.";
+        } else if (usuarioService.buscarPorCorreo(correo) != null) {
+            error = "Ya existe una cuenta con ese correo. Inicia sesión.";
+        }
+
+        if (error != null) {
+            usuario.setContrasena(null);
+            model.addAttribute("error", error);
+            return vista;
+        }
+
+        Usuarios nuevo = new Usuarios();
+        nuevo.setNombre(nombre);
+        nuevo.setCorreo(correo);
+        nuevo.setContrasena(passwordEncoder.encode(contrasena));
+        nuevo.setRol(rol);
+        nuevo.setActivo(true);
+        nuevo.setEstado("ACTIVO");
+        nuevo.setProveedor("LOCAL");
+        nuevo.setFechaCreacion(LocalDateTime.now());
+        nuevo = usuarioService.guardarUsuario(nuevo);
+
+        historialService.registrarAccion("CREAR", "USUARIO", "Nuevo registro: " + correo + " (" + rol + ")", correo);
+
+        SesionUtil.iniciar(session, nuevo);
+        return "redirect:" + SesionUtil.panelPorRol(nuevo);
     }
 
-    @GetMapping("/publico/proyectos")
-    public String verProyectosPublico(
-            @RequestParam(defaultValue = "0") int page,
-            Principal principal, Model model) {
+    // ============================================
+    // LOGIN
+    // ============================================
+    @GetMapping("/login")
+    public String mostrarLogin(HttpSession session) {
+        Usuarios actual = SesionUtil.usuario(session);
+        if (actual != null) {
+            return "redirect:" + SesionUtil.panelPorRol(actual);
+        }
+        return "Login";
+    }
 
-        PageRequest pageable = PageRequest.of(
-                Math.max(page, 0), 12,
-                Sort.by(Sort.Direction.DESC, "fechaCreacion"));
-        Page<Proyecto> pagina = proyectoService.listarPaginadoSinDatos(pageable);
-        List<Proyecto> proyectos = pagina.getContent();
+    @PostMapping("/login")
+    public String procesarLogin(@RequestParam String correo,
+                                @RequestParam String contrasena,
+                                HttpSession session,
+                                Model model) {
 
-        Map<String, String> liderPorProyecto = new HashMap<>();
-        for (Proyecto p : proyectos) {
-            if (p.getIdLider() != null) {
-                try {
-                    Usuarios lider = usuarioService.obtenerUsuarioPorId(p.getIdLider());
-                    liderPorProyecto.put(p.getId(), lider != null ? lider.getNombre() : "—");
-                } catch (Exception e) {
-                    liderPorProyecto.put(p.getId(), "—");
-                }
-            } else {
-                liderPorProyecto.put(p.getId(), "—");
+        Usuarios usuario = usuarioService.buscarPorCorreo(correo == null ? "" : correo.trim().toLowerCase());
+        if (usuario == null) {
+            // Compatibilidad con correos guardados con mayúsculas
+            usuario = usuarioService.buscarPorCorreo(correo);
+        }
+
+        if (usuario == null || usuario.getContrasena() == null
+                || !passwordEncoder.matches(contrasena, usuario.getContrasena())) {
+            model.addAttribute("error", "Correo o contraseña incorrectos");
+            return "Login";
+        }
+
+        if (!usuario.isEnabled()) {
+            model.addAttribute("error", "Tu cuenta está inactiva. Contacta al administrador.");
+            return "Login";
+        }
+
+        String panel = SesionUtil.panelPorRol(usuario);
+        if ("/login".equals(panel)) {
+            model.addAttribute("error", "Tu cuenta no tiene un rol válido. Contacta al administrador.");
+            return "Login";
+        }
+
+        usuario.setUltimoAcceso(LocalDateTime.now());
+        usuario = usuarioService.guardarUsuario(usuario);
+        SesionUtil.iniciar(session, usuario);
+        return "redirect:" + panel;
+    }
+
+    /**
+     * Botón "Continuar con Google". Si viene ?rol=LIDER, la cuenta nueva se crea como líder.
+     */
+    @GetMapping("/login/google")
+    public String loginGoogle(@RequestParam(required = false) String rol, HttpSession session) {
+        if ("LIDER".equalsIgnoreCase(rol)) {
+            session.setAttribute(GoogleLoginSuccessHandler.ATTR_ROL_GOOGLE, "LIDER");
+        } else {
+            session.removeAttribute(GoogleLoginSuccessHandler.ATTR_ROL_GOOGLE);
+        }
+        return "redirect:/oauth2/authorization/google";
+    }
+
+    // (GET /logout lo atiende Spring Security: cierra la sesión y lleva a /login?logout)
+
+    // ============================================
+    // DASHBOARD DEL PARTICIPANTE
+    // ============================================
+    @GetMapping("/dashboard")
+    public String dashboard(HttpSession session, Model model) {
+        Usuarios usuario = SesionUtil.usuario(session);
+        if (usuario == null) {
+            return "redirect:/login";
+        }
+        if (!"PARTICIPANTE".equals(SesionUtil.rol(usuario))) {
+            return "redirect:" + SesionUtil.panelPorRol(usuario);
+        }
+
+        List<Tarea> tareas = tareaService.obtenerTareasPorUsuario(usuario.getId());
+        long pendientes = tareas.stream().filter(t -> !"COMPLETADA".equalsIgnoreCase(t.getEstado())).count();
+
+        model.addAttribute("usuario", usuario);
+        model.addAttribute("totalTareas", tareas.size());
+        model.addAttribute("tareasPendientes", pendientes);
+        model.addAttribute("tareasCompletadas", tareas.size() - pendientes);
+        model.addAttribute("totalProyectos", usuario.getProyectos() == null ? 0 : usuario.getProyectos().size());
+        return "dashboard_Usuario";
+    }
+
+    @GetMapping("/administrador_dashboard")
+    public String adminDashboard() {
+        return "redirect:/admin/proyectos";
+    }
+
+    // ============================================
+    // BUZÓN DE TAREAS
+    // ============================================
+    @GetMapping("/tareas/buzon")
+    public String mostrarBuzonTareas(HttpSession session, Model model) {
+        Usuarios usuario = SesionUtil.usuario(session);
+        if (usuario == null) {
+            return "redirect:/login";
+        }
+
+        List<Tarea> tareas = tareaService.obtenerTareasPorUsuario(usuario.getId());
+
+        // Tareas que este usuario ya entregó (para mostrar "Entregada")
+        Set<String> entregadas = entregaTareaRepository.findByIdUsuario(usuario.getId()).stream()
+                .map(e -> e.getIdTarea())
+                .collect(Collectors.toSet());
+
+        model.addAttribute("usuario", usuario);
+        model.addAttribute("tareas", tareas);
+        model.addAttribute("entregadas", entregadas);
+        return "Buzon_Tareas_Usuario";
+    }
+
+    // ============================================
+    // PERFIL / CREDENCIALES
+    // ============================================
+    @GetMapping("/usuario/credenciales")
+    public String verCredenciales(HttpSession session, Model model) {
+        Usuarios usuario = SesionUtil.usuario(session);
+        if (usuario == null) {
+            return "redirect:/login";
+        }
+        model.addAttribute("usuario", usuario);
+        return "usuario_credenciales";
+    }
+
+    @PostMapping("/usuario/actualizar-credenciales")
+    public String actualizarCredenciales(@RequestParam(required = false) String nombre,
+                                         @RequestParam(required = false) String correo,
+                                         @RequestParam(required = false) String contrasenaActual,
+                                         @RequestParam(required = false) String contrasenaNueva,
+                                         @RequestParam(required = false) String contrasenaConfirmacion,
+                                         HttpSession session,
+                                         RedirectAttributes ra) {
+
+        Usuarios enSesion = SesionUtil.usuario(session);
+        if (enSesion == null) {
+            return "redirect:/login";
+        }
+        // Siempre trabajar con la versión más reciente de la base de datos
+        Usuarios usuario = usuarioService.obtenerUsuarioPorId(enSesion.getId());
+
+        if (nombre != null && !nombre.trim().isEmpty()) {
+            usuario.setNombre(nombre.trim());
+        }
+
+        if (correo != null && !correo.trim().isEmpty() && !correo.trim().equalsIgnoreCase(usuario.getCorreo())) {
+            String nuevoCorreo = correo.trim().toLowerCase();
+            if (usuarioService.buscarPorCorreo(nuevoCorreo) != null) {
+                ra.addFlashAttribute("error", "El correo ya está en uso");
+                return "redirect:/usuario/credenciales";
+            }
+            usuario.setCorreo(nuevoCorreo);
+        }
+
+        if (contrasenaNueva != null && !contrasenaNueva.isEmpty()) {
+            boolean esGoogle = "GOOGLE".equalsIgnoreCase(usuario.getProveedor());
+            // Las cuentas creadas con Google pueden definir su primera contraseña sin la actual
+            if (!esGoogle && (contrasenaActual == null
+                    || !passwordEncoder.matches(contrasenaActual, usuario.getContrasena()))) {
+                ra.addFlashAttribute("error", "La contraseña actual es incorrecta");
+                return "redirect:/usuario/credenciales";
+            }
+            if (!contrasenaNueva.equals(contrasenaConfirmacion)) {
+                ra.addFlashAttribute("error", "Las contraseñas nuevas no coinciden");
+                return "redirect:/usuario/credenciales";
+            }
+            if (contrasenaNueva.length() < MIN_CONTRASENA) {
+                ra.addFlashAttribute("error", "La contraseña debe tener al menos " + MIN_CONTRASENA + " caracteres");
+                return "redirect:/usuario/credenciales";
+            }
+            usuario.setContrasena(passwordEncoder.encode(contrasenaNueva));
+            if (esGoogle) {
+                usuario.setProveedor("GOOGLE+LOCAL");
             }
         }
 
-        if (principal != null) {
-            Usuarios usuario = usuarioService.buscarPorCorreo(principal.getName());
-            if (usuario != null) {
-                model.addAttribute("usuario", usuario);
-                model.addAttribute("inscritosSet",
-                        participacionService.obtenerIdsProyectosPorUsuario(usuario.getId()));
-            }
-        }
+        usuario = usuarioService.guardarUsuario(usuario);
+        SesionUtil.iniciar(session, usuario);
 
-        model.addAttribute("proyectos", proyectos);
-        model.addAttribute("liderPorProyecto", liderPorProyecto);
-        model.addAttribute("currentPage", pagina.getNumber());
-        model.addAttribute("totalPages", pagina.getTotalPages());
-        model.addAttribute("hasPrev", pagina.hasPrevious());
-        model.addAttribute("hasNext", pagina.hasNext());
-        model.addAttribute("returnUrl", "/");
-        model.addAttribute("baseUrl", "/publico/proyectos");
-        return "Participacion_Proyecto_Usuario";
+        ra.addFlashAttribute("mensaje", "Credenciales actualizadas correctamente");
+        return "redirect:/usuario/credenciales";
     }
+
+    // Ruta antigua: la asignación de tareas del líder vive en /lider/tareas/asignar
+    @GetMapping("/lider/asignar-tareas")
+    public String mostrarAsignacionTareas() {
+        return "redirect:/lider/tareas/asignar";
+    }
+
+    // Los proyectos públicos (invitados) están en ExplorarController.
 }

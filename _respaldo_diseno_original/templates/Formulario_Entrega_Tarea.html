@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entregar Tarea – Synergy</title>
+    <link rel="stylesheet" href="/css/Usuarios_Dashboard.css">
+</head>
+
+<body>
+
+<div class="hero">
+    <div class="overlay"></div>
+
+    <div class="container">
+        <div class="card">
+
+            <!-- ENCABEZADO -->
+            <div class="header">
+                <a th:href="@{/tareas/buzon}" class="btn-inicio">⬅ Volver</a>
+
+                <h1>Entregar tarea</h1>
+                <p class="subtitle">Sube el archivo correspondiente a tu tarea asignada.</p>
+            </div>
+
+            <!-- INFORMACIÓN DE LA TAREA -->
+            <div class="task-info">
+                <h2 th:text="${tarea.titulo}">Título tarea</h2>
+
+                <p><strong>Descripción:</strong>
+                    <span th:text="${tarea.descripcion}"></span>
+                </p>
+
+                <p><strong>Fecha límite:</strong>
+                    <span th:text="${tarea.fechaEntrega}"></span>
+                </p>
+            </div>
+
+            <!-- ERROR -->
+            <p th:if="${error}" style="color: #ff8080; font-weight: bold; margin: 10px 0;">
+                ❌ <span th:text="${error}"></span>
+            </p>
+
+            <!-- FORMULARIO -->
+            <form th:action="@{/tareas/entregar/{id}(id=${tarea.id})}"
+                  method="post"
+                  enctype="multipart/form-data"
+                  style="display:flex; flex-direction:column; gap:15px;">
+
+                <label style="font-size:16px;">
+                    Selecciona un archivo:
+                </label>
+
+                <input type="file" name="archivo" required
+                       style="padding:10px; border-radius:10px;">
+
+                <button type="submit"
+                        class="btn-usuarios"
+                        style="margin-top:10px; font-size:16px;">
+                    📤 Enviar Tarea
+                </button>
+            </form>
+
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>

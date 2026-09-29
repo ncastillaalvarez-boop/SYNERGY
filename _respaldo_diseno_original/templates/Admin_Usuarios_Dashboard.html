@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gestión de Usuarios – Synergy Admin</title>
+  <link rel="stylesheet" th:href="@{/css/Admin_Usuarios_Dashboard.css}" />
+  <style>
+    .role-badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    .role-admin { background: #ff6b6b; color: white; }
+    .role-lider { background: #4ecdc4; color: white; }
+    .role-participante { background: #95e1d3; color: #333; }
+  </style>
+</head>
+<body>
+
+  <div class="hero">
+    <div class="overlay"></div>
+    <div class="container">
+      <div class="card">
+
+        <!-- Encabezado -->
+        <div class="header">
+          <div class="top-buttons">
+            <a th:href="@{/admin/proyectos}" class="btn-inicio">⬅ Volver al Dashboard</a>
+            <a th:href="@{/logout}" class="btn-logout">🚪 Cerrar Sesión</a>
+          </div>
+          <h1>👥 Gestión de Usuarios</h1>
+          <p class="subtitle">Administra los usuarios registrados en la plataforma</p>
+
+          <!-- Mensajes -->
+          <div th:if="${mensaje}" class="alert alert-success"
+               style="margin-top: 1rem; padding: 1rem; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 5px; color: #155724;">
+            <span th:text="${mensaje}"></span>
+          </div>
+          <div th:if="${error}" class="alert alert-error"
+               style="margin-top: 1rem; padding: 1rem; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 5px; color: #721c24;">
+            <span th:text="${error}"></span>
+          </div>
+        </div>
+
+        <!-- Tabla de usuarios -->
+        <table class="project-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nombre</th>
+              <th>Correo</th>
+              <th>Rol Actual</th>
+              <th>Cambiar Rol</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Si no hay usuarios -->
+            <tr th:if="${#lists.isEmpty(usuarios)}">
+              <td colspan="6" style="text-align: center; padding: 2rem; color: #666;">
+                No hay usuarios registrados
+              </td>
+            </tr>
+
+            <!-- Usuarios dinámicos -->
+            <tr th:each="u : ${usuarios}">
+              <td th:text="${u.id}">1</td>
+              <td th:text="${u.nombre}">Usuario</td>
+              <td th:text="${u.correo}">correo@ejemplo.com</td>
+              <td>
+                <span class="role-badge"
+                      th:classappend="${u.rol == 'ADMINISTRADOR' ? 'role-admin' : (u.rol == 'LIDER' ? 'role-lider' : 'role-participante')}"
+                      th:text="${u.rol}">
+                  Rol
+                </span>
+              </td>
+              <td>
+                <!-- Formulario para cambiar rol -->
+                <form th:action="@{/admin/usuario/{id}/cambiar-rol(id=${u.id})}" method="post"
+                      style="display: flex; gap: 0.5rem; align-items: center;">
+                  <select name="nuevoRol" style="padding: 0.4rem; border-radius: 4px; border: 1px solid #ddd;">
+                    <option value="ADMINISTRADOR" th:selected="${u.rol == 'ADMINISTRADOR'}">Administrador</option>
+                    <option value="LIDER" th:selected="${u.rol == 'LIDER'}">Líder</option>
+                    <option value="PARTICIPANTE" th:selected="${u.rol == 'PARTICIPANTE'}">Participante</option>
+                  </select>
+                  <button type="submit" class="btn-aceptar" style="padding: 0.4rem 1rem; cursor: pointer; border: none; border-radius: 5px; background: #007bff; color: white;">Cambiar</button>
+                </form>
+              </td>
+              <td class="actions">
+                <!-- No mostrar eliminar si es el admin actual -->
+                <form th:if="${u.id != usuario.id}"
+                      th:action="@{/admin/usuario/{id}/eliminar(id=${u.id})}"
+                      method="post" style="display: inline;">
+                  <button type="submit" class="btn-eliminar">Eliminar</button>
+                </form>
+                <span th:if="${u.id == usuario.id}" style="color: #666; font-style: italic;">(Tú)</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Estadísticas -->
+        <div style="margin-top: 2rem; padding: 1rem; background: rgba(255,255,255,0.1); border-radius: 5px; color: #fff;">
+          <p style="margin: 0;">
+            <strong>Total de usuarios:</strong> <span th:text="${#lists.size(usuarios)}">0</span>
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

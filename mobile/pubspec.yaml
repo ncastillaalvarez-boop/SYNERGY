@@ -1,0 +1,37 @@
+name: synergy_mobile
+description: Cliente Android en Flutter para la plataforma Synergy.
+publish_to: none
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  http: ^1.2.2
+  shared_preferences: ^2.3.2
+  file_picker: ^8.1.2
+  # Multi-idioma
+  intl: ^0.20.3
+  # Caché offline
+  sqflite: ^2.3.0
+  path: ^1.8.3
+  path_provider: ^2.1.1
+  # Firebase (Push Notifications)
+  firebase_core: ^4.13.0
+  firebase_messaging: ^16.5.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  # Testing
+  mockito: ^5.4.4
+  build_runner: ^2.4.6
+
+flutter:
+  uses-material-design: true
+  generate: true

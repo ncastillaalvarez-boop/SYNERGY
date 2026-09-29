@@ -1,142 +1,163 @@
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gestión de Usuarios – Synergy Admin</title>
-  <link rel="stylesheet" th:href="@{/css/Admin_Usuarios_Dashboard.css}" />
-  <style>
-    .role-badge {
-      display: inline-block;
-      padding: 0.25rem 0.75rem;
-      border-radius: 12px;
-      font-size: 0.85rem;
-      font-weight: 600;
-    }
-    .role-admin { background: #ff6b6b; color: white; }
-    .role-lider { background: #4ecdc4; color: white; }
-    .role-participante { background: #95e1d3; color: #333; }
-  </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>try{var t=localStorage.getItem('synergy-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
+  <title>Gestión de usuarios – Synergy</title>
+  <link rel="icon" type="image/png" href="../static/img/logo-mark.png" th:href="@{/img/logo-mark.png}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <link rel="stylesheet" href="../static/css/core.css" th:href="@{/css/core.css}">
+  <link rel="stylesheet" href="../static/css/dashboard.css" th:href="@{/css/dashboard.css}">
 </head>
 <body>
+  <div class="bg-ambient" aria-hidden="true"></div>
 
-  <div class="hero">
-    <div class="overlay"></div>
-    <div class="container">
-      <div class="card">
+<div class="app-shell">
+  <div th:replace="~{fragments/sidebar :: sidebar('admin-usuarios')}"></div>
+  <div class="app-main">
+  <div th:replace="~{fragments/sidebar :: topbar}"></div>
 
-        <!-- Encabezado -->
-        <div class="header">
-          <div class="top-buttons">
-            <a th:href="@{/admin/proyectos}" class="btn-inicio">⬅ Volver al Dashboard</a>
-            <a th:href="@{/logout}" class="btn-logout">🚪 Cerrar Sesión</a>
+  <main class="app-container">
+    <section class="app-card">
+      <header class="page-header">
+        <nav class="page-toolbar">
+          <div class="toolbar-group">
+            <a th:href="@{/admin/proyectos}" class="btn btn-secondary btn-sm"><i class="fa-solid fa-arrow-left"></i> Proyectos</a>
+            
           </div>
-          <h1>👥 Gestión de Usuarios</h1>
-          <p class="subtitle">Administra los usuarios registrados en la plataforma</p>
-
-          <!-- Mensajes -->
-          <div th:if="${mensaje}" class="alert alert-success"
-               style="margin-top: 1rem; padding: 1rem; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 5px; color: #155724;">
-            <span th:text="${mensaje}"></span>
-          </div>
-          <div th:if="${error}" class="alert alert-error"
-               style="margin-top: 1rem; padding: 1rem; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 5px; color: #721c24;">
-            <span th:text="${error}"></span>
+        </nav>
+        <div class="page-heading">
+          <span class="page-icon has-img"><img src="../static/img/icons/comunidad.png" th:src="@{/img/icons/comunidad.png}" alt=""></span>
+          <div>
+            <h1 class="page-title">Gestión de usuarios</h1>
+            <p class="page-subtitle">Cambia roles, activa o desactiva cuentas y elimina usuarios.</p>
           </div>
         </div>
+      </header>
 
-        <!-- Barra de búsqueda -->
-        <div style="margin-bottom: 20px;">
-          <input type="text" id="buscadorUsuarios" onkeyup="filtrarUsuarios()" placeholder="🔍 Buscar por nombre, correo o rol..."
-                 style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(15,23,42,0.6); color: white; font-size: 16px;">
+      <div th:if="${mensaje}" class="alert alert-success" data-autohide>
+        <i class="fa-solid fa-circle-check"></i>
+        <span th:text="${mensaje}"></span>
+      </div>
+      <div th:if="${error}" class="alert alert-error">
+        <i class="fa-solid fa-circle-exclamation"></i>
+        <span th:text="${error}"></span>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card" style="--i:0"><img src="../static/img/icons/comunidad.png" th:src="@{/img/icons/comunidad.png}" alt="" class="stat-icon">
+          <span class="stat-value" th:text="${#numbers.formatInteger(totalUsuarios, 1, 'POINT')}">0</span><span class="stat-label">Usuarios</span></div>
+        <div class="stat-card" style="--i:1"><img src="../static/img/icons/perfil.png" th:src="@{/img/icons/perfil.png}" alt="" class="stat-icon">
+          <span class="stat-value" th:text="${#numbers.formatInteger(totalVoluntarios, 1, 'POINT')}">0</span><span class="stat-label"><a th:href="@{/admin/usuarios(rol='PARTICIPANTE')}" class="link">Voluntarios</a></span></div>
+        <div class="stat-card" style="--i:2"><img src="../static/img/icons/logro.png" th:src="@{/img/icons/logro.png}" alt="" class="stat-icon">
+          <span class="stat-value" th:text="${#numbers.formatInteger(totalLideres, 1, 'POINT')}">0</span><span class="stat-label"><a th:href="@{/admin/usuarios(rol='LIDER')}" class="link">Líderes</a></span></div>
+        <div class="stat-card" style="--i:3"><img src="../static/img/icons/ajustes.png" th:src="@{/img/icons/ajustes.png}" alt="" class="stat-icon">
+          <span class="stat-value" th:text="${totalAdmins}">0</span><span class="stat-label"><a th:href="@{/admin/usuarios(rol='ADMINISTRADOR')}" class="link">Administradores</a></span></div>
+      </div>
+
+      <form class="filter-bar" th:action="@{/admin/usuarios}" method="get" role="search" data-autosubmit>
+        <div class="field field-search">
+          <label for="q">Buscar</label>
+          <div class="search-input">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="search" id="q" name="q" th:value="${q}" maxlength="60" placeholder="Nombre o correo">
+          </div>
         </div>
+        <div class="field">
+          <label for="rol">Rol</label>
+          <select id="rol" name="rol">
+            <option value="">Todos</option>
+            <option value="ADMINISTRADOR" th:selected="${rolFiltro == 'ADMINISTRADOR'}">Administrador</option>
+            <option value="LIDER" th:selected="${rolFiltro == 'LIDER'}">Líder</option>
+            <option value="PARTICIPANTE" th:selected="${rolFiltro == 'PARTICIPANTE'}">Voluntario</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="estado">Estado</label>
+          <select id="estado" name="estado">
+            <option value="">Todos</option>
+            <option value="ACTIVO" th:selected="${estadoFiltro == 'ACTIVO'}">Activo</option>
+            <option value="INACTIVO" th:selected="${estadoFiltro == 'INACTIVO'}">Inactivo</option>
+          </select>
+        </div>
+        <div class="filter-actions">
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-filter"></i> Filtrar</button>
+          <a th:if="${hayFiltros}" th:href="@{/admin/usuarios}" class="btn btn-secondary" title="Quitar filtros"><i class="fa-solid fa-xmark"></i></a>
+        </div>
+      </form>
 
-        <!-- Tabla de usuarios -->
-        <table class="project-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Nombre</th>
-              <th>Correo</th>
-              <th>Rol Actual</th>
-              <th>Cambiar Rol</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>Usuario</th><th>Rol</th><th>Estado</th><th>Cambiar rol</th><th>Acciones</th></tr></thead>
           <tbody>
-            <!-- Si no hay usuarios -->
             <tr th:if="${#lists.isEmpty(usuarios)}">
-              <td colspan="6" style="text-align: center; padding: 2rem; color: #666;">
-                No hay usuarios registrados
-              </td>
+              <td colspan="5" class="cell-empty"><i class="fa-regular fa-user"></i><span th:text="${hayFiltros} ? 'Ningún usuario coincide con la búsqueda' : 'No hay usuarios registrados'">No hay usuarios</span></td>
             </tr>
-
-            <!-- Usuarios dinámicos -->
             <tr th:each="u : ${usuarios}">
-              <td th:text="${u.id}">1</td>
-              <td th:text="${u.nombre}">Usuario</td>
-              <td th:text="${u.correo}">correo@ejemplo.com</td>
               <td>
-                <span class="role-badge"
-                      th:classappend="${u.rol == 'ADMINISTRADOR' ? 'role-admin' : (u.rol == 'LIDER' ? 'role-lider' : 'role-participante')}"
-                      th:text="${u.rol}">
-                  Rol
-                </span>
+                <div class="cluster" style="flex-wrap:nowrap">
+                  <span class="avatar avatar-sm" th:text="${u.iniciales}">US</span>
+                  <div style="min-width:0">
+                    <div class="cell-strong" th:text="${u.nombre}">Usuario</div>
+                    <small th:text="${u.correo}">correo</small>
+                    <span th:if="${u.proveedor != null and #strings.contains(u.proveedor, 'GOOGLE')}" class="badge no-dot" title="Cuenta de Google"><i class="fa-brands fa-google"></i></span>
+                  </div>
+                </div>
               </td>
               <td>
-                <!-- Formulario para cambiar rol -->
-                <form th:action="@{/admin/usuario/{id}/cambiar-rol(id=${u.id})}" method="post"
-                      style="display: flex; gap: 0.5rem; align-items: center;">
-                  <select name="nuevoRol" style="padding: 0.4rem; border-radius: 4px; border: 1px solid #ddd;">
+                <span class="badge" th:classappend="${u.rol == 'ADMINISTRADOR' ? 'badge-danger' : (u.rol == 'LIDER' ? 'badge-success' : 'badge-info')}"
+                      th:text="${u.rol == 'PARTICIPANTE' ? 'VOLUNTARIO' : u.rol}">Rol</span>
+              </td>
+              <td>
+                <span class="badge" th:classappend="${u.enabled} ? 'badge-success' : 'badge-danger'" th:text="${u.enabled} ? 'Activo' : 'Inactivo'">Activo</span>
+              </td>
+              <td>
+                <form th:action="@{/admin/usuario/{id}/cambiar-rol(id=${u.id})}" method="post" class="cluster" style="flex-wrap:nowrap">
+                  <input type="hidden" name="volver" th:value="${volverUsuarios}">
+                  <select name="nuevoRol" class="select-sm" aria-label="Nuevo rol">
                     <option value="ADMINISTRADOR" th:selected="${u.rol == 'ADMINISTRADOR'}">Administrador</option>
                     <option value="LIDER" th:selected="${u.rol == 'LIDER'}">Líder</option>
-                    <option value="PARTICIPANTE" th:selected="${u.rol == 'PARTICIPANTE'}">Participante</option>
+                    <option value="PARTICIPANTE" th:selected="${u.rol == 'PARTICIPANTE'}">Voluntario</option>
                   </select>
-                  <button type="submit" class="btn-aceptar" style="padding: 0.4rem 1rem; cursor: pointer; border: none; border-radius: 5px; background: #007bff; color: white;">Cambiar</button>
+                  <button type="submit" class="btn btn-info btn-sm btn-icon" title="Guardar rol" aria-label="Guardar rol"><i class="fa-solid fa-check"></i></button>
                 </form>
               </td>
-              <td class="actions">
-                <!-- No mostrar eliminar si es el admin actual -->
-                <form th:if="${u.id != usuario.id}"
-                      th:action="@{/admin/usuario/{id}/eliminar(id=${u.id})}"
-                      method="post" style="display: inline;">
-                  <button type="submit" class="btn-eliminar">Eliminar</button>
-                </form>
-                <span th:if="${u.id == usuario.id}" style="color: #666; font-style: italic;">(Tú)</span>
+              <td>
+                <div class="table-actions" th:if="${u.id != usuario.id}">
+                  <form th:action="@{/admin/usuario/{id}/estado(id=${u.id})}" method="post" class="inline-form">
+                  <input type="hidden" name="volver" th:value="${volverUsuarios}">
+                    <button type="submit" class="btn btn-sm" th:classappend="${u.enabled} ? 'btn-warning' : 'btn-success'"
+                            th:title="${u.enabled} ? 'Desactivar cuenta' : 'Activar cuenta'">
+                      <i class="fa-solid" th:classappend="${u.enabled} ? 'fa-user-slash' : 'fa-user-check'"></i>
+                      <span th:text="${u.enabled} ? 'Desactivar' : 'Activar'">Desactivar</span>
+                    </button>
+                  </form>
+                  <form th:action="@{/admin/usuario/{id}/eliminar(id=${u.id})}" method="post" class="inline-form">
+                  <input type="hidden" name="volver" th:value="${volverUsuarios}">
+                    <button type="submit" class="btn btn-danger btn-sm btn-icon" title="Eliminar" aria-label="Eliminar usuario"
+                            data-confirm="¿Eliminar este usuario? Esta acción no se puede deshacer." data-confirm-ok="Eliminar">
+                      <i class="fa-regular fa-trash-can"></i>
+                    </button>
+                  </form>
+                </div>
+                <span th:if="${u.id == usuario.id}" class="badge no-dot"><i class="fa-solid fa-user-check"></i> Tú</span>
               </td>
             </tr>
           </tbody>
         </table>
-
-        <!-- Estadísticas -->
-        <div style="margin-top: 2rem; padding: 1rem; background: rgba(255,255,255,0.1); border-radius: 5px; color: #fff;">
-          <p style="margin: 0;">
-            <strong>Total de usuarios:</strong> <span th:text="${#lists.size(usuarios)}">0</span>
-          </p>
-        </div>
-
       </div>
-    </div>
-  </div>
 
-<script>
-function filtrarUsuarios() {
-  const filter = document.getElementById("buscadorUsuarios").value.toLowerCase();
-  const trs = document.querySelectorAll(".project-table tbody tr");
-  
-  trs.forEach(tr => {
-    if(tr.children.length === 1) return; 
-    const nombre = tr.children[1].textContent.toLowerCase();
-    const correo = tr.children[2].textContent.toLowerCase();
-    const rol = tr.children[3].textContent.toLowerCase();
-    
-    if (nombre.includes(filter) || correo.includes(filter) || rol.includes(filter)) {
-      tr.style.display = "";
-    } else {
-      tr.style.display = "none";
-    }
-  });
-}
-</script>
+      <div th:replace="~{fragments/paginacion :: paginacion(${paginacion}, 'usuarios')}"></div>
+
+    </section>
+  </main>
+  </div>
+</div>
+
+  <script src="../static/js/script.js" th:src="@{/js/script.js}"></script>
 </body>
 </html>

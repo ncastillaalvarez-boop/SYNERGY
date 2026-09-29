@@ -1,142 +1,73 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="UTF-8">
-    <title>Jerarquía de Proyectos - Synergy</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 20px;
-            margin: 0;
-        }
-        
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        }
-        
-        h1 {
-            color: #667eea;
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        
-        .jerarquia-box {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 20px;
-            margin: 20px 0;
-            border-left: 4px solid #667eea;
-        }
-        
-        .nodo {
-            font-family: 'Courier New', monospace;
-            padding: 5px 0;
-            font-size: 14px;
-            line-height: 1.6;
-        }
-        
-        .formularios {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            margin-top: 30px;
-        }
-        
-        .form-card {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 10px;
-            border-top: 3px solid #667eea;
-        }
-        
-        .form-card h3 {
-            margin-top: 0;
-            color: #667eea;
-        }
-        
-        input, button {
-            width: 100%;
-            padding: 10px;
-            margin: 5px 0;
-            border-radius: 5px;
-            border: 1px solid #ddd;
-            box-sizing: border-box;
-        }
-        
-        button {
-            background: #667eea;
-            color: white;
-            border: none;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        
-        button:hover {
-            background: #5568d3;
-        }
-        
-        .back-link {
-            display: inline-block;
-            margin-bottom: 20px;
-            color: #667eea;
-            text-decoration: none;
-            font-weight: bold;
-        }
-        
-        .back-link:hover {
-            text-decoration: underline;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>try{var t=localStorage.getItem('synergy-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
+  <title>Jerarquía de Proyectos - Synergy</title>
+  <link rel="icon" type="image/png" href="../static/img/logo-mark.png" th:href="@{/img/logo-mark.png}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <link rel="stylesheet" href="../static/css/core.css" th:href="@{/css/core.css}">
+  <link rel="stylesheet" href="../static/css/dashboard.css" th:href="@{/css/dashboard.css}">
 </head>
 <body>
-    <div class="container">
-        <a href="/proyectos" class="back-link">← Volver a Proyectos</a>
-        
-        <h1>🌳 Jerarquía de Proyectos</h1>
-        
-        <div class="jerarquia-box">
-            <div th:each="linea : ${jerarquia}" class="nodo" th:text="${linea}"></div>
+  <div class="bg-ambient" aria-hidden="true"></div>
+
+  <div class="app-shell">
+  <div th:replace="~{fragments/sidebar :: sidebar('jerarquia')}"></div>
+  <div class="app-main">
+  <div th:replace="~{fragments/sidebar :: topbar}"></div>
+
+  <main class="app-container">
+    <section class="app-card">
+
+      <header class="page-header">
+        <nav class="page-toolbar">
+          <div class="toolbar-group">
+            <a th:href="@{/admin/proyectos}" class="btn btn-secondary btn-sm"><i class="fa-solid fa-arrow-left"></i> Volver a proyectos</a>
+          </div>
+          <a th:href="@{/}" class="mini-brand"><span class="mini-brand-mark"><img src="../static/img/logo-mark.png" th:src="@{/img/logo-mark.png}" alt=""></span><span>Synergy</span></a>
+        </nav>
+        <div class="page-heading">
+          <span class="page-icon has-img"><img src="../static/img/icons/proyectos.png" th:src="@{/img/icons/proyectos.png}" alt="" loading="lazy"></span>
+          <div>
+            <h1 class="page-title">Jerarquía de Proyectos</h1>
+            <p class="page-subtitle">Cómo se organizan los proyectos por categoría y barrio.</p>
+          </div>
         </div>
-        
-        <div class="formularios">
-            <!-- Formulario para agregar proyecto -->
-            <div class="form-card">
-                <h3>📊 Agregar Proyecto</h3>
-                <form th:action="@{/jerarquia/agregar-proyecto}" method="post">
-                    <input type="number" name="id" placeholder="ID del proyecto" required>
-                    <input type="text" name="nombre" placeholder="Nombre del proyecto" required>
-                    <button type="submit">Agregar Proyecto</button>
-                </form>
-            </div>
-            
-            <!-- Formulario para agregar subproyecto -->
-            <div class="form-card">
-                <h3>📁 Agregar Subproyecto</h3>
-                <form th:action="@{/jerarquia/agregar-subproyecto}" method="post">
-                    <input type="number" name="proyectoId" placeholder="ID del proyecto padre" required>
-                    <input type="number" name="subproyectoId" placeholder="ID del subproyecto" required>
-                    <input type="text" name="nombre" placeholder="Nombre del subproyecto" required>
-                    <button type="submit">Agregar Subproyecto</button>
-                </form>
-            </div>
-            
-            <!-- Formulario para agregar tarea -->
-            <div class="form-card">
-                <h3>✅ Agregar Tarea</h3>
-                <form th:action="@{/jerarquia/agregar-tarea}" method="post">
-                    <input type="number" name="proyectoId" placeholder="ID del proyecto" required>
-                    <input type="number" name="tareaId" placeholder="ID de la tarea" required>
-                    <input type="text" name="nombre" placeholder="Nombre de la tarea" required>
-                    <button type="submit">Agregar Tarea</button>
-                </form>
-            </div>
-        </div>
-    </div>
+      </header>
+
+      <div class="alert alert-info">
+        <i class="fa-solid fa-circle-info"></i>
+        <span>El árbol se construye con los proyectos reales: <strong>organización → categoría → barrio → proyecto</strong>.
+          Abre una categoría para ver sus barrios y proyectos.</span>
+      </div>
+
+      <div th:if="${ruta != null}" class="result-summary">
+        <span><i class="fa-solid fa-route"></i>
+          <th:block th:each="r, st : ${ruta}"><span th:text="${r}"></span><span th:if="${!st.last}"> › </span></th:block></span>
+        <span><strong th:text="${tareasCategoria}">0</strong> tareas en esta categoría</span>
+      </div>
+
+      <h2 class="section-heading"><i class="fa-solid fa-folder-tree"></i> Árbol de proyectos</h2>
+      <ul class="tree-list">
+        <li th:each="n : ${nodos}" class="tree-node" th:classappend="'tree-' + ${#strings.toLowerCase(n.tipo)}"
+            th:style="'--nivel:' + ${n.nivel}">
+          <i class="fa-solid" th:classappend="${n.tipo == 'ORGANIZACION'} ? 'fa-sitemap' : (${n.tipo == 'CATEGORIA'} ? (${n.abierto} ? 'fa-folder-open' : 'fa-folder') : (${n.tipo == 'BARRIO'} ? 'fa-location-dot' : 'fa-seedling'))"></i>
+          <a th:if="${n.url != null}" th:href="@{${n.url}}" th:text="${n.nombre}">Nodo</a>
+          <span th:if="${n.url == null}" th:text="${n.nombre}">Nodo</span>
+          <small th:text="${n.detalle}">detalle</small>
+        </li>
+      </ul>
+
+    </section>
+  </main>
+  </div>
+</div>
+
+  <script src="../static/js/script.js" th:src="@{/js/script.js}"></script>
 </body>
 </html>

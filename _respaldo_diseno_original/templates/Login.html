@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Iniciar sesión – Synergy</title>
+  <link rel="stylesheet" th:href="@{/css/Login.css}">
+</head>
+<body>
+
+<section class="hero">
+
+  <div class="overlay"></div>
+
+    <button onclick="history.back()" class="btn-small" style="position:absolute; top:20px; left:20px; z-index:9999;">
+    ←
+  </button>
+  
+  <div class="card">
+    
+    <img th:src="@{/img/Logo.png}" alt="Logo Synergy" class="Logo">
+
+    <h1>Inicia sesión</h1>
+    <p class="subtitle">Accede a tu cuenta de Synergy</p>
+
+    <form th:action="@{/login}" method="post">
+
+      <p th:if="${error}" th:text="${error}" style="color:red; margin-bottom:10px;"></p>
+      
+      <p th:if="${param.sessionExpirada}" style="color:orange; margin-bottom:10px; text-align:center;">
+             Tu sesión ha expirado. Por favor inicia sesión nuevamente.
+      </p>
+
+      <div class="input-group">
+        <input type="email" name="correo" required>
+        <label>Correo electrónico</label>
+      </div>
+
+      <div class="input-group">
+        <input type="password" name="contrasena" required>
+        <label>Contraseña</label>
+      </div>
+
+      <button type="submit" class="btn-comenzar">Iniciar sesión</button>
+      <div class="divider">
+        <hr><span>o continúa sin cuenta</span><hr>
+     </div>
+
+     <a th:href="@{/publico/proyectos}" class="btn-invitado">
+       Ver proyectos como invitado
+     </a>
+      
+      <p class="login-text">
+        ¿No tienes una cuenta? <a th:href="@{/seleccionar-rol}">Regístrate</a>
+      </p>
+
+    </form>
+  </div>
+</section>
+
+</body>
+</html>

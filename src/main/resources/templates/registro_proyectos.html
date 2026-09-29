@@ -1,54 +1,112 @@
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registrar Proyecto - Synergy</title>
-
-    <link rel="stylesheet" th:href="@{/css/registro_proyecto.css}">
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>try{var t=localStorage.getItem('synergy-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
+  <title>Proponer proyecto – Synergy</title>
+  <link rel="icon" type="image/png" href="../static/img/logo-mark.png" th:href="@{/img/logo-mark.png}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <link rel="stylesheet" href="../static/css/core.css" th:href="@{/css/core.css}">
+  <link rel="stylesheet" href="../static/css/dashboard.css" th:href="@{/css/dashboard.css}">
 </head>
 <body>
+  <div class="bg-ambient" aria-hidden="true"></div>
 
-<h1>Registrar Proyecto</h1>
+<div class="app-shell">
+  <div th:replace="~{fragments/sidebar :: sidebar('proponer')}"></div>
+  <div class="app-main">
+  <div th:replace="~{fragments/sidebar :: topbar}"></div>
 
-<div th:if="${mensajeExito}">
-    <p th:text="${mensajeExito}"></p>
+  <main class="app-container is-narrow">
+    <section class="app-card">
+      <header class="page-header">
+        <div class="page-heading">
+          <span class="page-icon has-img"><img src="../static/img/icons/agregar.png" th:src="@{/img/icons/agregar.png}" alt=""></span>
+          <div>
+            <h1 class="page-title">Proponer un proyecto</h1>
+            <p class="page-subtitle">Envía tu propuesta. Un administrador la revisará antes de publicarla.</p>
+          </div>
+        </div>
+      </header>
+
+      <div th:if="${mensaje}" class="alert alert-success" data-autohide>
+        <i class="fa-solid fa-circle-check"></i>
+        <span th:text="${mensaje}"></span>
+      </div>
+      <div th:if="${error}" class="alert alert-error">
+        <i class="fa-solid fa-circle-exclamation"></i>
+        <span th:text="${error}"></span>
+      </div>
+
+      <div th:if="${mensajeExito}" class="alert alert-success">
+        <i class="fa-solid fa-circle-check"></i>
+        <span th:text="${mensajeExito}"></span>
+      </div>
+
+      <form th:action="@{/proyectos/guardar}" th:object="${proyecto}" method="post" enctype="multipart/form-data" data-loading>
+        <div class="form-grid">
+          <div class="field span-2">
+            <label th:for="nombre"><i class="fa-solid fa-signature"></i> Nombre</label>
+            <input type="text" th:field="*{nombre}" maxlength="120" placeholder="Ej: Limpieza de playas" required>
+          </div>
+          <div class="field span-2">
+            <label th:for="descripcion"><i class="fa-solid fa-align-left"></i> Descripción</label>
+            <textarea th:field="*{descripcion}" placeholder="Describe el objetivo del proyecto..." required></textarea>
+          </div>
+          <div class="field">
+            <label th:for="fechaInicio"><i class="fa-regular fa-calendar"></i> Fecha inicio</label>
+            <input type="date" th:field="*{fechaInicio}" required>
+          </div>
+          <div class="field">
+            <label th:for="fechaFin"><i class="fa-regular fa-calendar-check"></i> Fecha fin</label>
+            <input type="date" th:field="*{fechaFin}" required>
+          </div>
+          <div class="field">
+            <label th:for="categoria"><i class="fa-solid fa-leaf"></i> Categoría</label>
+            <select th:field="*{categoria}" required>
+              <option value="">Selecciona…</option>
+              <option th:each="c : ${categorias}" th:value="${c}" th:text="${c}">Categoría</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label th:for="ubicacion"><i class="fa-solid fa-location-dot"></i> Barrio / sector</label>
+            <select th:field="*{ubicacion}" required>
+              <option value="">Selecciona…</option>
+              <option th:each="b : ${barrios}" th:value="${b}" th:text="${b}">Barrio</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label th:for="tipoOrganizacion"><i class="fa-solid fa-building"></i> Organización</label>
+            <select th:field="*{tipoOrganizacion}" required>
+              <option value="">Selecciona…</option>
+              <option th:each="o : ${organizaciones}" th:value="${o}" th:text="${o}">Org</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label th:for="audiencia"><i class="fa-solid fa-bullseye"></i> Dirigido a</label>
+            <select th:field="*{audiencia}">
+              <option value="">Público general</option>
+              <option th:each="a : ${audiencias}" th:value="${a}" th:text="${a}">Audiencia</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary btn-lg"><i class="fa-solid fa-paper-plane"></i> Enviar propuesta</button>
+        </div>
+      </form>
+
+    </section>
+  </main>
+  </div>
 </div>
 
-<form th:action="@{/proyectos/guardar}" 
-      th:object="${proyecto}" 
-      method="post" 
-      enctype="multipart/form-data">
-
-    <!-- Nombre -->
-    <label>Nombre:</label>
-    <input type="text" th:field="*{nombre}" required>
-    <br><br>
-
-    <!-- Descripción -->
-    <label>Descripción:</label>
-    <textarea th:field="*{descripcion}" required></textarea>
-    <br><br>
-
-    <!-- Fechas -->
-    <label>Fecha inicio:</label>
-    <input type="date" th:field="*{fechaInicio}" required>
-    <br><br>
-
-    <label>Fecha fin:</label>
-    <input type="date" th:field="*{fechaFin}" required>
-    <br><br>
-
-    <!-- Archivo -->
-    <label>Archivo (opcional):</label>
-    <input type="file" name="archivo">
-    <br><br>
-
-    <button type="submit">Guardar Proyecto</button>
-    <br><br>
-    <a th:href="@{/lider/dashboard}" class="btn-volver">Volver al Dashboard</a>
-</form>
-
+  <script src="../static/js/script.js" th:src="@{/js/script.js}"></script>
 </body>
 </html>

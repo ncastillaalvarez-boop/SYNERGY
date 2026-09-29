@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <title>Tareas Recibidas – Synergy</title>
+    <link rel="stylesheet" href="/css/Tareas_Proyecto.css" />
+</head>
+
+<body>
+
+<div class="hero">
+    <div class="overlay"></div>
+
+    <div class="container">
+        <div class="card">
+
+            <div class="header">
+                <div class="top-buttons">
+                    <button class="btn-volver" onclick="location.href='/lider/dashboard'">⬅ Volver</button>
+                </div>
+
+                <h1>Tareas Recibidas</h1>
+                <p class="subtitle">Estas son las tareas enviadas por los participantes.</p>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Título</th>
+                        <th>Descripción</th>
+                        <th>Usuario</th>
+                        <th>Archivo</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    <tr th:each="t : ${tareas}">
+                        <td th:text="${t.titulo}"></td>
+                        <td th:text="${t.descripcion}"></td>
+                        <td th:text="${t.usuario.nombre}"></td>
+                        <td><a th:href="@{/tareas/archivo/{id}(id=${t.id})}" class="link">Descargar</a></td>
+                        <td><a th:href="@{/tareas/detalles/{id}(id=${t.id})}" class="btn-ver">Ver</a></td>
+                    </tr>
+                </tbody>
+
+            </table>
+
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>

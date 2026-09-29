@@ -1,81 +1,102 @@
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Buzón del Proyecto – Synergy</title>
-    <link rel="stylesheet" href="/css/Comentarios_Proyectos.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>try{var t=localStorage.getItem('synergy-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
+  <title>Comentarios – Synergy</title>
+  <link rel="icon" type="image/png" href="../static/img/logo-mark.png" th:href="@{/img/logo-mark.png}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <link rel="stylesheet" href="../static/css/core.css" th:href="@{/css/core.css}">
+  <link rel="stylesheet" href="../static/css/dashboard.css" th:href="@{/css/dashboard.css}">
 </head>
 <body>
+  <div class="bg-ambient" aria-hidden="true"></div>
 
-<section class="hero">
-    <div class="overlay"></div>
+<div class="app-shell">
+  <div th:replace="~{fragments/sidebar :: sidebar('mis-proyectos')}"></div>
+  <div class="app-main">
+  <div th:replace="~{fragments/sidebar :: topbar}"></div>
 
-    <div class="card">
-        <!-- Logo -->
-        <img src="Logo.png" alt="Logo Synergy" class="Logo">
-
-        <!-- Título dinámico con Thymeleaf -->
-        <h1 th:text="${proyecto.nombre}">Nombre del Proyecto</h1>
-        <p class="subtitle" th:text="${proyecto.descripcion}">
-            Aquí podrás dejar tus comentarios y ver tus tareas asignadas
-        </p>
-
-        <!-- Sección de tareas -->
-        <div class="tareas-section">
-            <h2>📋 Tareas Asignadas</h2>
-            <ul id="listaTareas">
-                <li th:each="tarea : ${tareas}" th:text="${tarea.descripcion}">
-                    Diseñar interfaz principal del sistema
-                </li>
-            </ul>
+  <main class="app-container is-narrow">
+    <section class="app-card">
+      <header class="page-header">
+        <nav class="page-toolbar">
+          <div class="toolbar-group">
+            <a th:href="@{${volverA}}" class="btn btn-secondary btn-sm"><i class="fa-solid fa-arrow-left"></i> Volver</a>
+            
+          </div>
+        </nav>
+        <div class="page-heading">
+          <span class="page-icon has-img"><img src="../static/img/icons/comunidad.png" th:src="@{/img/icons/comunidad.png}" alt=""></span>
+          <div>
+            <h1 class="page-title" th:text="${proyecto.nombre}">Proyecto</h1>
+            <p class="page-subtitle" th:text="'Buzón de comentarios del proyecto'">Descripción</p>
+          </div>
         </div>
+      </header>
 
-        <!-- Formulario de comentarios -->
-        <div class="comentarios-section">
-            <h2>💬 Dejar un Comentario</h2>
+      <div th:if="${mensaje}" class="alert alert-success" data-autohide>
+        <i class="fa-solid fa-circle-check"></i>
+        <span th:text="${mensaje}"></span>
+      </div>
+      <div th:if="${error}" class="alert alert-error">
+        <i class="fa-solid fa-circle-exclamation"></i>
+        <span th:text="${error}"></span>
+      </div>
 
-            <form th:action="@{/proyectos/enviar-comentario}" method="post" enctype="multipart/form-data">
-                <!-- Campo oculto con el ID del proyecto -->
-                <input type="hidden" name="proyectoId" th:value="${proyecto.id}">
+      <h2 class="section-heading"><i class="fa-regular fa-comment-dots"></i> Escribir un comentario</h2>
+      <div class="panel">
+        <form th:action="@{/proyectos/enviar-comentario}" method="post" class="stack" data-loading>
+          <input type="hidden" name="proyectoId" th:value="${proyecto.id}">
+          <div class="field">
+            <label for="comentario" class="sr-only">Comentario</label>
+            <textarea id="comentario" name="comentario" maxlength="2000" placeholder="Comparte avances, dudas o ideas con tu equipo..." required></textarea>
+          </div>
+          <div><button type="submit" class="btn btn-primary"><i class="fa-solid fa-paper-plane"></i> Publicar</button></div>
+        </form>
+      </div>
 
-                <div class="input-group">
-                    <textarea id="comentario" name="comentario" placeholder="Escribe tu comentario..." required></textarea>
-                </div>
-
-                <div class="file-group">
-                    <label for="archivo" class="file-label">📎 Adjuntar archivo</label>
-                    <input type="file" id="archivo" name="archivo" accept="image/*,.pdf,.doc,.docx,.zip">
-                    <span id="fileName" class="file-name">Ningún archivo seleccionado</span>
-                </div>
-
-                <button type="submit">Enviar Comentario</button>
-            </form>
-        </div>
-
-        <!-- Sección de comentarios anteriores -->
-        <div class="comentarios-lista">
-            <h2>🗨️ Comentarios Recientes</h2>
-            <div class="comentario" th:each="comentario : ${comentarios}">
-                <p><strong th:text="${comentario.usuario.nombre}">Usuario</strong>:</p>
-                <p th:text="${comentario.texto}">Excelente avance en la documentación.</p>
-                <small th:text="${#dates.format(comentario.fecha, 'dd/MM/yyyy HH:mm')}">08/11/2025 15:30</small>
-                <hr>
+      <h2 class="section-heading"><i class="fa-solid fa-comments"></i> Comentarios
+        <span class="count" th:text="${#lists.size(comentarios)}">0</span></h2>
+      <div class="panel">
+        <div class="comment" th:each="c : ${comentarios}">
+          <span class="avatar" th:text="${c.iniciales}">US</span>
+          <div class="comment-body">
+            <div class="comment-head">
+              <strong class="comment-author" th:text="${c.autor}">Usuario</strong>
+              <div class="cluster">
+                <small th:text="${c.fecha != null ? #temporals.format(c.fecha, 'dd/MM/yyyy HH:mm') : ''}">08/11/2025 15:30</small>
+                <form th:if="${c.propio or proyecto.idLider == usuarioActual.id or rolActual == 'ADMINISTRADOR'}"
+                      th:action="@{/proyectos/comentarios/eliminar/{id}(id=${c.id})}" method="post" class="inline-form">
+                  <input type="hidden" name="proyectoId" th:value="${proyecto.id}">
+                  <button type="submit" class="btn btn-ghost btn-sm btn-icon" title="Eliminar comentario" aria-label="Eliminar comentario"
+                          data-confirm="¿Eliminar este comentario?" data-confirm-ok="Eliminar"><i class="fa-regular fa-trash-can"></i></button>
+                </form>
+              </div>
             </div>
+            <p class="comment-text" th:text="${c.contenido}">Comentario</p>
+          </div>
         </div>
+        <p th:if="${#lists.isEmpty(comentarios)}" class="text-subtle">Aún no hay comentarios. ¡Sé el primero!</p>
+      </div>
 
-        <a href="/proyectos/mis-proyectos" class="back-link">← Volver a Mis Proyectos</a>
-    </div>
-</section>
+      <h2 class="section-heading"><i class="fa-solid fa-list-check"></i> Tareas</h2>
+      <div class="panel">
+        <ul class="task-list">
+          <li th:each="t : ${tareas}"><span><strong th:text="${t.titulo}">Tarea</strong> · <span th:text="${t.estado}">PENDIENTE</span></span></li>
+        </ul>
+        <p th:if="${#lists.isEmpty(tareas)}" class="text-subtle">No hay tareas para mostrar.</p>
+      </div>
 
-<script>
-  // Mostrar nombre del archivo seleccionado
-  const fileInput = document.getElementById("archivo");
-  const fileName = document.getElementById("fileName");
-  fileInput.addEventListener("change", function () {
-      fileName.textContent = fileInput.files.length > 0 ? fileInput.files[0].name : "Ningún archivo seleccionado";
-  });
-</script>
+    </section>
+  </main>
+  </div>
+</div>
 
+  <script src="../static/js/script.js" th:src="@{/js/script.js}"></script>
 </body>
 </html>

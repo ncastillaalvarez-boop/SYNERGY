@@ -1,4 +1,4 @@
-@import url('/css/synergy-tokens.css');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 * {
   margin: 0;
@@ -315,3 +315,4 @@ h2 {
   .project-table { display: block; overflow-x: auto; }
   .project-table th, .project-table td { padding: 12px 10px; }
 }
+

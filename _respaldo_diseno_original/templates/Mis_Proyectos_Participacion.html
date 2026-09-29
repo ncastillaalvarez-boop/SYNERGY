@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mis Proyectos – Synergy</title>
+    <link rel="stylesheet" href="/css/Mis_Proyectos_Participacion.css">
+</head>
+<body>
+
+<section class="hero">
+    <div class="overlay"></div>
+
+    <div class="card">
+        <img src="Logo.png" alt="Logo Synergy" class="Logo">
+        <h1>Mis Proyectos</h1>
+        <p class="subtitle">Proyectos donde participas activamente</p>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Descripción</th>
+                        <th>Inicio</th>
+                        <th>Fin</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Lista de proyectos del usuario -->
+                    <tr th:each="proyecto : ${misProyectos}">
+                        <td th:text="${proyecto.nombre}"></td>
+                        <td th:text="${proyecto.descripcion}"></td>
+                        <td th:text="${proyecto.fechaInicio}"></td>
+                        <td th:text="${proyecto.fechaFin}"></td>
+                        <td>
+                            <a th:href="@{'/buzon/' + ${proyecto.id}}" class="btn">Abrir Buzón</a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <a href="/inicio" class="back-link">← Volver al Menú Principal</a>
+    </div>
+</section>
+
+</body>
+</html>

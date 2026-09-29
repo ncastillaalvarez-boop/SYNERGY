@@ -8,87 +8,56 @@ import org.springframework.stereotype.Component;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 
 @Component
 public class JwtTokenProvider {
 
-    @Value("${app.jwtSecret}")
+    @Value("${app.jwtSecret:synergy_secret_key_2024_a_very_long_secret_key_for_jwt_encryption}")
     private String jwtSecret;
 
-    @Value("${app.jwtExpirationMs}")
+    @Value("${app.jwtExpirationMs:86400000}") // 24 horas por defecto
     private long jwtExpirationMs;
 
-    @Value("${app.jwtRefreshExpirationMs}")
-    private long jwtRefreshExpirationMs;
-
-    // ============================================================
-    // ACCESS TOKEN
-    // ============================================================
     public String generateToken(String correo, String rol) {
-        return buildToken(correo, rol, jwtExpirationMs, "access");
-    }
-
-    // ============================================================
-    // REFRESH TOKEN
-    // ============================================================
-    public String generateRefreshToken(String correo) {
-        return buildToken(correo, null, jwtRefreshExpirationMs, "refresh");
-    }
-
-    // ============================================================
-    // CONSTRUCCIÓN INTERNA DE TOKENS
-    // ============================================================
-    private String buildToken(String correo, String rol, long expirationMs, String tipo) {
-        Key key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
+        Key key = Keys.hmacShaKeyFor(jwtSecret.getBytes(java.nio.charset.StandardCharsets.UTF_8));
         Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + expirationMs);
+        Date expiryDate = new Date(now.getTime() + jwtExpirationMs);
 
-        var builder = Jwts.builder()
-                .setSubject(correo)
-                .claim("tipo", tipo)
-                .setIssuedAt(now)
-                .setExpiration(expiryDate)
-                .signWith(key, SignatureAlgorithm.HS512);
-
-        if (rol != null) {
-            builder.claim("rol", rol);
-        }
-
-        return builder.compact();
+        return Jwts.builder()
+                .subject(correo)
+                .claim("rol", rol)
+                .issuedAt(now)
+                .expiration(expiryDate)
+                .signWith((javax.crypto.SecretKey) key, Jwts.SIG.HS512)
+                .compact();
     }
 
-    // ============================================================
-    // EXTRAER DATOS DEL TOKEN
-    // ============================================================
     public String getCorreoFromToken(String token) {
-        return getClaims(token).getSubject();
-    }
-
-    public String getRolFromToken(String token) {
-        return (String) getClaims(token).get("rol");
-    }
-
-    public String getTipoFromToken(String token) {
-        return (String) getClaims(token).get("tipo");
-    }
-
-    private Claims getClaims(String token) {
-        Key key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
-        return Jwts.parser()
+        Key key = Keys.hmacShaKeyFor(jwtSecret.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        Claims claims = Jwts.parser()
                 .verifyWith((javax.crypto.SecretKey) key)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
+
+        return claims.getSubject();
     }
 
-    // ============================================================
-    // VALIDACIÓN
-    // ============================================================
+    public String getRolFromToken(String token) {
+        Key key = Keys.hmacShaKeyFor(jwtSecret.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        Claims claims = Jwts.parser()
+                .verifyWith((javax.crypto.SecretKey) key)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
+
+        return (String) claims.get("rol");
+    }
+
     public boolean validateToken(String token) {
         try {
-            Key key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
+            Key key = Keys.hmacShaKeyFor(jwtSecret.getBytes(java.nio.charset.StandardCharsets.UTF_8));
             Jwts.parser()
                     .verifyWith((javax.crypto.SecretKey) key)
                     .build()
@@ -101,9 +70,5 @@ public class JwtTokenProvider {
 
     public Long getExpirationTime() {
         return jwtExpirationMs;
-    }
-
-    public Long getRefreshExpirationTime() {
-        return jwtRefreshExpirationMs;
     }
 }

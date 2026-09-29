@@ -3,100 +3,114 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>try{var t=localStorage.getItem('synergy-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
   <title>Registrarse – Synergy</title>
-  <link rel="stylesheet" th:href="@{/css/SeleccionarRol.css}">
+  <link rel="icon" type="image/png" href="../static/img/logo-mark.png" th:href="@{/img/logo-mark.png}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <link rel="stylesheet" href="../static/css/core.css" th:href="@{/css/core.css}">
+  <link rel="stylesheet" href="../static/css/auth.css" th:href="@{/css/auth.css}">
+  <style>.theme-icon-light{display:none}[data-theme="light"] .theme-icon-dark{display:none}[data-theme="light"] .theme-icon-light{display:inline-block}</style>
 </head>
 <body>
+  <div class="bg-ambient" aria-hidden="true"></div>
+  <div class="bg-grid" aria-hidden="true"></div>
 
-  <a th:href="@{/}" class="btn-volver">← Volver</a>
+  <a th:href="@{/}" class="btn btn-secondary btn-sm back-btn">
+    <i class="fa-solid fa-arrow-left"></i> Volver
+  </a>
 
-  <div class="card">
+  <button type="button" class="btn btn-secondary btn-icon theme-float" data-theme-toggle aria-label="Cambiar tema claro u oscuro">
+    <i class="fa-solid fa-moon theme-icon-dark"></i>
+    <i class="fa-solid fa-sun theme-icon-light"></i>
+  </button>
 
-    <div class="logo">
-      <div class="logo-icon">
-        <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
-          <path d="M10 2C10 2 4 6 4 11a6 6 0 0012 0C16 6 10 2 10 2z" fill="white" opacity="0.9"/>
-          <path d="M10 7v6M7 10h6" stroke="#1D9E75" stroke-width="1.5" stroke-linecap="round"/>
-        </svg>
+  <main class="auth-page">
+    <div class="auth-card is-wide">
+
+      <div class="auth-brand">
+        <span class="auth-brand-mark"><img src="../static/img/logo-mark.png" th:src="@{/img/logo-mark.png}" alt=""></span>
+        <span class="auth-brand-text">Synergy</span>
       </div>
-      <span class="logo-text">Synergy</span>
+      <p class="auth-brand-sub"><i class="fa-solid fa-location-dot"></i> Proyectos ambientales · Cartagena</p>
+
+      <div class="steps" aria-label="Paso 2 de 3">
+        <div class="step-dot done"></div>
+        <div class="step-dot active"></div>
+        <div class="step-dot"></div>
+      </div>
+
+      <h1 class="auth-title">¿Cómo quieres participar?</h1>
+      <p class="auth-subtitle">Elige tu rol en la plataforma. Puedes cambiarlo después contactando al administrador.</p>
+
+      <div class="roles-grid">
+
+        <a th:href="@{/registro/voluntario}" class="rol-card"
+           onmouseenter="showInfo('voluntario')" onfocus="showInfo('voluntario')"
+           onmouseleave="clearInfo()" onblur="clearInfo()">
+          <div class="rol-icono icono-voluntario"><i class="fa-solid fa-hand-holding-heart"></i></div>
+          <div class="rol-nombre">Voluntario</div>
+          <div class="rol-desc">Únete a proyectos y apoya iniciativas ambientales</div>
+          <span class="rol-go">Continuar <i class="fa-solid fa-arrow-right"></i></span>
+        </a>
+
+        <a th:href="@{/registro/lider}" class="rol-card recomendado"
+           onmouseenter="showInfo('lider')" onfocus="showInfo('lider')"
+           onmouseleave="clearInfo()" onblur="clearInfo()">
+          <div class="badge-rec"><i class="fa-solid fa-star"></i> Recomendado</div>
+          <div class="rol-icono icono-lider"><i class="fa-solid fa-flag"></i></div>
+          <div class="rol-nombre">Líder</div>
+          <div class="rol-desc">Crea y gestiona proyectos ambientales</div>
+          <span class="rol-go">Continuar <i class="fa-solid fa-arrow-right"></i></span>
+        </a>
+
+      </div>
+
+      <div class="info-box" id="infoBox" aria-live="polite">
+        <i class="fa-solid fa-circle-info"></i>
+        <span id="infoText">Pasa el cursor sobre un rol para ver más información.</span>
+      </div>
+
+      <th:block th:if="${usuarioActual == null}">
+        <div class="divider">o continúa sin registrarte</div>
+
+        <a th:href="@{/publico/proyectos}" class="btn btn-secondary btn-block">
+          <i class="fa-regular fa-eye"></i> Ver proyectos como invitado
+        </a>
+      </th:block>
+      <div th:if="${usuarioActual != null}" class="alert alert-info" style="margin-top:16px">
+        <i class="fa-solid fa-circle-info"></i>
+        <span>Tienes una sesión abierta como <strong th:text="${usuarioActual.nombre}">Usuario</strong>.
+          <a th:href="@{${panelActual}}" class="link">Ir a mi panel</a> o
+          <a th:href="@{/logout}" class="link">cerrar sesión</a> para crear otra cuenta.</span>
+      </div>
+
+      <p class="auth-footer">
+        ¿Ya tienes cuenta? <a th:href="@{/login}">Inicia sesión</a>
+      </p>
+
     </div>
-    <p class="logo-sub">Proyectos ambientales · Cartagena</p>
-
-    <div class="steps">
-      <div class="step-dot done"></div>
-      <div class="step-dot active"></div>
-      <div class="step-dot"></div>
-    </div>
-
-    <h1 class="title">¿Cómo quieres participar?</h1>
-    <p class="subtitle">Elige tu rol en la plataforma. Puedes cambiarlo después contactando al administrador.</p>
-
-    <div class="roles-grid">
-
-      <a th:href="@{/registro/voluntario}" class="rol-card"
-         onmouseenter="showInfo('voluntario')"
-         onmouseleave="clearInfo()">
-        <div class="rol-icono icono-voluntario">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="8" r="4" stroke="#1D9E75" stroke-width="1.5"/>
-            <path d="M4 20c0-4 3.582-7 8-7s8 3 8 7" stroke="#1D9E75" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
-        </div>
-        <div class="rol-nombre">Voluntario</div>
-        <div class="rol-desc">Únete a proyectos y apoya iniciativas ambientales</div>
-      </a>
-
-      <a th:href="@{/registro/lider}" class="rol-card recomendado"
-         onmouseenter="showInfo('lider')"
-         onmouseleave="clearInfo()">
-        <div class="badge-rec">Recomendado</div>
-        <div class="rol-icono icono-lider">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-            <path d="M12 3l2.2 4.4 4.8.7-3.5 3.4.8 4.8L12 14l-4.3 2.3.8-4.8L5 8.1l4.8-.7z"
-                  stroke="#9FE1CB" stroke-width="1.5" stroke-linejoin="round"/>
-          </svg>
-        </div>
-        <div class="rol-nombre">Líder</div>
-        <div class="rol-desc">Crea y gestiona proyectos ambientales</div>
-      </a>
-
-    </div>
-
-    <div class="info-box" id="infoBox">
-      Pasa el cursor sobre un rol para ver más información.
-    </div>
-
-    <div class="divider">
-      <div class="divider-line"></div>
-      <span class="divider-text">o continúa sin registrarte</span>
-      <div class="divider-line"></div>
-    </div>
-
-    <a th:href="@{/publico/proyectos}" class="btn-invitado">
-      Ver proyectos como invitado
-    </a>
-
-    <p class="login-link">
-      ¿Ya tienes cuenta? <a th:href="@{/login}">Inicia sesión</a>
-    </p>
-
-  </div>
+  </main>
 
   <script>
-    const infos = {
+    var infos = {
       voluntario: 'Como voluntario podrás unirte a proyectos activos, registrar tu participación y ver el impacto ambiental de tu ciudad.',
       lider: 'Como líder podrás crear proyectos, gestionar equipos de voluntarios y hacer seguimiento al progreso ambiental en Cartagena.'
     };
+    var defaultInfo = 'Pasa el cursor sobre un rol para ver más información.';
 
     function showInfo(rol) {
-      document.getElementById('infoBox').textContent = infos[rol];
+      document.getElementById('infoText').textContent = infos[rol];
+      document.getElementById('infoBox').classList.add('is-active');
     }
 
     function clearInfo() {
-      document.getElementById('infoBox').textContent = 'Pasa el cursor sobre un rol para ver más información.';
+      document.getElementById('infoText').textContent = defaultInfo;
+      document.getElementById('infoBox').classList.remove('is-active');
     }
   </script>
-
+  <script src="../static/js/script.js" th:src="@{/js/script.js}"></script>
 </body>
 </html>

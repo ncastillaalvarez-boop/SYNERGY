@@ -48,7 +48,7 @@ public class TareaServiceImpl implements TareaService{
         Optional<Tarea> tareaOpt = tareaRepository.findById(idTarea);
         if (tareaOpt.isPresent()) {
             Tarea tarea = tareaOpt.get();
-            tarea.setEstado("Completada");
+            tarea.setEstado("COMPLETADA");
             tareaRepository.save(tarea);
         }
     }

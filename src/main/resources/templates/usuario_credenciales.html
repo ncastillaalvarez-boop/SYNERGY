@@ -3,160 +3,139 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>try{var t=localStorage.getItem('synergy-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
   <title>Mis Credenciales – Synergy</title>
-  <link rel="stylesheet" href="/css/Usuarios_Dashboard.css">
+  <link rel="icon" type="image/png" href="../static/img/logo-mark.png" th:href="@{/img/logo-mark.png}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <link rel="stylesheet" href="../static/css/core.css" th:href="@{/css/core.css}">
+  <link rel="stylesheet" href="../static/css/dashboard.css" th:href="@{/css/dashboard.css}">
 </head>
 <body>
+  <div class="bg-ambient" aria-hidden="true"></div>
 
-  <div class="hero">
-    <div class="overlay"></div>
+  <div class="app-shell">
+  <div th:replace="~{fragments/sidebar :: sidebar('perfil')}"></div>
+  <div class="app-main">
+  <div th:replace="~{fragments/sidebar :: topbar}"></div>
 
-    <div class="container">
-      <div class="card">
+  <main class="app-container is-narrow">
+    <section class="app-card">
 
-        <!-- ENCABEZADO -->
-        <div class="header">
-          <div class="top-buttons">
-            <a th:href="@{/dashboard}" class="btn-inicio">← Volver al panel</a>
+      <!-- HEADER -->
+      <header class="page-header">
+        <nav class="page-toolbar">
+          <div class="toolbar-group">
+            <a th:href="@{/dashboard}" class="btn btn-secondary btn-sm"><i class="fa-solid fa-arrow-left"></i> Volver al Dashboard</a>
           </div>
-          <h1>🔐 Mis Credenciales</h1>
-          <p class="subtitle">Gestiona tu información personal y seguridad.</p>
-        </div>
-
-        <!-- MENSAJES -->
-        <div th:if="${mensaje}"
-             style="background:#d4edda; border:1px solid #c3e6cb; border-radius:10px;
-                    padding:12px 18px; margin-bottom:20px; color:#155724; font-size:14px; font-weight:600;">
-          <span th:text="${mensaje}"></span>
-        </div>
-        <div th:if="${error}"
-             style="background:#f8d7da; border:1px solid #f5c6cb; border-radius:10px;
-                    padding:12px 18px; margin-bottom:20px; color:#721c24; font-size:14px; font-weight:600;">
-          <span th:text="${error}"></span>
-        </div>
-
-        <!-- FORMULARIO -->
-        <form th:action="@{/usuario/actualizar-credenciales}" method="post">
-
-          <!-- SECCIÓN 1: INFORMACIÓN BÁSICA -->
-          <div style="margin-bottom:28px; padding-bottom:24px; border-bottom:2px solid #f0f0f0;">
-            <p style="font-size:16px; font-weight:700; color:#1a1a2e; margin-bottom:16px;">
-              👤 Información Básica
-            </p>
-
-            <div style="margin-bottom:16px;">
-              <label style="display:block; margin-bottom:6px; color:#555; font-weight:600; font-size:14px;">
-                Nombre Completo
-              </label>
-              <input type="text" name="nombre" th:value="${usuario.nombre}"
-                     placeholder="Tu nombre completo"
-                     style="width:100%; padding:11px 14px; border:2px solid #e0e0e0;
-                            border-radius:10px; font-size:15px; transition:border-color 0.2s;
-                            box-sizing:border-box;"
-                     onfocus="this.style.borderColor='#0F6E56'"
-                     onblur="this.style.borderColor='#e0e0e0'">
-            </div>
-
-            <div style="margin-bottom:16px;">
-              <label style="display:block; margin-bottom:6px; color:#555; font-weight:600; font-size:14px;">
-                Correo Electrónico
-              </label>
-              <input type="email" name="correo" th:value="${usuario.correo}"
-                     placeholder="tu@email.com"
-                     style="width:100%; padding:11px 14px; border:2px solid #e0e0e0;
-                            border-radius:10px; font-size:15px; transition:border-color 0.2s;
-                            box-sizing:border-box;"
-                     onfocus="this.style.borderColor='#0F6E56'"
-                     onblur="this.style.borderColor='#e0e0e0'">
-            </div>
-
-            <div>
-              <label style="display:block; margin-bottom:6px; color:#555; font-weight:600; font-size:14px;">
-                Rol Actual
-              </label>
-              <input type="text" th:value="${usuario.rol}" readonly
-                     style="width:100%; padding:11px 14px; border:2px solid #e0e0e0;
-                            border-radius:10px; font-size:15px; background:#f5f5f5;
-                            color:#888; cursor:not-allowed; box-sizing:border-box;">
-              <span th:text="${usuario.rol}"
-                    style="display:inline-block; margin-top:6px; background:#e8f5f1;
-                           color:#0F6E56; border-radius:12px; padding:3px 12px;
-                           font-size:12px; font-weight:700;">
-              </span>
-            </div>
+          <a th:href="@{/}" class="mini-brand"><span class="mini-brand-mark"><img src="../static/img/logo-mark.png" th:src="@{/img/logo-mark.png}" alt=""></span><span>Synergy</span></a>
+        </nav>
+        <div class="page-heading">
+          <span class="page-icon has-img"><img src="../static/img/icons/perfil.png" th:src="@{/img/icons/perfil.png}" alt="" loading="lazy"></span>
+          <div>
+            <h1 class="page-title">Mis Credenciales</h1>
+            <p class="page-subtitle">Gestiona tu información personal y seguridad</p>
           </div>
+        </div>
+      </header>
 
-          <!-- SECCIÓN 2: CAMBIAR CONTRASEÑA -->
-          <div style="margin-bottom:28px;">
-            <p style="font-size:16px; font-weight:700; color:#1a1a2e; margin-bottom:16px;">
-              🔒 Cambiar Contraseña
-            </p>
-
-            <div style="margin-bottom:16px;">
-              <label style="display:block; margin-bottom:6px; color:#555; font-weight:600; font-size:14px;">
-                Contraseña Actual
-              </label>
-              <input type="password" name="contrasenaActual"
-                     placeholder="Tu contraseña actual"
-                     style="width:100%; padding:11px 14px; border:2px solid #e0e0e0;
-                            border-radius:10px; font-size:15px; transition:border-color 0.2s;
-                            box-sizing:border-box;"
-                     onfocus="this.style.borderColor='#0F6E56'"
-                     onblur="this.style.borderColor='#e0e0e0'">
-            </div>
-
-            <div style="margin-bottom:16px;">
-              <label style="display:block; margin-bottom:6px; color:#555; font-weight:600; font-size:14px;">
-                Nueva Contraseña
-              </label>
-              <input type="password" name="contrasenaNueva"
-                     placeholder="Nueva contraseña"
-                     style="width:100%; padding:11px 14px; border:2px solid #e0e0e0;
-                            border-radius:10px; font-size:15px; transition:border-color 0.2s;
-                            box-sizing:border-box;"
-                     onfocus="this.style.borderColor='#0F6E56'"
-                     onblur="this.style.borderColor='#e0e0e0'">
-            </div>
-
-            <div style="margin-bottom:16px;">
-              <label style="display:block; margin-bottom:6px; color:#555; font-weight:600; font-size:14px;">
-                Confirmar Nueva Contraseña
-              </label>
-              <input type="password" name="contrasenaConfirmacion"
-                     placeholder="Repite la nueva contraseña"
-                     style="width:100%; padding:11px 14px; border:2px solid #e0e0e0;
-                            border-radius:10px; font-size:15px; transition:border-color 0.2s;
-                            box-sizing:border-box;"
-                     onfocus="this.style.borderColor='#0F6E56'"
-                     onblur="this.style.borderColor='#e0e0e0'">
-            </div>
-
-            <div style="background:#f0f9f6; border-left:4px solid #0F6E56; padding:12px 16px;
-                        border-radius:6px; font-size:13px; color:#0F6E56;">
-              <strong>Requisitos:</strong>
-              <ul style="margin:6px 0 0 18px;">
-                <li>Mínimo 6 caracteres</li>
-                <li>Dejar vacío si no deseas cambiarla</li>
-                <li>Ambas contraseñas deben coincidir</li>
-              </ul>
-            </div>
-          </div>
-
-          <!-- BOTÓN GUARDAR -->
-          <button type="submit"
-                  style="width:100%; padding:14px; background:#0F6E56; color:white;
-                         border:none; border-radius:12px; font-size:16px; font-weight:700;
-                         cursor:pointer; transition:background 0.2s;"
-                  onmouseover="this.style.background='#0a5240'"
-                  onmouseout="this.style.background='#0F6E56'">
-            💾 Guardar Cambios
-          </button>
-
-        </form>
-
+      <!-- MENSAJES -->
+      <div th:if="${mensaje}" class="alert alert-success" data-autohide>
+        <i class="fa-solid fa-circle-check"></i>
+        <span th:text="${mensaje}"></span>
       </div>
-    </div>
-  </div>
 
+      <div th:if="${error}" class="alert alert-error">
+        <i class="fa-solid fa-circle-exclamation"></i>
+        <span th:text="${error}"></span>
+      </div>
+
+      <!-- FORMULARIO -->
+      <form th:action="@{/usuario/actualizar-credenciales}" method="post" data-loading>
+
+        <!-- SECCIÓN 1: INFORMACIÓN BÁSICA -->
+        <div class="form-section">
+          <h2 class="section-heading"><i class="fa-regular fa-id-card"></i> Información Básica</h2>
+
+          <div class="stack" style="gap:18px;">
+            <div class="field">
+              <label for="nombre"><i class="fa-regular fa-user"></i> Nombre Completo</label>
+              <input type="text" id="nombre" name="nombre" th:value="${usuario.nombre}" placeholder="Tu nombre completo">
+            </div>
+
+            <div class="field">
+              <label for="correo"><i class="fa-regular fa-envelope"></i> Correo Electrónico</label>
+              <input type="email" id="correo" name="correo" th:value="${usuario.correo}" placeholder="tu@email.com">
+            </div>
+
+            <div class="field">
+              <label for="rolActual"><i class="fa-solid fa-user-tag"></i> Rol Actual</label>
+              <input type="text" id="rolActual" th:value="${usuario.rol}" readonly>
+              <span><span class="badge badge-info" th:text="${usuario.rol}">Participante</span></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECCIÓN 2: CAMBIAR CONTRASEÑA -->
+        <div class="form-section">
+          <h2 class="section-heading"><i class="fa-solid fa-lock"></i> Cambiar Contraseña</h2>
+
+          <div th:if="${usuario.proveedor == 'GOOGLE'}" class="alert alert-info">
+            <i class="fa-brands fa-google"></i>
+            <span>Entraste con Google. Puedes crear una contraseña para iniciar sesión también con tu correo (no necesitas la contraseña actual).</span>
+          </div>
+
+          <div class="stack" style="gap:18px;">
+            <div class="field">
+              <label for="contrasenaActual"><i class="fa-solid fa-key"></i> Contraseña Actual</label>
+              <input type="password" id="contrasenaActual" name="contrasenaActual" placeholder="Tu contraseña actual" autocomplete="current-password">
+            </div>
+
+            <div class="form-grid">
+              <div class="field">
+                <label for="contrasenaNueva"><i class="fa-solid fa-lock"></i> Nueva Contraseña</label>
+                <input type="password" id="contrasenaNueva" name="contrasenaNueva" placeholder="Nueva contraseña" autocomplete="new-password">
+              </div>
+
+              <div class="field">
+                <label for="contrasenaConfirmacion"><i class="fa-solid fa-shield-halved"></i> Confirmar Nueva Contraseña</label>
+                <input type="password" id="contrasenaConfirmacion" name="contrasenaConfirmacion" placeholder="Repite la nueva contraseña" autocomplete="new-password">
+              </div>
+            </div>
+
+            <div class="note">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+              <div>
+                <strong>Requisitos de contraseña:</strong>
+                <ul>
+                  <li>Mínimo 6 caracteres</li>
+                  <li>Dejar vacío si no deseas cambiarla</li>
+                  <li>Ambas contraseñas deben coincidir</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- BOTONES -->
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary btn-lg">
+            <i class="fa-solid fa-floppy-disk"></i> Guardar Cambios
+          </button>
+          <a th:href="@{/dashboard}" class="btn btn-secondary btn-lg">
+            <i class="fa-solid fa-arrow-left"></i> Volver al Dashboard
+          </a>
+        </div>
+
+      </form>
+
+    </section>
+  </main>
+  </div>
+</div>
+
+  <script src="../static/js/script.js" th:src="@{/js/script.js}"></script>
 </body>
 </html>

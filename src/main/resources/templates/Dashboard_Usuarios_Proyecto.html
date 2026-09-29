@@ -3,60 +3,80 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>try{var t=localStorage.getItem('synergy-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
   <title>Dashboard de Proyectos – Synergy</title>
-  <link rel="stylesheet" href="/css/Usuarios_Dashboard.css">
+  <link rel="icon" type="image/png" href="../static/img/logo-mark.png" th:href="@{/img/logo-mark.png}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <link rel="stylesheet" href="../static/css/core.css" th:href="@{/css/core.css}">
+  <link rel="stylesheet" href="../static/css/dashboard.css" th:href="@{/css/dashboard.css}">
 </head>
-
 <body>
+  <div class="bg-ambient" aria-hidden="true"></div>
 
-  <div class="hero">
-    <div class="overlay"></div>
+  <div class="app-shell">
+  <div th:replace="~{fragments/sidebar :: sidebar('inicio')}"></div>
+  <div class="app-main">
+  <div th:replace="~{fragments/sidebar :: topbar}"></div>
 
-    <div class="container">
-      <div class="card">
+  <main class="app-container">
+    <section class="app-card">
 
-        <!-- ENCABEZADO -->
-        <div class="header">
-          <div class="top-buttons">
-
-            <!-- Volver al dashboard principal -->
-            <a th:href="@{/dashboard}" class="btn-inicio">⬅ Volver</a>
-
-            <!-- Logout -->
-            <a th:href="@{/logout}" class="btn-usuarios">🚪 Cerrar sesión</a>
+      <!-- ENCABEZADO -->
+      <header class="page-header">
+        <nav class="page-toolbar">
+          <div class="toolbar-group">
+            <a th:href="@{/dashboard}" class="btn btn-secondary btn-sm"><i class="fa-solid fa-arrow-left"></i> Volver</a>
           </div>
-
-          <h1>Gestión de Proyectos</h1>
-          <p class="subtitle">Selecciona una opción para continuar.</p>
+          <a th:href="@{/}" class="mini-brand"><span class="mini-brand-mark"><img src="../static/img/logo-mark.png" th:src="@{/img/logo-mark.png}" alt=""></span><span>Synergy</span></a>
+        </nav>
+        <div class="page-heading">
+          <span class="page-icon has-img"><img src="../static/img/icons/proyectos.png" th:src="@{/img/icons/proyectos.png}" alt="" loading="lazy"></span>
+          <div>
+            <h1 class="page-title">Gestión de Proyectos</h1>
+            <p class="page-subtitle">Selecciona una opción para continuar.</p>
+          </div>
         </div>
+      </header>
 
-        <!-- MENÚ DE OPCIONES -->
-        <div class="menu-options">
+      <!-- MENÚ DE OPCIONES -->
+      <div class="tile-grid">
+        <a th:href="@{/proyectos/registro}" class="tile" style="--i:0">
+          <span class="tile-icon has-img"><img src="../static/img/icons/agregar.png" th:src="@{/img/icons/agregar.png}" alt="" loading="lazy"></span>
+          <span class="tile-title">Crear proyecto</span>
+          <span class="tile-desc">Registra una nueva iniciativa ambiental.</span>
+          <i class="fa-solid fa-arrow-right tile-arrow"></i>
+        </a>
 
-          <!-- Crear Proyecto -->
-          <a th:href="@{/proyectos/registro}" class="menu-btn">
-            ➕ Crear proyecto
-          </a>
+        <a th:href="@{/proyectos/participar}" class="tile tone-blue" style="--i:1">
+          <span class="tile-icon has-img"><img src="../static/img/icons/comunidad.png" th:src="@{/img/icons/comunidad.png}" alt="" loading="lazy"></span>
+          <span class="tile-title">Participar en proyecto</span>
+          <span class="tile-desc">Únete a proyectos publicados.</span>
+          <i class="fa-solid fa-arrow-right tile-arrow"></i>
+        </a>
 
-          <!-- Participar en proyecto -->
-          <a th:href="@{/proyectos/participar}" class="menu-btn">
-            🤝 Participar en proyecto
-          </a>
-<a th:href="@{'/proyectos/mis_proyectos/' + ${usuario.id}}" class="menu-btn">
-    Mis Proyectos
-</a>
+        <a th:href="@{'/proyectos/mis_proyectos/' + ${usuario.id}}" class="tile tone-amber" style="--i:2">
+          <span class="tile-icon has-img"><img src="../static/img/icons/proyectos.png" th:src="@{/img/icons/proyectos.png}" alt="" loading="lazy"></span>
+          <span class="tile-title">Mis Proyectos</span>
+          <span class="tile-desc">Proyectos que has creado.</span>
+          <i class="fa-solid fa-arrow-right tile-arrow"></i>
+        </a>
 
-
-          <!-- Proyectos donde participo -->
-          <a th:href="@{'/participacion/mis-proyectos/' + ${usuario.id}}" class="menu-btn">
-            🚪 Salir de proyectos
-          </a>
-
-        </div>
-
+        <a th:href="@{'/participacion/mis-proyectos/' + ${usuario.id}}" class="tile tone-red" style="--i:3">
+          <span class="tile-icon"><i class="fa-solid fa-door-open"></i></span>
+          <span class="tile-title">Salir de proyectos</span>
+          <span class="tile-desc">Gestiona tus participaciones.</span>
+          <i class="fa-solid fa-arrow-right tile-arrow"></i>
+        </a>
       </div>
-    </div>
-  </div>
 
+    </section>
+  </main>
+  </div>
+</div>
+
+  <script src="../static/js/script.js" th:src="@{/js/script.js}"></script>
 </body>
 </html>

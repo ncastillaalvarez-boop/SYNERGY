@@ -3,83 +3,87 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mis Proyectos – Synergy</title>
-  <link rel="stylesheet" href="/css/Lista_Proyectos.css">
+  <script>try{var t=localStorage.getItem('synergy-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
+  <title>Mis proyectos – Synergy</title>
+  <link rel="icon" type="image/png" href="../static/img/logo-mark.png" th:href="@{/img/logo-mark.png}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <link rel="stylesheet" href="../static/css/core.css" th:href="@{/css/core.css}">
+  <link rel="stylesheet" href="../static/css/dashboard.css" th:href="@{/css/dashboard.css}">
 </head>
 <body>
+  <div class="bg-ambient" aria-hidden="true"></div>
 
-  <div class="hero">
-    <div class="overlay"></div>
+<div class="app-shell">
+  <div th:replace="~{fragments/sidebar :: sidebar('mis-proyectos')}"></div>
+  <div class="app-main">
+  <div th:replace="~{fragments/sidebar :: topbar}"></div>
 
-    <div class="container">
-      <div class="card">
-
-        <!-- ENCABEZADO -->
-        <div class="header">
-          <button class="btn-inicio" onclick="location.href='/dashboard'">⬅ Volver al panel de usuario</button>
-          <h1>Mis Proyectos</h1>
-          <p class="subtitle">Proyectos en los que estás participando.</p>
+  <main class="app-container">
+    <section class="app-card">
+      <header class="page-header">
+        <nav class="page-toolbar">
+          <div class="toolbar-group">
+            
+            <a th:href="@{/proyectos/participar}" class="btn btn-primary btn-sm"><i class="fa-solid fa-magnifying-glass"></i> Explorar más</a>
+          </div>
+        </nav>
+        <div class="page-heading">
+          <span class="page-icon has-img"><img src="../static/img/icons/proyectos.png" th:src="@{/img/icons/proyectos.png}" alt=""></span>
+          <div>
+            <h1 class="page-title">Mis proyectos</h1>
+            <p class="page-subtitle">Proyectos en los que participas.</p>
+          </div>
         </div>
+      </header>
 
-        <!-- TABLA -->
-        <table class="project-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Nombre</th>
-              <th>Descripción</th>
-              <th>Fecha Inicio</th>
-              <th>Acción</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            <!-- LISTADO DE PROYECTOS DEL USUARIO -->
-            <tr th:each="p : ${proyectosParticipando}">
-              <td th:text="${p.id}"></td>
-              <td th:text="${p.nombre}"></td>
-              <td th:text="${p.descripcion}"></td>
-              <td th:text="${#temporals.format(p.fechaInicio, 'dd/MM/yyyy')}"></td>
-
-              <td>
-                <div class="acciones">
-
-<form th:action="@{/proyectos/participacion/eliminar/{proyectoId}/{usuarioId}
-                  (proyectoId=${p.id}, usuarioId=${usuario.id})}"
-      method="post">
-    <button type="submit" class="btn-participar" style="background:#d9534f">
-      Salir
-    </button>
-</form>
-
-
-                </div>
-              </td>
-
-            </tr>
-          </tbody>
-
-        </table>
-
+      <div th:if="${mensaje}" class="alert alert-success" data-autohide>
+        <i class="fa-solid fa-circle-check"></i>
+        <span th:text="${mensaje}"></span>
       </div>
-    </div>
+      <div th:if="${error}" class="alert alert-error">
+        <i class="fa-solid fa-circle-exclamation"></i>
+        <span th:text="${error}"></span>
+      </div>
+
+      <div th:if="${#lists.isEmpty(proyectosParticipando)}" class="empty-state">
+        <div class="empty-state-icon has-img"><img src="../static/img/icons/comunidad.png" th:src="@{/img/icons/comunidad.png}" alt="" class=""></div>
+        <h3>Aún no participas en proyectos</h3>
+        <p>Explora los proyectos activos y únete al que más te guste.</p>
+        <a th:href="@{/proyectos/participar}" class="btn btn-primary mt-2"><i class="fa-solid fa-magnifying-glass"></i> Explorar proyectos</a>
+      </div>
+
+      <div class="list">
+        <div class="list-row" th:each="p, st : ${proyectosParticipando}" th:style="'--i:' + ${st.index}">
+          <div class="list-row-main">
+            <span class="item-card-icon"><i class="fa-solid fa-seedling"></i></span>
+            <div class="list-row-body">
+              <div class="list-row-title" th:text="${p.nombre}">Proyecto</div>
+              <div class="list-row-desc" th:text="${p.descripcion}">Descripción</div>
+              <div class="meta">
+                <span><i class="fa-regular fa-calendar"></i> <span th:text="${p.fechaInicio != null ? #temporals.format(p.fechaInicio, 'dd/MM/yyyy') : '-'}">-</span></span>
+                <span class="badge" th:classappend="${p.estado == 'ACTIVO'} ? 'badge-success is-live' : (${p.estado == 'PENDIENTE'} ? 'badge-warning' : (${p.estado == 'COMPLETADO'} ? 'badge-info' : 'badge-danger'))" th:text="${p.estado}">ACTIVO</span>
+              </div>
+            </div>
+          </div>
+          <div class="table-actions">
+            <a th:href="@{/proyectos/{id}/comentarios(id=${p.id})}" class="btn btn-info btn-sm"><i class="fa-regular fa-comments"></i> Comentarios</a>
+            <form th:action="@{/proyectos/participacion/eliminar/{proyectoId}/{usuarioId}(proyectoId=${p.id}, usuarioId=${usuario.id})}" method="post" class="inline-form">
+              <button type="submit" class="btn btn-danger btn-sm" data-confirm="¿Seguro que deseas salir de este proyecto?" data-confirm-ok="Salir">
+                <i class="fa-solid fa-right-from-bracket"></i> Salir
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+    </section>
+  </main>
   </div>
+</div>
 
-  <!-- TOAST -->
-  <div id="toast" class="toast hidden"></div>
-
-  <script>
-    function showToast(message, type) {
-      const toast = document.getElementById("toast");
-      toast.textContent = message;
-
-      toast.className = "toast " + type;
-
-      setTimeout(() => {
-        toast.classList.add("hidden");
-      }, 2500);
-    }
-  </script>
-
+  <script src="../static/js/script.js" th:src="@{/js/script.js}"></script>
 </body>
 </html>

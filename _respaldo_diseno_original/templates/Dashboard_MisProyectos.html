@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mis Proyectos – Synergy</title>
+  <link rel="stylesheet" href="/css/Usuarios_Dashboard.css">
+</head>
+<body>
+
+<div class="hero">
+  <div class="overlay"></div>
+
+  <div class="container">
+    <div class="card">
+
+      <!-- ENCABEZADO -->
+      <div class="header">
+        <div class="top-buttons">
+
+          <!-- Volver al dashboard -->
+          <a th:href="@{/proyectos/dashboard}" class="btn-inicio">⬅ Volver</a>
+
+          <!-- Logout -->
+          <a th:href="@{/logout}" class="btn-usuarios">🚪 Cerrar sesión</a>
+
+        </div>
+
+        <h1>Mis Proyectos</h1>
+        <p class="subtitle">Selecciona un proyecto para asignar tareas.</p>
+      </div>
+
+      <!-- LISTA DE PROYECTOS -->
+      <div class="menu-options" style="display: flex; flex-direction: column; gap: 15px;">
+
+        <!-- Mensaje si no hay proyectos -->
+        <p th:if="${proyectos.size() == 0}" style="color: white; text-align: center;">
+          No has creado ningún proyecto todavía.
+        </p>
+
+        <!-- Iteración de proyectos -->
+        <div th:each="proyecto : ${proyectos}" class="menu-btn" style="display: flex; justify-content: space-between; align-items: center;">
+
+          <!-- Nombre del proyecto -->
+          <span th:text="${proyecto.nombre}">Nombre del proyecto</span>
+
+<a th:href="@{/tareas/asignar/{id}(id=${proyecto.id})}" class="btn-usuarios">
+    📝 Asignar tareas
+</a>
+
+
+
+
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

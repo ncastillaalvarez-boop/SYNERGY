@@ -1,58 +1,59 @@
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="UTF-8" />
-    <title>Usuarios del Proyecto – Synergy</title>
-    <link rel="stylesheet" href="/css/Usuarios_Dashboard.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>try{var t=localStorage.getItem('synergy-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
+  <title>Voluntarios – Synergy</title>
+  <link rel="icon" type="image/png" href="../static/img/logo-mark.png" th:href="@{/img/logo-mark.png}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <link rel="stylesheet" href="../static/css/core.css" th:href="@{/css/core.css}">
+  <link rel="stylesheet" href="../static/css/dashboard.css" th:href="@{/css/dashboard.css}">
 </head>
-
 <body>
+  <div class="bg-ambient" aria-hidden="true"></div>
 
-<div class="hero">
-    <div class="overlay"></div>
+<div class="app-shell">
+  <div th:replace="~{fragments/sidebar :: sidebar('lider-usuarios')}"></div>
+  <div class="app-main">
+  <div th:replace="~{fragments/sidebar :: topbar}"></div>
 
-    <div class="container">
-        <div class="card">
-
-            <div class="header">
-                <div class="top-buttons">
-                    <button class="btn-volver" onclick="location.href='/lider/dashboard'">⬅ Volver</button>
-                </div>
-
-                <h1>Usuarios Inscritos</h1>
-                <p class="subtitle">Lista de participantes registrados en este proyecto.</p>
-            </div>
-
-            <table class="project-table">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Nombre</th>
-                        <th>Correo</th>
-                        <th>Rol</th>
-                        <th>Proyecto(s)</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-                    <tr th:each="u : ${usuarios}">
-                        <td class="cell-id" th:text="${u.id}"></td>
-                        <td th:text="${u.nombre}"></td>
-                        <td th:text="${u.correo}"></td>
-                        <td><span class="badge-rol" th:text="${u.rol}"></span></td>
-                        <td>
-                            <span th:each="pNombre, iter : ${proyectosDeUsuario[u.id]}">
-                                <span class="badge-proyecto" th:text="${pNombre}"></span>
-                            </span>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-
+  <main class="app-container">
+    <section class="app-card">
+      <header class="page-header">
+        <div class="page-heading">
+          <span class="page-icon has-img"><img src="../static/img/icons/comunidad.png" th:src="@{/img/icons/comunidad.png}" alt=""></span>
+          <div>
+            <h1 class="page-title">Voluntarios inscritos</h1>
+            <p class="page-subtitle">Personas que participan en tus proyectos.</p>
+          </div>
         </div>
-    </div>
+      </header>
 
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>Voluntario</th><th>Correo</th><th>Proyectos</th></tr></thead>
+          <tbody>
+            <tr th:each="u : ${usuarios}">
+              <td><div class="cluster"><span class="avatar avatar-sm" th:text="${u.iniciales}">AB</span><span class="cell-strong" th:text="${u.nombre}">Nombre</span></div></td>
+              <td class="cell-muted"><a th:href="'mailto:' + ${u.correo}" th:text="${u.correo}" class="link">correo</a></td>
+              <td><div class="cluster"><span class="badge no-dot" th:each="n : ${proyectosPorUsuario[u.id]}" th:text="${n}">Proyecto</span></div></td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(usuarios)}">
+              <td colspan="3" class="cell-empty"><i class="fa-regular fa-user"></i>Todavía no hay voluntarios inscritos en tus proyectos.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </section>
+  </main>
+  </div>
 </div>
 
+  <script src="../static/js/script.js" th:src="@{/js/script.js}"></script>
 </body>
 </html>

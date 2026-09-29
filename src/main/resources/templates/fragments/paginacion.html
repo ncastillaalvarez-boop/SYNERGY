@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<!--
+  Barra de paginación reutilizable.
+  Uso: <div th:replace="~{fragments/paginacion :: paginacion(${paginacion}, 'proyectos')}"></div>
+  "pag" es un Dto/Paginacion; "nombre" es la palabra que se muestra en el resumen.
+-->
+<body>
+
+<nav th:fragment="paginacion(pag, nombre)" th:if="${pag != null and pag.varias}" class="pagination" aria-label="Paginación">
+  <a th:if="${pag.urlAnterior != null}" th:href="@{${pag.urlAnterior}}" aria-label="Página anterior"><i class="fa-solid fa-chevron-left"></i></a>
+  <span th:if="${pag.urlAnterior == null}" class="is-disabled" aria-hidden="true"><i class="fa-solid fa-chevron-left"></i></span>
+
+  <th:block th:each="e : ${pag.enlaces}">
+    <span th:if="${e.separador}" class="is-gap">…</span>
+    <span th:if="${e.actual}" class="is-current" aria-current="page" th:text="${e.texto}">1</span>
+    <a th:if="${!e.separador and !e.actual}" th:href="@{${e.url}}" th:text="${e.texto}">2</a>
+  </th:block>
+
+  <a th:if="${pag.urlSiguiente != null}" th:href="@{${pag.urlSiguiente}}" aria-label="Página siguiente"><i class="fa-solid fa-chevron-right"></i></a>
+  <span th:if="${pag.urlSiguiente == null}" class="is-disabled" aria-hidden="true"><i class="fa-solid fa-chevron-right"></i></span>
+
+  <p class="pagination-info">
+    Mostrando <span th:text="${pag.desde}">1</span>–<span th:text="${pag.hasta}">12</span>
+    de <span th:text="${#numbers.formatInteger(pag.totalElementos, 1, 'POINT')}">100</span>
+    <span th:text="${nombre}">resultados</span>
+  </p>
+</nav>
+
+</body>
+</html>

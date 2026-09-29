@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Crear Proyecto – Synergy</title>
+  <link rel="stylesheet" href="/css/Lider_Dashboard.css">
+  <link rel="stylesheet" href="/css/Usuarios_Dashboard.css">
+</head>
+
+<body>
+
+  <div class="hero">
+    <div class="overlay"></div>
+
+    <div class="container">
+      <div class="card">
+
+        <!-- ENCABEZADO -->
+        <div class="header">
+          <div class="top-buttons">
+            <a th:href="@{/lider/dashboard}" class="btn-inicio">← Volver</a>
+          </div>
+          <h1>Crear Proyecto</h1>
+          <p class="subtitle">Completa los datos del nuevo proyecto.</p>
+        </div>
+
+        <!-- FORMULARIO -->
+        <form th:action="@{/lider/proyecto/guardar}" th:object="${proyecto}" method="post">
+
+          <div class="form-group">
+            <label>Nombre del proyecto</label>
+            <input type="text" th:field="*{nombre}" placeholder="Ej: Reforestación Urbana" required />
+          </div>
+
+          <div class="form-group">
+            <label>Descripción</label>
+            <textarea th:field="*{descripcion}" placeholder="Describe el objetivo del proyecto..." rows="4" required></textarea>
+          </div>
+
+          <div class="form-group">
+            <label>Fecha de inicio</label>
+            <input type="date" th:field="*{fechaInicio}" required />
+          </div>
+
+          <div class="form-group">
+            <label>Fecha de fin</label>
+            <input type="date" th:field="*{fechaFin}" required />
+          </div>
+
+          <div class="form-group">
+            <label>Estado</label>
+            <select th:field="*{estado}">
+              <option value="ACTIVO">Activo</option>
+              <option value="COMPLETADO">Completado</option>
+              <option value="CANCELADO">Cancelado</option>
+            </select>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="menu-btn">✅ Guardar proyecto</button>
+            <a th:href="@{/lider/dashboard}" class="btn-cancelar">Cancelar</a>
+          </div>
+
+        </form>
+
+      </div>
+    </div>
+  </div>
+
+</body>
+
+</html>

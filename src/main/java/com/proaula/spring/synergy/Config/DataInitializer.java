@@ -1,241 +1,337 @@
 package com.proaula.spring.synergy.Config;
 
-import java.time.LocalDate;
+import java.io.IOException;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.CommandLineRunner;
+import org.bson.Document;
+import org.bson.json.JsonMode;
+import org.bson.json.JsonWriterSettings;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
-import com.proaula.spring.synergy.Model.Comentario;
-import com.proaula.spring.synergy.Model.Participacion;
 import com.proaula.spring.synergy.Model.Privilegio;
 import com.proaula.spring.synergy.Model.Proyecto;
 import com.proaula.spring.synergy.Model.Rol;
-import com.proaula.spring.synergy.Model.Tarea;
 import com.proaula.spring.synergy.Model.Usuarios;
-import com.proaula.spring.synergy.Repository.ComentarioRepository;
-import com.proaula.spring.synergy.Repository.ParticipacionRepository;
 import com.proaula.spring.synergy.Repository.PrivilegioRepository;
 import com.proaula.spring.synergy.Repository.ProyectoRepository;
 import com.proaula.spring.synergy.Repository.RolRepository;
-import com.proaula.spring.synergy.Repository.TareaRepository;
 import com.proaula.spring.synergy.Repository.UsuarioRepository;
+import com.proaula.spring.synergy.Service.CodigoProyectoService;
 
+/**
+ * Prepara la base de datos al arrancar, en este orden:
+ *
+ * 1. Detecta datos con el ESQUEMA ANTIGUO (los del script poblar_synergy.py de la
+ *    versión anterior: usuarios con "idRol" y sin "rol", ids guardados como ObjectId,
+ *    estados EN_EJECUCION/FINALIZADO...). Esos datos no funcionan con el código actual,
+ *    así que se RESPALDAN en la carpeta respaldos/ y se reemplazan.
+ * 2. Crea/repara los índices (MongoIndexConfig).
+ * 3. Crea privilegios y roles si no existen.
+ * 4. Garantiza las 3 cuentas de prueba (admin, líder y voluntario).
+ * 5. Si hay pocos proyectos, genera el volumen de datos de prueba (GeneradorDatos).
+ * 6. Asigna código SYN-AAAA-NNNNN a los proyectos que no tengan.
+ *
+ * Todo se configura en application.properties (sección DATOS DE PRUEBA).
+ */
 @Component
-public class DataInitializer implements CommandLineRunner {
+@Order(Ordered.HIGHEST_PRECEDENCE)
+public class DataInitializer implements ApplicationRunner {
 
-    @Autowired
-    private PrivilegioRepository privilegioRepository;
+    private static final Logger log = LoggerFactory.getLogger(DataInitializer.class);
 
-    @Autowired
-    private RolRepository rolRepository;
+    // ── Cuentas de prueba (documentadas en README.md) ──
+    public static final String ADMIN_CORREO = "admin@synergy.com";
+    public static final String ADMIN_CLAVE = "Admin123*";
+    public static final String LIDER_CORREO = "lider@synergy.com";
+    public static final String LIDER_CLAVE = "Lider123*";
+    public static final String VOLUNTARIO_CORREO = "voluntario@synergy.com";
+    public static final String VOLUNTARIO_CLAVE = "Voluntario123*";
 
-    @Autowired
-    private UsuarioRepository usuarioRepository;
+    /** Colecciones de la aplicación (en el orden en que se respaldan). */
+    private static final List<String> COLECCIONES = List.of(
+        "usuarios", "proyectos", "tareas", "participaciones", "comentarios",
+        "entregas_tareas", "roles", "privilegios", CodigoProyectoService.COLECCION);
 
-    @Autowired
-    private ProyectoRepository proyectoRepository;
+    private static final List<String> ESTADOS_ANTIGUOS = List.of(
+        "PLANIFICACION", "EN_EJECUCION", "FINALIZADO", "SUSPENDIDO");
 
-    @Autowired
-    private TareaRepository tareaRepository;
+    @Value("${synergy.demo.enabled:true}")
+    private boolean demoHabilitado;
 
-    @Autowired
-    private ParticipacionRepository participacionRepository;
+    @Value("${synergy.demo.reset-passwords:true}")
+    private boolean reiniciarClaves;
 
-    @Autowired
-    private ComentarioRepository comentarioRepository;
+    @Value("${synergy.datos.generar:true}")
+    private boolean generarDatos;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    @Value("${synergy.datos.reemplazar-esquema-antiguo:true}")
+    private boolean reemplazarAntiguos;
+
+    @Value("${synergy.datos.minimo-proyectos:200}")
+    private int minimoProyectos;
+
+    @Value("${synergy.datos.usuarios:2500}")
+    private int cantidadUsuarios;
+
+    @Value("${synergy.datos.proyectos:3000}")
+    private int cantidadProyectos;
+
+    @Value("${synergy.datos.tareas:4000}")
+    private int cantidadTareas;
+
+    @Value("${synergy.datos.comentarios:1500}")
+    private int cantidadComentarios;
+
+    /** true = en el próximo arranque respalda, borra y regenera TODO (volver a false después). */
+    @Value("${synergy.datos.regenerar-todo:false}")
+    private boolean regenerarTodo;
+
+    @Value("${synergy.datos.carpeta-respaldos:respaldos}")
+    private String carpetaRespaldos;
+
+    private final MongoTemplate mongoTemplate;
+    private final MongoIndexConfig indices;
+    private final GeneradorDatos generador;
+    private final CodigoProyectoService codigoService;
+    private final PrivilegioRepository privilegioRepository;
+    private final RolRepository rolRepository;
+    private final UsuarioRepository usuarioRepository;
+    private final ProyectoRepository proyectoRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    public DataInitializer(MongoTemplate mongoTemplate, MongoIndexConfig indices, GeneradorDatos generador,
+                           CodigoProyectoService codigoService, PrivilegioRepository privilegioRepository,
+                           RolRepository rolRepository, UsuarioRepository usuarioRepository,
+                           ProyectoRepository proyectoRepository, PasswordEncoder passwordEncoder) {
+        this.mongoTemplate = mongoTemplate;
+        this.indices = indices;
+        this.generador = generador;
+        this.codigoService = codigoService;
+        this.privilegioRepository = privilegioRepository;
+        this.rolRepository = rolRepository;
+        this.usuarioRepository = usuarioRepository;
+        this.proyectoRepository = proyectoRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
 
     @Override
-    public void run(String... args) throws Exception {
-        if (usuarioRepository.count() > 0) {
-            System.out.println("✔ Base de datos ya inicializada");
+    public void run(ApplicationArguments args) {
+        // 1. Datos antiguos incompatibles (o regeneración pedida a mano)
+        if (regenerarTodo) {
+            log.warn("synergy.datos.regenerar-todo=true: se respaldará y regenerará toda la base. Vuelve a ponerlo en false.");
+            respaldarYLimpiar();
+        } else if (reemplazarAntiguos && hayEsquemaAntiguo()) {
+            log.warn("Se detectaron datos con el esquema ANTIGUO de Synergy (incompatibles con esta versión).");
+            respaldarYLimpiar();
+        }
+
+        // 2. Índices
+        indices.crearIndices();
+
+        if (!demoHabilitado) {
+            asignarCodigosFaltantes();
             return;
         }
 
-        System.out.println("🔧 Inicializando base de datos...");
+        // 3. Privilegios y roles
+        if (privilegioRepository.count() == 0) {
+            crearPrivilegios();
+        }
+        if (rolRepository.count() == 0) {
+            crearRoles();
+        }
 
-        createPrivilegios();
-        createRoles();
-        createUsuarios();
-        createProyectos();
-        createParticipaciones();
-        createTareas();
-        createComentarios();
+        // 4. Cuentas de prueba
+        Usuarios admin = asegurarUsuario("Administrador Synergy", ADMIN_CORREO, ADMIN_CLAVE, "ADMINISTRADOR");
+        Usuarios lider = asegurarUsuario("Laura Líder", LIDER_CORREO, LIDER_CLAVE, "LIDER");
+        Usuarios voluntario = asegurarUsuario("Víctor Voluntario", VOLUNTARIO_CORREO, VOLUNTARIO_CLAVE, "PARTICIPANTE");
 
-        System.out.println("✔ Base de datos inicializada correctamente");
+        // 5. Volumen de datos de prueba
+        long proyectos = proyectoRepository.count();
+        if (generarDatos && proyectos < minimoProyectos) {
+            log.info("Hay {} proyectos (mínimo {}): generando datos de prueba, puede tardar unos segundos...",
+                    proyectos, minimoProyectos);
+            generador.generar(new GeneradorDatos.Volumen(cantidadUsuarios, cantidadProyectos, cantidadTareas,
+                    cantidadComentarios), admin, lider, voluntario);
+        }
+
+        // 6. Códigos de proyecto
+        asignarCodigosFaltantes();
+
+        log.info("""
+
+            ✔ Synergy listo: {} usuarios, {} proyectos.
+              Cuentas de prueba:
+               - Admin:      {} / {}
+               - Líder:      {} / {}
+               - Voluntario: {} / {}
+               - Usuarios generados: cualquier correo del panel de admin / {}
+            """, usuarioRepository.count(), proyectoRepository.count(),
+                ADMIN_CORREO, ADMIN_CLAVE, LIDER_CORREO, LIDER_CLAVE, VOLUNTARIO_CORREO, VOLUNTARIO_CLAVE,
+                GeneradorDatos.CLAVE_GENERADOS);
     }
 
-    private void createPrivilegios() {
-        System.out.println("📋 Creando privilegios...");
+    // =====================================================================
+    // ESQUEMA ANTIGUO
+    // =====================================================================
 
+    private boolean hayEsquemaAntiguo() {
+        boolean usuariosViejos = mongoTemplate.exists(new Query(new Criteria().orOperator(
+                Criteria.where("idRol").exists(true),
+                Criteria.where("rol").exists(false))), "usuarios");
+        boolean idsComoObjectId = mongoTemplate.exists(
+                Query.query(Criteria.where("idLider").type(7)), "proyectos"); // 7 = ObjectId
+        boolean estadosViejos = mongoTemplate.exists(
+                Query.query(Criteria.where("estado").in(ESTADOS_ANTIGUOS)), "proyectos");
+        return usuariosViejos || idsComoObjectId || estadosViejos;
+    }
+
+    /** Guarda cada colección en respaldos/AAAAMMDD_HHmmss/coleccion.json y luego la borra. */
+    private void respaldarYLimpiar() {
+        String marca = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+        Path carpeta = Paths.get(carpetaRespaldos, marca).toAbsolutePath();
+        JsonWriterSettings json = JsonWriterSettings.builder().outputMode(JsonMode.RELAXED).build();
+        try {
+            Files.createDirectories(carpeta);
+            for (String coleccion : COLECCIONES) {
+                if (!mongoTemplate.collectionExists(coleccion)) {
+                    continue;
+                }
+                try (Writer w = Files.newBufferedWriter(carpeta.resolve(coleccion + ".json"), StandardCharsets.UTF_8)) {
+                    w.write("[\n");
+                    boolean primero = true;
+                    for (Document d : mongoTemplate.getCollection(coleccion).find()) {
+                        if (!primero) {
+                            w.write(",\n");
+                        }
+                        w.write(d.toJson(json));
+                        primero = false;
+                    }
+                    w.write("\n]\n");
+                }
+            }
+        } catch (IOException e) {
+            // Sin respaldo no se borra nada: se avisa y se sigue con los datos como están
+            log.error("No se pudo crear el respaldo en {} ({}). Los datos antiguos NO se borraron.", carpeta, e.getMessage());
+            return;
+        }
+
+        for (String coleccion : COLECCIONES) {
+            mongoTemplate.dropCollection(coleccion);
+        }
+        log.warn("Datos antiguos respaldados en {} y eliminados. Se generarán datos nuevos compatibles.", carpeta);
+    }
+
+    // =====================================================================
+    // CÓDIGOS DE PROYECTO
+    // =====================================================================
+
+    /** Proyectos creados antes de existir el campo "codigo" (o por la API) reciben uno. */
+    private void asignarCodigosFaltantes() {
+        Query sinCodigo = new Query(new Criteria().orOperator(
+                Criteria.where("codigo").exists(false), Criteria.where("codigo").is(null)))
+                .with(Sort.by("fechaCreacion"));
+        sinCodigo.fields().include("_id");
+        List<Proyecto> pendientes = mongoTemplate.find(sinCodigo, Proyecto.class);
+        for (Proyecto p : pendientes) {
+            mongoTemplate.updateFirst(Query.query(Criteria.where("_id").is(p.getId())),
+                    Update.update("codigo", codigoService.siguienteCodigo()), Proyecto.class);
+        }
+        if (!pendientes.isEmpty()) {
+            log.info("Código asignado a {} proyectos que no tenían", pendientes.size());
+        }
+    }
+
+    // =====================================================================
+    // CUENTAS, PRIVILEGIOS Y ROLES
+    // =====================================================================
+
+    /** Crea la cuenta si no existe; si existe, la activa y (opcionalmente) restablece su contraseña. */
+    private Usuarios asegurarUsuario(String nombre, String correo, String clave, String rol) {
+        Usuarios usuario = usuarioRepository.findByCorreo(correo);
+        if (usuario == null) {
+            usuario = new Usuarios(nombre, correo, passwordEncoder.encode(clave), null, rol);
+            usuario.setProveedor("LOCAL");
+            usuario.setFechaCreacion(LocalDateTime.now());
+        } else {
+            if (reiniciarClaves) {
+                usuario.setContrasena(passwordEncoder.encode(clave));
+            }
+            usuario.setRol(rol);
+        }
+        usuario.setActivo(true);
+        usuario.setEstado("ACTIVO");
+        return usuarioRepository.save(usuario);
+    }
+
+    private void crearPrivilegios() {
         List<Privilegio> privilegios = Arrays.asList(
             new Privilegio("CREAR_PROYECTO", "Crear nuevos proyectos", "PROYECTO", "CREATE"),
             new Privilegio("VER_PROYECTO", "Ver proyectos", "PROYECTO", "READ"),
             new Privilegio("EDITAR_PROYECTO", "Editar proyectos existentes", "PROYECTO", "UPDATE"),
             new Privilegio("ELIMINAR_PROYECTO", "Eliminar proyectos", "PROYECTO", "DELETE"),
-
             new Privilegio("CREAR_TAREA", "Crear nuevas tareas", "TAREA", "CREATE"),
             new Privilegio("VER_TAREA", "Ver tareas", "TAREA", "READ"),
             new Privilegio("EDITAR_TAREA", "Editar tareas existentes", "TAREA", "UPDATE"),
             new Privilegio("ELIMINAR_TAREA", "Eliminar tareas", "TAREA", "DELETE"),
             new Privilegio("ASIGNAR_TAREA", "Asignar tareas a usuarios", "TAREA", "UPDATE"),
-
             new Privilegio("CREAR_USUARIO", "Crear nuevos usuarios", "USUARIO", "CREATE"),
             new Privilegio("VER_USUARIO", "Ver información de usuarios", "USUARIO", "READ"),
             new Privilegio("EDITAR_USUARIO", "Editar usuarios existentes", "USUARIO", "UPDATE"),
             new Privilegio("ELIMINAR_USUARIO", "Eliminar usuarios", "USUARIO", "DELETE"),
             new Privilegio("CAMBIAR_ROL", "Cambiar rol de usuario", "USUARIO", "UPDATE"),
-
             new Privilegio("CREAR_COMENTARIO", "Crear comentarios en proyectos y tareas", "COMENTARIO", "CREATE"),
             new Privilegio("EDITAR_COMENTARIO", "Editar comentarios", "COMENTARIO", "UPDATE"),
             new Privilegio("ELIMINAR_COMENTARIO", "Eliminar comentarios", "COMENTARIO", "DELETE"),
-
             new Privilegio("CREAR_ENTREGA", "Entregar tareas", "ENTREGA", "CREATE"),
             new Privilegio("VER_ENTREGA", "Ver entregas de tareas", "ENTREGA", "READ"),
             new Privilegio("CALIFICAR_ENTREGA", "Calificar entregas de tareas", "ENTREGA", "UPDATE"),
-
             new Privilegio("ACCESO_ADMIN", "Acceso al panel de administración", "ADMIN", "READ"),
             new Privilegio("GENERAR_REPORTES", "Generar reportes del sistema", "ADMIN", "READ")
         );
-
         privilegioRepository.saveAll(privilegios);
-        System.out.println("  ✓ " + privilegios.size() + " privilegios creados");
     }
 
-    private void createRoles() {
-        System.out.println("👤 Creando roles...");
-
+    private void crearRoles() {
         List<Privilegio> privilegios = privilegioRepository.findByActivo(true);
 
         Rol admin = new Rol("ADMINISTRADOR", "Acceso total al sistema");
         admin.setPrivilegios(privilegios.stream().map(Privilegio::getId).toList());
         rolRepository.save(admin);
 
-        Rol lider = new Rol("LIDER", "Líder de proyecto - puede crear tareas y asignar usuarios");
-        List<String> privilegiosLider = privilegios.stream()
-            .filter(p -> !p.getNombre().startsWith("ELIMINAR_USUARIO") &&
-                         !p.getNombre().startsWith("ELIMINAR_PROYECTO") &&
-                         !p.getNombre().equals("ACCESO_ADMIN") &&
-                         !p.getNombre().equals("CREAR_USUARIO"))
+        Rol lider = new Rol("LIDER", "Líder de proyecto: crea proyectos, asigna tareas y revisa entregas");
+        lider.setPrivilegios(privilegios.stream()
+            .filter(p -> !List.of("ELIMINAR_USUARIO", "ELIMINAR_PROYECTO", "ACCESO_ADMIN", "CREAR_USUARIO").contains(p.getNombre()))
             .map(Privilegio::getId)
-            .toList();
-        lider.setPrivilegios(privilegiosLider);
+            .toList());
         rolRepository.save(lider);
 
-        Rol participante = new Rol("PARTICIPANTE", "Participante - acceso limitado a proyectos asignados");
-        List<String> privilegiosParticipante = privilegios.stream()
-            .filter(p -> p.getAccion().equals("READ") || p.getNombre().equals("CREAR_COMENTARIO") ||
-                         p.getNombre().equals("CREAR_ENTREGA"))
+        Rol participante = new Rol("PARTICIPANTE", "Voluntario: se une a proyectos y entrega tareas");
+        participante.setPrivilegios(privilegios.stream()
+            .filter(p -> "READ".equals(p.getAccion()) || List.of("CREAR_COMENTARIO", "CREAR_ENTREGA").contains(p.getNombre()))
             .map(Privilegio::getId)
-            .toList();
-        participante.setPrivilegios(privilegiosParticipante);
+            .toList());
         rolRepository.save(participante);
-
-        System.out.println("  ✓ 3 roles creados");
-    }
-
-    private void createUsuarios() {
-        System.out.println("👥 Creando usuarios de prueba...");
-
-        String passwordEncriptada = passwordEncoder.encode("123456");
-
-        Rol adminRol      = rolRepository.findByNombre("ADMINISTRADOR").orElse(null);
-        Rol liderRol      = rolRepository.findByNombre("LIDER").orElse(null);
-        Rol participanteRol = rolRepository.findByNombre("PARTICIPANTE").orElse(null);
-
-        Usuarios admin = new Usuarios("Administrador", "admin@synergy.com", passwordEncriptada);
-        if (adminRol != null) admin.setIdRol(adminRol.getId());
-        admin.setEstado("ACTIVO");
-        admin.setFechaCreacion(LocalDateTime.now());
-        usuarioRepository.save(admin);
-
-        Usuarios lider = new Usuarios("Líder de Proyecto", "lider@synergy.com", passwordEncriptada);
-        if (liderRol != null) lider.setIdRol(liderRol.getId());
-        lider.setEstado("ACTIVO");
-        lider.setFechaCreacion(LocalDateTime.now());
-        usuarioRepository.save(lider);
-
-        Usuarios participante = new Usuarios("Usuario Participante", "usuario@synergy.com", passwordEncriptada);
-        if (participanteRol != null) participante.setIdRol(participanteRol.getId());
-        participante.setEstado("ACTIVO");
-        participante.setFechaCreacion(LocalDateTime.now());
-        usuarioRepository.save(participante);
-
-        System.out.println("  ✓ 3 usuarios de prueba creados");
-        System.out.println("     - admin@synergy.com (ADMINISTRADOR)");
-        System.out.println("     - lider@synergy.com (LIDER)");
-        System.out.println("     - usuario@synergy.com (PARTICIPANTE)");
-    }
-
-    private void createProyectos() {
-        System.out.println("📦 Creando proyectos de ejemplo...");
-
-        Usuarios lider = usuarioRepository.findByCorreo("lider@synergy.com");
-
-        Proyecto proyecto = new Proyecto(
-            "Proyecto de Gestión de Inventario",
-            "Sistema para gestionar inventario de la empresa",
-            LocalDate.of(2024, 3, 1),
-            LocalDate.of(2024, 6, 30),
-            lider.getId()
-        );
-        proyectoRepository.save(proyecto);
-
-        System.out.println("  ✓ 1 proyecto creado");
-    }
-
-    private void createParticipaciones() {
-        System.out.println("📝 Creando participaciones...");
-
-        Usuarios lider       = usuarioRepository.findByCorreo("lider@synergy.com");
-        Usuarios participante = usuarioRepository.findByCorreo("usuario@synergy.com");
-        Proyecto proyecto    = proyectoRepository.findAll().get(0);
-
-        participacionRepository.save(new Participacion(lider.getId(), proyecto.getId()));
-        participacionRepository.save(new Participacion(participante.getId(), proyecto.getId()));
-
-        System.out.println("  ✓ 2 participaciones creadas");
-    }
-
-    private void createTareas() {
-        System.out.println("📌 Creando tareas de ejemplo...");
-
-        Usuarios participante = usuarioRepository.findByCorreo("usuario@synergy.com");
-        Proyecto proyecto     = proyectoRepository.findAll().get(0);
-
-        Tarea tarea = new Tarea(
-            "Implementar módulo de autenticación",
-            "Crear sistema de login seguro con Spring Security",
-            "PENDIENTE",
-            LocalDate.of(2024, 4, 15),
-            proyecto.getId()
-        );
-        tarea.addUsuarioAsignado(participante.getId());
-        tareaRepository.save(tarea);
-
-        System.out.println("  ✓ 1 tarea creada");
-    }
-
-    private void createComentarios() {
-        System.out.println("💬 Creando comentarios de ejemplo...");
-
-        Usuarios lider = usuarioRepository.findByCorreo("lider@synergy.com");
-        Proyecto proyecto = proyectoRepository.findAll().get(0);
-
-        Comentario comentario = new Comentario(
-            "Proyecto iniciado, por favor revisar los requerimientos.",
-            proyecto.getId(),
-            lider.getId()
-        );
-        comentarioRepository.save(comentario);
-
-        System.out.println("  ✓ 1 comentario creado");
     }
 }

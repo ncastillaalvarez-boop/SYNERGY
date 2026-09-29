@@ -1,79 +1,161 @@
-# SYNERGY: Plataforma de Gestión y Participación Comunitaria
+# Synergy — Plataforma de voluntariado ambiental
 
-Este documento técnico sirve como guía y sustento de evaluación para la defensa y sustentación del proyecto **Synergy**, enfocado a evidenciar de forma directa el cumplimiento de cada uno de los ítems requeridos en la arquitectura y desarrollo.
+Synergy conecta a **administradores**, **líderes de proyecto** y **voluntarios** para organizar proyectos ambientales (limpieza de playas, siembra de manglar, huertas…), asignar tareas, recibir entregas con evidencias y comentar el avance.
 
----
+- **Web:** Spring Boot 3.5 + Thymeleaf + Spring Security (sesión web y Google).
+- **API móvil:** REST con JWT en `/api/**`, usada por la app Flutter de la carpeta `mobile/`.
+- **Base de datos:** MongoDB (base `synergy`).
 
-##  1. Autenticación y Registro de Usuarios 
-
-### a. Autenticación en Base de Datos (NoSQL - MongoDB)
-El sistema gestiona la autenticación leyendo directamente desde nuestra base de datos **MongoDB**. Para ello, se cuenta con la clase `Usuarios` (mapeada a la colección `usuarios`) que implementa la interfaz **`UserDetails`** de Spring Security. 
-*   **Roles Implementados:** El sistema diferencia el acceso al menos con tres tipos distintos de roles: `ADMINISTRADOR`, `LIDER` y `PARTICIPANTE` (Usuario Regular).
-*   **Hash/Cifrado:** Ninguna contraseña es almacenada en texto plano; su verificación en el login y en base de datos se hace mediante **`BCryptPasswordEncoder`**.
-
-### b. Registro de Usuarios
-Contamos con lógica de controladores tanto a nivel de `Thymeleaf` como en `AuthService` para crear nuevas cuentas ("Signup"). Los usuarios que se registran desde la plataforma son almacenados inmediatamente en la base de datos, cifrando su contraseña. (De hecho, cualquier usuario nuevo registrado puede iniciar sesión con éxito demostrando la integridad de nuestro enrutamiento y servicio `PasswordEncoder`).
+Este README es la única documentación del proyecto.
 
 ---
 
-##  2. Gestión de Autorizaciones y Accesos Restringidos 
+## 1. Requisitos
 
-### a. Definición de Privilegios y Reglas de Acceso
-Nuestra arquitectura utiliza un modelo donde existen "Roles" que a su vez contienen "Privilegios" (Permisos de lectura, creación, edición, etc.).
-*   **En Base de Datos:** Las colecciones `roles` y `privilegios` se asocian a cada usuario según su jerarquía.
-*   **Endpoints Restringidos:** En el archivo maestro de configuración `SecurityConfig.java`, restringimos explícitamente el acceso usando nuestro middleware `SecurityFilterChain`:
-    ```java
-    .requestMatchers("/api/admin/**").hasRole("ADMINISTRADOR")
-    .requestMatchers("/api/lider/**").hasAnyRole("ADMINISTRADOR", "LIDER")
-    .requestMatchers("/api/**").authenticated()
-    ```
-    Ningún visitante puede ingresar a estas rutas si no presenta el nivel de autorización requerido.
+| Herramienta | Versión |
+|---|---|
+| Java (JDK) | 21 o superior |
+| MongoDB | 6 o superior, corriendo en `localhost:27017` |
+| Maven | incluido (`mvnw` / `mvnw.cmd`) |
+| Flutter | 3.x (solo para la app móvil) |
 
-### b. Configuración de Formularios de Login
-*   **Vistas Frontend:** Existen formularios pre-armados para manejar el Login (`/login`, `/seleccionar-rol`) y Registro (`/registrarse`), soportadas de vista nativa con **Thymeleaf**.
-*   **Integración de Backend:** El controlador intercepta el Request y delega a `AuthenticationManager` quien emite el veredicto junto a `DaoAuthenticationProvider`.
+## 2. Cómo arrancar
 
----
+```bash
+# Windows: mvnw.cmd clean spring-boot:run
+mvnw clean spring-boot:run
+```
 
-## ⏳ 3. Administración de Sesiones y Expiración 
+Abrir <http://localhost:8080>. No hace falta ningún script: en el **primer arranque** la aplicación prepara sola la base de datos (tarda unos segundos):
 
-La plataforma maneja con rigurosidad cómo persisten o mueren las sesiones del usuario de forma automática y controlada para prevenir ataques o mal uso de recursos:
-*   **Tiempo de Vida (Time-Out):** Configurado directamente a 13 minutos de inactividad a través del archivo de propiedades `server.servlet.session.timeout=13m` y reforzado con vencimientos JWT (`jwt.expiration=780000`). Pasado este tiempo, la sesión muere.
-*   **Limite de Concurrencias:** Se configuró que exista un límite de un *máximo de 2 sesiones activas (*en`SecurityConfig.java` > `.maximumSessions(2)`).
-*   **Seguridad de Cookie:** Las cookies (llamada `SYNERGY_SESSION`) corren bajó los flags estandar de `HttpOnly` y `Secure`.
+1. Si encuentra datos de la **versión anterior** (los de `poblar_synergy.py`: usuarios con `idRol`, ids como ObjectId, estados `EN_EJECUCION`/`FINALIZADO`…), que no funcionan con el código actual, los **respalda** en la carpeta `respaldos/AAAAMMDD_HHmmss/` (un `.json` por colección) y los reemplaza.
+2. Crea o repara los índices, los roles y los privilegios.
+3. Crea las 3 cuentas de prueba.
+4. Si hay menos de 200 proyectos, genera **≈19.000 documentos** de prueba ambientados en Cartagena.
 
----
-## 🚫 4. Manejo de Control de Errores y Seguridad Estricta (1 punto)
+## 3. Datos y cuentas de prueba
 
-La robustez de la app se evidencia en su capa de presentación ante escenarios imprevistos, evitando colapsos del servidor o información expuesta ("stack traces" feos):
-*   **Páginas Customizadas (403 y 404):** Cuando un usuario intenta acceder a una ruta restringida sin el rol adecuado, Spring Security dispara un error de prohibición (403). Nuestro sistema lo atrapa y direcciona a una página visualmente impecable (`403.html`). Idénticamente ocurre si navegan a algo que no existe (`404.html`), previniendo caídas totales.
-*   **Blindaje ante "Case Sensitivity":** Se reforzaron los Endpoints (`LiderController`, `UsuarioWebController`) validando los roles de la base de datos indiferentemente del case sensitivity de la inyección manual (`.equalsIgnoreCase`, `.toUpperCase()`), cortando de raíz los errores de log-in rebotados.
-*   **Limpieza de Binding Interno:** Se sanó todo error del servidor tipo 500 originado por llamadas Strict de Enums (`u.rol.name()`), permitiendo mallas limpias de renderizado Thymeleaf en las tablas de Usuarios.
+| Rol | Correo | Contraseña | Qué tiene |
+|---|---|---|---|
+| Administrador | `admin@synergy.com` | `Admin123*` | Todo el panel: ~240 propuestas por aprobar |
+| Líder | `lider@synergy.com` | `Lider123*` | 12 proyectos propios (activos, pendientes, completados), equipos, tareas y entregas por revisar |
+| Voluntario | `voluntario@synergy.com` | `Voluntario123*` | Inscrito en ~13 proyectos, con tareas y entregas |
+| Cualquier usuario generado | ver *Usuarios* en el panel de admin | `Synergy123*` | Voluntarios y líderes de ejemplo |
 
----
+Volumen generado (`Config/GeneradorDatos.java`, semilla fija → siempre los mismos datos):
 
-## 🗄️ 5. Avance Frontend, Backend y CRUD de Entidades 
+| Colección | Documentos | Relación que se mantiene coherente |
+|---|---|---|
+| usuarios | 2.500 | `proyectos[]` y `tareasAsignadas[]` coinciden con las demás colecciones |
+| proyectos | 3.000 | código único `SYN-AAAA-NNNNN`, categoría, barrio, organización, audiencia |
+| participaciones | ~5.600 | = `proyectos.participantes[]` |
+| tareas | 4.000 | solo se asignan a integrantes del proyecto |
+| entregas_tareas | ~2.300 | archivo de evidencia `.txt`; estados ENTREGADO / REVISADO / RECHAZADO |
+| comentarios | 1.500 | escritos por integrantes del proyecto |
 
-El desarrollo cumple metodologías cliente-servidor para presentar funcionalidades asíncronas y de renderizado:
-*   **Backend:** Todo el ciclo en Java usando anotaciones Controller/Service/Repository, acoplados a Spring Data MongoDB. Tenemos colecciones funcionales reales: `Proyectos`, `Usuarios`, `Tareas`, `Roles`.
-*   **Operaciones CRUD:**
-    *   *Create:* Generación de Proyectos por líderes comunitarios o Usuarios nuevos (Registro).
-    *   *Read:* Visualizar listas de proyectos, conteo de voluntarios, dashboard de gestión o la visualización de los detalles en `/proyectos/publico`.
-    *   *Update:* Asignación de roles y actualizaciones de avance del proyecto o del estado de las tareas.
-    *   *Delete:* Eliminación bajo restricciones administrativas (solo administradores pueden desaparecer proyectos inválidos).
+Opciones en `application.properties` (sección *DATOS DE PRUEBA*):
 
----
+- `synergy.datos.usuarios / proyectos / tareas / comentarios` → cantidades.
+- `synergy.datos.regenerar-todo=true` → en el siguiente arranque respalda, borra y regenera todo. **Vuelve a ponerlo en `false`.** (Alternativa con mongosh: `mongosh "mongodb://localhost:27017" setup_synergy_db.js`.)
+- `synergy.demo.reset-passwords=true` → restablece las contraseñas de las 3 cuentas en cada arranque. **En producción: `false`**, igual que `synergy.datos.generar=false`.
 
-## 🎨 6. Escalabilidad Frontend y Diseño Unificado
+## 4. Inicio de sesión con Google
 
-A nivel visual, Synergy cuenta con una Arquitectura SaaS extremadamente limpia, pensada en la retención del usuario:
-*   **Unified Global Dashboard:** Todo panel interior (Admin, Usuario o Líder) ha sido sincronizado a utilizar una sola matriz de *Sistema de Diseño*.
-*   **Premium Glassmorphism:** Se han descartado colores genéricos o archivos de imágenes de fondo pesadas. El sistema opera modularmente con tipografía `Inter`, degradados Radiales CSS Nativos rápidos y un balance perfecto entre `Dark Theme` profundo e interacciones reactivas impecables.
-*   **Control de Resources (Case-Insensitive Automático):** La inyección de imágenes está configurada a respetar de forma milimétrica su ruta para ser a prueba de caídas en despliegues como Linux O Windows.
+1. En [Google Cloud Console](https://console.cloud.google.com/apis/credentials) → *Credenciales* → tu cliente OAuth 2.0 (tipo **Aplicación web**), agrega:
+   - **Orígenes de JavaScript autorizados:** `http://localhost:8080`
+   - **URI de redireccionamiento autorizados:** `http://localhost:8080/login/oauth2/code/google`
+2. Las claves van en `src/main/resources/application-secrets.properties` (ya está creado y **no se sube a GitHub** porque está en `.gitignore`):
 
----
-##  Resumen de Inicialización 
+   ```properties
+   spring.security.oauth2.client.registration.google.client-id=TU_CLIENT_ID
+   spring.security.oauth2.client.registration.google.client-secret=TU_CLIENT_SECRET
+   ```
 
-El sistema cuenta con **dos mecanismos** para asegurar datos iniciales:
-1.  Un archivo interno programado en backend: `DataInitializer.java` (si la base de datos arranca vacía, Spring crea todo lo necesario en la colección, los usuarios, y hashea las contraseñas internamente).
-2.  Un script de mongo: `setup_synergy_db.js` (como alternativa que se ejecuta directo en el shell de MongoDB para ambientes independientes o para re-seteos de despliegue).
+   También se pueden pasar como variables de entorno `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET`.
+3. Funcionamiento:
+   - Botón **Continuar con Google** en el login y en los registros.
+   - Si el correo ya existe, entra con su rol actual. Si la cuenta está inactiva, se rechaza.
+   - Si es nuevo, se crea como **voluntario**; desde *Registro de líder* se crea como **líder** (`/login/google?rol=LIDER`).
+   - La foto de Google se usa como avatar en el menú lateral.
+
+> Si el secreto del cliente se compartió por chat o correo, conviene regenerarlo en Google Cloud Console y actualizar el archivo.
+
+## 5. Roles y funciones
+
+| Rol | Puede |
+|---|---|
+| **Administrador** | Buscar y filtrar proyectos y usuarios (paginado), aprobar o rechazar propuestas, eliminar proyectos (con sus tareas, entregas y comentarios), cambiar roles, activar/desactivar cuentas, ver historial y el árbol de proyectos (categoría → barrio → proyecto). |
+| **Líder** | Crear/editar/completar/eliminar sus proyectos, asignar tareas a los inscritos, ver avance con gráficas, revisar y descargar entregas, comentar. |
+| **Voluntario** | Explorar proyectos con buscador y filtros (estado, categoría, barrio, organización), inscribirse o salir, ver sus tareas, entregar archivos (máx. 10 MB), comentar, proponer proyectos (quedan *pendientes*; al aprobarse pasa a ser líder). |
+| **Invitado** | Ver los proyectos activos y completados con los mismos filtros; al pulsar *Participar* se le pide crear cuenta. |
+
+Búsqueda: no distingue mayúsculas ni tildes (`reforestacion` encuentra *Reforestación*) y busca en nombre, descripción, código, barrio y categoría. Las listas se paginan en el servidor (12 proyectos o 20 usuarios por página), así funcionan igual con 30 que con 30.000 registros.
+
+Flujo: el voluntario/líder propone un proyecto → queda `PENDIENTE` → el administrador lo aprueba (`ACTIVO`) → los voluntarios se inscriben → el líder asigna tareas → el voluntario entrega → el líder revisa.
+
+## 6. Configuración (`application.properties`)
+
+| Propiedad / variable | Por defecto | Para qué |
+|---|---|---|
+| `MONGODB_URI` | `mongodb://localhost:27017/synergy` | Conexión a MongoDB (Atlas en producción). |
+| `JWT_SECRET` | valor de `application-secrets.properties` | Firma de los tokens de la app móvil. |
+| `SESSION_COOKIE_SECURE` | `false` | Ponlo en `true` cuando la web use HTTPS. |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | secrets | Login con Google. |
+| `spring.servlet.multipart.max-file-size` | `10MB` | Tamaño máximo de las entregas. |
+
+Sesión web: 13 minutos de inactividad, máximo 2 sesiones por usuario.
+
+## 7. Estructura
+
+```
+Synergy/
+├── pom.xml
+├── setup_synergy_db.js            Script de MongoDB con datos de prueba
+├── mobile/                        App Flutter (cliente de /api/**)
+└── src/main/
+    ├── java/com/proaula/spring/synergy/
+    │   ├── Config/                SecurityConfig, DataInitializer, SesionUsuarioAdvice, errores globales
+    │   ├── Controller/            Web (Thymeleaf) y REST para la app (Api*, AuthController, JWT)
+    │   ├── Dto/                   Objetos de vista (EntregaVista, ComentarioVista…)
+    │   ├── Model/                 Documentos de MongoDB
+    │   ├── Repository/            Repositorios Spring Data
+    │   ├── Security/              SesionUtil, GoogleLoginSuccessHandler, JWT
+    │   └── Service/               Lógica de negocio
+    └── resources/
+        ├── application.properties
+        ├── application-secrets.properties   (privado, no se sube)
+        ├── static/css/            core.css, auth.css, landing.css, dashboard.css
+        ├── static/js/script.js    Animaciones, tema claro/oscuro, menú, confirmaciones
+        ├── static/img/            logo.png, logo-mark.png, icons/*.png
+        └── templates/             Vistas + fragments/sidebar.html (menú lateral por rol)
+```
+
+### Diseño
+
+- Paleta: fondo `#0B0E14`, verde esmeralda `#10B981`; **tema claro** con el botón de luna/sol (se recuerda en el navegador).
+- Menú lateral según el rol, barra superior en móvil, gráficas de avance en el panel del líder, ventanas de confirmación propias (`data-confirm="¿Seguro?"` en cualquier enlace, botón o formulario).
+- Iconos propios en `static/img/icons/` (minúsculas): `inicio, proyectos, comunidad, perfil, notificaciones, ajustes, buscar, agregar, reforestacion, logro, tareas, meta-semanal, progreso, reporte-fotografico`.
+- Todas las rutas de imágenes usan `/img/...` en **minúsculas** (la carpeta debe llamarse `img`, no `IMG`; en Linux/servidores importa).
+
+## 8. App móvil (Flutter)
+
+```bash
+cd mobile
+flutter pub get
+flutter run
+```
+
+La URL del backend está en `mobile/lib/utils/app_config.dart` (`http://10.0.2.2:8080/api` para el emulador de Android; en un teléfono real usa la IP de tu PC). Las cuentas de prueba sirven también en la app.
+
+Endpoints principales: `POST /api/auth/login`, `POST /api/auth/registrar`, `/api/proyectos/**`, `/api/tareas/**`, `/api/entregas/**`, `/api/comentarios/**`, `/api/admin/**` (solo administrador). Sin token válido responden `401` en JSON.
+
+## 9. Problemas comunes
+
+| Síntoma | Solución |
+|---|---|
+| En la consola sale `IndexOptionsConflict` o `Index already exists with a different name` | Ya no detiene la aplicación: `MongoIndexConfig` reemplaza el índice viejo. Si persiste, usa `synergy.datos.regenerar-todo=true` una vez. |
+| La página sale sin estilos o con el diseño viejo | `mvnw clean spring-boot:run` y recargar con `Ctrl + F5`. |
+| Google dice `redirect_uri_mismatch` | Agregar exactamente `http://localhost:8080/login/oauth2/code/google` en Google Cloud Console. |
+| Google dice `invalid_client` | Revisar client-id / secret en `application-secrets.properties`. |
+| No entra con las cuentas de prueba | Poner `synergy.demo.reset-passwords=true` una vez, o ejecutar `setup_synergy_db.js`. |
+| `Connection refused` a MongoDB | Iniciar el servicio de MongoDB. |

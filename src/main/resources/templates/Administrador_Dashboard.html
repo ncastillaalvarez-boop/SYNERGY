@@ -1,274 +1,153 @@
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Panel de Administración – Synergy</title>
-  <link rel="stylesheet" href="/css/Lista_Proyectos.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>try{var t=localStorage.getItem('synergy-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
+  <title>Panel de administración – Synergy</title>
+  <link rel="icon" type="image/png" href="../static/img/logo-mark.png" th:href="@{/img/logo-mark.png}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <link rel="stylesheet" href="../static/css/core.css" th:href="@{/css/core.css}">
+  <link rel="stylesheet" href="../static/css/dashboard.css" th:href="@{/css/dashboard.css}">
 </head>
 <body>
+  <div class="bg-ambient" aria-hidden="true"></div>
 
-  <div class="hero">
-    <div class="overlay"></div>
+<div class="app-shell">
+  <div th:replace="~{fragments/sidebar :: sidebar('admin-proyectos')}"></div>
+  <div class="app-main">
+  <div th:replace="~{fragments/sidebar :: topbar}"></div>
 
-    <div class="container">
-      <div class="card">
-
-        <!-- Encabezado -->
-        <div class="header">
-          <div class="top-buttons">
-            <a th:href="@{/index}" class="btn-inicio">⬅ Volver</a>
-            <a th:href="@{/admin/usuarios}" class="btn-usuarios">👥 Ver Usuarios</a>
+  <main class="app-container">
+    <section class="app-card">
+      <header class="page-header">
+        <nav class="page-toolbar">
+          <div class="toolbar-group">
+            
+            <a th:href="@{/admin/usuarios}" class="btn btn-info btn-sm"><i class="fa-solid fa-users"></i> Usuarios</a>
           </div>
-          <h1>Panel de Administración</h1>
-          <p class="subtitle">Gestiona los proyectos enviados por los usuarios.</p>
-        </div>
-
-        <!-- Mensaje de éxito o error -->
-        <div th:if="${mensaje}" class="alert-success" th:text="${mensaje}"></div>
-
-        <!-- Contador + info de página -->
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:8px;">
-          <span style="color:#94A3B8; font-size:14px;">
-            📋 <span th:text="${totalElements}">0</span> proyectos en total ·
-            Página <span th:text="${currentPage + 1}">1</span> de <span th:text="${totalPages}">1</span>
-          </span>
-          <span style="color:#475569; font-size:12px;">
-            (mostrando 12 por página · ordenados más recientes primero)
-          </span>
-        </div>
-
-        <!-- Filtros (aplican sobre la página actual) -->
-        <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px; align-items:center;">
-          <input type="text" id="buscadorProyectos" oninput="filtrarProyectos()"
-                 placeholder="🔍 Buscar en esta página..."
-                 class="buscador-input" style="flex:1; min-width:160px;">
-          <select id="filtroEstadoAdmin" onchange="filtrarProyectos()"
-                  style="padding:8px 14px; border:1px solid rgba(255,255,255,0.1);
-                         border-radius:20px; font-size:13px;
-                         background:rgba(15,23,42,0.6); color:#CBD5E1;">
-            <option value="">Todos los estados</option>
-            <option value="ACTIVO">Activo</option>
-            <option value="COMPLETADO">Completado</option>
-            <option value="CANCELADO">Cancelado</option>
-          </select>
-          <select id="filtroOrgAdmin" onchange="filtrarProyectos()"
-                  style="padding:8px 14px; border:1px solid rgba(255,255,255,0.1);
-                         border-radius:20px; font-size:13px;
-                         background:rgba(15,23,42,0.6); color:#CBD5E1;">
-            <option value="">Todas las organizaciones</option>
-            <option value="Empresa">Empresa</option>
-            <option value="Proyecto estudiantil">Proyecto estudiantil</option>
-            <option value="ONG">ONG</option>
-            <option value="Institución educativa">Institución educativa</option>
-            <option value="Entidad gubernamental">Entidad gubernamental</option>
-            <option value="Comunidad">Comunidad</option>
-            <option value="Otro">Otro</option>
-          </select>
-          <input type="text" id="filtroLiderAdmin" oninput="filtrarProyectos()"
-                 placeholder="👤 Líder..."
-                 style="padding:8px 14px; border:1px solid rgba(255,255,255,0.1);
-                        border-radius:20px; font-size:13px; min-width:130px;
-                        background:rgba(15,23,42,0.6); color:#CBD5E1;">
-        </div>
-
-        <!-- Sin proyectos -->
-        <div th:if="${#lists.isEmpty(proyectos)}" class="empty-invitado">
-          No hay proyectos registrados.
-        </div>
-
-        <!-- Grilla de tarjetas -->
-        <div class="proyectos-grid" id="gridProyectos">
-
-          <div th:each="proyecto : ${proyectos}" class="proy-card"
-               th:attr="data-nombre=${proyecto.nombre},
-                        data-estado=${proyecto.estado},
-                        data-org=${proyecto.tipoOrganizacion},
-                        data-lider=${liderPorProyecto[proyecto.id]}">
-
-            <!-- Imagen del proyecto -->
-            <img th:if="${proyecto.nombreArchivo != null}"
-                 th:src="@{/proyectos/{id}/imagen(id=${proyecto.id})}"
-                 alt="Imagen del proyecto"
-                 style="width:100%; height:140px; object-fit:cover; border-radius:10px; margin-bottom:12px;">
-
-            <!-- Encabezado de tarjeta -->
-            <div class="proy-card-top">
-              <h3 class="proy-nombre" th:text="${proyecto.nombre}">Proyecto</h3>
-              <span class="proy-fecha"
-                    th:text="${proyecto.fechaInicio != null ? '📅 ' + proyecto.fechaInicio : ''}"></span>
-            </div>
-
-            <!-- Badge organización -->
-            <div style="margin-bottom:6px;">
-              <span th:if="${proyecto.tipoOrganizacion != null}"
-                    th:text="${proyecto.tipoOrganizacion}"
-                    style="background:rgba(16,185,129,0.15); color:#34D399;
-                           border-radius:20px; padding:2px 10px; font-size:11px; font-weight:700;">
-              </span>
-              <span th:if="${proyecto.tipoOrganizacion == null}"
-                    style="background:rgba(255,255,255,0.06); color:#64748B;
-                           border-radius:20px; padding:2px 10px; font-size:11px;">
-                Sin organización definida
-              </span>
-            </div>
-
-            <!-- Líder -->
-            <div style="margin-bottom:10px;">
-              <span th:text="'👤 ' + ${liderPorProyecto[proyecto.id]}"
-                    style="font-size:12px; color:#94A3B8;">
-              </span>
-            </div>
-
-            <!-- Descripción -->
-            <p class="proy-desc" th:text="${proyecto.descripcion}">Descripción</p>
-
-            <!-- Participantes -->
-            <div style="margin-bottom:14px;">
-              <span style="font-size:12px; color:#64748B; font-weight:600;">
-                👥 Participantes (<span th:text="${#lists.size(participantesPorProyecto[proyecto.id])}">0</span>):
-              </span>
-              <div th:if="${#lists.isEmpty(participantesPorProyecto[proyecto.id])}"
-                   style="font-size:12px; color:#475569; margin-top:4px;">
-                Sin participantes inscritos
-              </div>
-              <div th:unless="${#lists.isEmpty(participantesPorProyecto[proyecto.id])}"
-                   style="display:flex; flex-wrap:wrap; gap:4px; margin-top:6px;">
-                <span th:each="u : ${participantesPorProyecto[proyecto.id]}"
-                      th:text="${u.nombre}"
-                      style="background:rgba(255,255,255,0.05); color:#CBD5E1;
-                             border-radius:12px; padding:2px 8px; font-size:11px;">
-                </span>
-              </div>
-            </div>
-
-            <!-- Badge estado -->
-            <div style="margin-bottom:14px;">
-              <span th:text="${proyecto.estado ?: 'SIN ESTADO'}"
-                    th:style="${proyecto.estado == 'ACTIVO'} ? 'background:rgba(16,185,129,0.15);color:#34D399;' :
-                               (${proyecto.estado == 'COMPLETADO'} ? 'background:rgba(59,130,246,0.15);color:#60A5FA;' :
-                               'background:rgba(239,68,68,0.15);color:#F87171;')"
-                    style="font-size:11px; font-weight:700; border-radius:20px; padding:2px 10px;">
-              </span>
-            </div>
-
-            <!-- Acciones -->
-            <div class="proy-footer">
-              <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                <a th:href="@{/admin/proyecto/{id}(id=${proyecto.id})}" class="btn-ver">👁 Ver detalle</a>
-
-                <form th:action="@{/admin/proyecto/{id}/aceptar(id=${proyecto.id})}" method="post"
-                      style="margin:0;">
-                  <button type="submit" class="btn-aceptar">✅ Aceptar</button>
-                </form>
-
-                <form th:action="@{/admin/proyecto/{id}/eliminar(id=${proyecto.id})}" method="post"
-                      style="margin:0;">
-                  <button type="submit" class="btn-eliminar"
-                          onclick="return confirm('¿Seguro que deseas eliminar este proyecto?')">
-                    🗑 Eliminar
-                  </button>
-                </form>
-              </div>
-            </div>
-
+        </nav>
+        <div class="page-heading">
+          <span class="page-icon has-img"><img src="../static/img/icons/ajustes.png" th:src="@{/img/icons/ajustes.png}" alt=""></span>
+          <div>
+            <h1 class="page-title">Panel de administración</h1>
+            <p class="page-subtitle">Aprueba, revisa y gestiona los proyectos de la plataforma.</p>
           </div>
-
         </div>
+      </header>
 
-        <!-- PAGINACIÓN -->
-        <div th:if="${totalPages > 1}"
-             style="display:flex; justify-content:center; align-items:center;
-                    gap:8px; margin-top:32px; flex-wrap:wrap;">
-
-          <!-- Anterior -->
-          <a th:if="${hasPrev}"
-             th:href="@{/admin/proyectos(page=${currentPage - 1})}"
-             style="padding:8px 16px; border:1px solid rgba(255,255,255,0.1);
-                    border-radius:8px; background:rgba(255,255,255,0.05);
-                    color:#CBD5E1; text-decoration:none; font-size:13px;
-                    transition:background 0.2s;"
-             onmouseover="this.style.background='rgba(255,255,255,0.1)'"
-             onmouseout="this.style.background='rgba(255,255,255,0.05)'">
-            ⬅ Anterior
-          </a>
-          <span th:unless="${hasPrev}"
-                style="padding:8px 16px; border:1px solid rgba(255,255,255,0.05);
-                       border-radius:8px; color:#475569; font-size:13px; cursor:default;">
-            ⬅ Anterior
-          </span>
-
-          <!-- Números de página (ventana de 5 alrededor de la actual) -->
-          <th:block th:with="
-              startPage=${T(java.lang.Math).max(0, currentPage - 2)},
-              endPage=${T(java.lang.Math).min(totalPages - 1, currentPage + 2)}">
-            <th:block th:each="i : ${#numbers.sequence(startPage, endPage)}">
-              <a th:if="${i != currentPage}"
-                 th:href="@{/admin/proyectos(page=${i})}"
-                 th:text="${i + 1}"
-                 style="padding:8px 14px; border:1px solid rgba(255,255,255,0.1);
-                        border-radius:8px; background:rgba(255,255,255,0.05);
-                        color:#CBD5E1; text-decoration:none; font-size:13px;
-                        min-width:36px; text-align:center;
-                        transition:background 0.2s;"
-                 onmouseover="this.style.background='rgba(255,255,255,0.1)'"
-                 onmouseout="this.style.background='rgba(255,255,255,0.05)'">
-              </a>
-              <span th:if="${i == currentPage}"
-                    th:text="${i + 1}"
-                    style="padding:8px 14px; border:1px solid rgba(16,185,129,0.4);
-                           border-radius:8px; background:rgba(16,185,129,0.15);
-                           color:#34D399; font-size:13px; font-weight:700;
-                           min-width:36px; text-align:center;">
-              </span>
-            </th:block>
-          </th:block>
-
-          <!-- Siguiente -->
-          <a th:if="${hasNext}"
-             th:href="@{/admin/proyectos(page=${currentPage + 1})}"
-             style="padding:8px 16px; border:1px solid rgba(255,255,255,0.1);
-                    border-radius:8px; background:rgba(255,255,255,0.05);
-                    color:#CBD5E1; text-decoration:none; font-size:13px;
-                    transition:background 0.2s;"
-             onmouseover="this.style.background='rgba(255,255,255,0.1)'"
-             onmouseout="this.style.background='rgba(255,255,255,0.05)'">
-            Siguiente ➡
-          </a>
-          <span th:unless="${hasNext}"
-                style="padding:8px 16px; border:1px solid rgba(255,255,255,0.05);
-                       border-radius:8px; color:#475569; font-size:13px; cursor:default;">
-            Siguiente ➡
-          </span>
-
-        </div>
-        <!-- fin paginación -->
-
+      <div th:if="${mensaje}" class="alert alert-success" data-autohide>
+        <i class="fa-solid fa-circle-check"></i>
+        <span th:text="${mensaje}"></span>
       </div>
-    </div>
+      <div th:if="${error}" class="alert alert-error">
+        <i class="fa-solid fa-circle-exclamation"></i>
+        <span th:text="${error}"></span>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card" style="--i:0"><img src="../static/img/icons/proyectos.png" th:src="@{/img/icons/proyectos.png}" alt="" class="stat-icon">
+          <span class="stat-value" th:text="${#numbers.formatInteger(totalProyectos, 1, 'POINT')}">0</span><span class="stat-label">Proyectos</span></div>
+        <div class="stat-card" style="--i:1"><img src="../static/img/icons/notificaciones.png" th:src="@{/img/icons/notificaciones.png}" alt="" class="stat-icon">
+          <span class="stat-value" th:text="${#numbers.formatInteger(pendientes, 1, 'POINT')}">0</span><span class="stat-label"><a th:href="@{/admin/proyectos(estado='PENDIENTE')}" class="link">Por aprobar</a></span></div>
+        <div class="stat-card" style="--i:2"><img src="../static/img/icons/reforestacion.png" th:src="@{/img/icons/reforestacion.png}" alt="" class="stat-icon">
+          <span class="stat-value" th:text="${#numbers.formatInteger(activos, 1, 'POINT')}">0</span><span class="stat-label">Activos</span></div>
+        <div class="stat-card" style="--i:3"><img src="../static/img/icons/comunidad.png" th:src="@{/img/icons/comunidad.png}" alt="" class="stat-icon">
+          <span class="stat-value" th:text="${#numbers.formatInteger(totalUsuarios, 1, 'POINT')}">0</span><span class="stat-label">Usuarios</span></div>
+      </div>
+
+      <h2 class="section-heading"><i class="fa-solid fa-folder-open"></i> Proyectos
+        <span class="count" th:text="${#numbers.formatInteger(paginacion.totalElementos, 1, 'POINT')}">0</span></h2>
+
+      <form class="filter-bar" th:action="@{/admin/proyectos}" method="get" role="search" data-autosubmit>
+        <div class="field field-search">
+          <label for="q">Buscar</label>
+          <div class="search-input">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="search" id="q" name="q" th:value="${filtro.q}" maxlength="60" placeholder="Nombre, código o barrio">
+          </div>
+        </div>
+        <div class="field">
+          <label for="estado">Estado</label>
+          <select id="estado" name="estado">
+            <option value="">Todos</option>
+            <option th:each="e : ${estadosProyecto}" th:value="${e.key}" th:selected="${filtro.estado == e.key}"
+                    th:text="${e.value + ' (' + porEstado[e.key] + ')'}">Estado</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="categoria">Categoría</label>
+          <select id="categoria" name="categoria">
+            <option value="">Todas</option>
+            <option th:each="c : ${categorias}" th:value="${c}" th:text="${c}" th:selected="${filtro.categoria == c}">Categoría</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="orden">Ordenar por</label>
+          <select id="orden" name="orden">
+            <option th:each="o : ${ordenesProyecto}" th:value="${o.key}" th:text="${o.value}" th:selected="${filtro.orden == o.key}">Orden</option>
+          </select>
+        </div>
+        <div class="filter-actions">
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-filter"></i> Filtrar</button>
+          <a th:if="${filtro.activo or (filtro.estado != null and !#strings.isEmpty(filtro.estado))}" th:href="@{/admin/proyectos}" class="btn btn-secondary" title="Quitar filtros"><i class="fa-solid fa-xmark"></i></a>
+        </div>
+      </form>
+
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>Proyecto</th><th>Líder</th><th>Estado</th><th>Fechas</th><th>Acciones</th></tr></thead>
+          <tbody>
+            <tr th:each="proyecto : ${proyectos}">
+              <td>
+                <span class="cell-strong" th:text="${proyecto.nombre}">Nombre</span>
+                <span class="cell-sub"><span class="project-code" th:text="${proyecto.codigo}">SYN</span>
+                  <th:block th:if="${proyecto.categoria != null}"> · <span th:text="${proyecto.categoria}"></span></th:block>
+                  <th:block th:if="${proyecto.ubicacion != null}"> · <span th:text="${proyecto.ubicacion}"></span></th:block></span>
+              </td>
+              <td th:text="${lideres[proyecto.idLider] ?: 'Sin líder'}">Líder</td>
+              <td><span class="badge" th:classappend="${proyecto.estado == 'ACTIVO'} ? 'badge-success is-live' : (${proyecto.estado == 'PENDIENTE'} ? 'badge-warning' : (${proyecto.estado == 'COMPLETADO'} ? 'badge-info' : 'badge-danger'))" th:text="${proyecto.estadoEtiqueta}">Estado</span></td>
+              <td><span class="meta" style="margin:0"><span><i class="fa-regular fa-calendar"></i>
+                <span th:text="${proyecto.fechaInicio != null ? #temporals.format(proyecto.fechaInicio, 'dd/MM/yy') : '-'}">-</span>
+                → <span th:text="${proyecto.fechaFin != null ? #temporals.format(proyecto.fechaFin, 'dd/MM/yy') : '-'}">-</span></span></span></td>
+              <td>
+                <div class="table-actions">
+                  <a th:href="@{/admin/proyecto/{id}(id=${proyecto.id})}" class="btn btn-info btn-sm"><i class="fa-regular fa-eye"></i> Ver</a>
+                  <form th:if="${proyecto.estado == 'PENDIENTE'}" th:action="@{/admin/proyecto/{id}/aceptar(id=${proyecto.id})}" method="post" class="inline-form">
+                    <input type="hidden" name="volver" th:value="${volverProyectos}">
+                    <button type="submit" class="btn btn-success btn-sm"><i class="fa-solid fa-check"></i> Aprobar</button>
+                  </form>
+                  <form th:if="${proyecto.estado == 'PENDIENTE'}" th:action="@{/admin/proyecto/{id}/rechazar(id=${proyecto.id})}" method="post" class="inline-form">
+                    <input type="hidden" name="volver" th:value="${volverProyectos}">
+                    <button type="submit" class="btn btn-secondary btn-sm" data-confirm="¿Rechazar esta propuesta? Quedará como cancelada." data-confirm-ok="Rechazar">
+                      <i class="fa-solid fa-ban"></i> Rechazar</button>
+                  </form>
+                  <form th:action="@{/admin/proyecto/{id}/eliminar(id=${proyecto.id})}" method="post" class="inline-form">
+                    <input type="hidden" name="volver" th:value="${volverProyectos}">
+                    <button type="submit" class="btn btn-danger btn-sm" data-confirm="¿Eliminar este proyecto? También se borrarán sus tareas, entregas y comentarios." data-confirm-ok="Eliminar">
+                      <i class="fa-regular fa-trash-can"></i></button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(proyectos)}">
+              <td colspan="5" class="cell-empty"><i class="fa-regular fa-folder-open"></i>
+                <span th:text="${filtro.activo} ? 'Ningún proyecto coincide con la búsqueda.' : 'No hay proyectos en este estado.'">No hay proyectos.</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div th:replace="~{fragments/paginacion :: paginacion(${paginacion}, 'proyectos')}"></div>
+
+    </section>
+  </main>
   </div>
+</div>
 
-  <script>
-    function filtrarProyectos() {
-      var texto  = document.getElementById("buscadorProyectos").value.toLowerCase();
-      var estado = document.getElementById("filtroEstadoAdmin").value.toLowerCase();
-      var org    = document.getElementById("filtroOrgAdmin").value.toLowerCase();
-      var lider  = document.getElementById("filtroLiderAdmin").value.toLowerCase();
-
-      document.querySelectorAll(".proy-card").forEach(function(card) {
-        var nombre   = (card.getAttribute("data-nombre") || "").toLowerCase();
-        var est      = (card.getAttribute("data-estado") || "").toLowerCase();
-        var orgVal   = (card.getAttribute("data-org")    || "").toLowerCase();
-        var liderVal = (card.getAttribute("data-lider")  || "").toLowerCase();
-
-        var ok = nombre.includes(texto)
-              && (estado === "" || est === estado)
-              && (org    === "" || orgVal.includes(org))
-              && (lider  === "" || liderVal.includes(lider));
-        card.style.display = ok ? "" : "none";
-      });
-    }
-  </script>
-
+  <script src="../static/js/script.js" th:src="@{/js/script.js}"></script>
 </body>
 </html>

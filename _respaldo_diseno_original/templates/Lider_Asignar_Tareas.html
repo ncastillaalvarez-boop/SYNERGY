@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mis Proyectos – Synergy</title>
+    <link rel="stylesheet" href="/css/Lider_Asignar_Tareas.css" />
+    <style>
+        .card {
+            background: rgba(255,255,255,0.92);
+            border-radius: 20px;
+            padding: 30px;
+            width: 95%;
+            max-width: 960px;
+            margin: 0 auto;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+        }
+        .card h1 { color: #1a1a2e; font-size: 26px; margin-bottom: 4px; }
+        .card .subtitle { color: #666; font-size: 14px; margin-bottom: 24px; }
+        .btn-volver {
+            background: #f0f0f0; border: none; border-radius: 8px;
+            padding: 8px 16px; cursor: pointer; font-size: 13px;
+            margin-bottom: 16px; transition: background 0.2s;
+        }
+        .btn-volver:hover { background: #ddd; }
+
+        /* Tabla de proyectos */
+        .proyecto-section { margin-bottom: 36px; }
+        .proyecto-section h2 {
+            font-size: 16px; color: #0F6E56; font-weight: 700;
+            margin-bottom: 10px; padding-bottom: 6px;
+            border-bottom: 2px solid #0F6E56;
+        }
+        .project-table {
+            width: 100%; border-collapse: collapse; font-size: 14px;
+        }
+        .project-table th {
+            text-align: left; padding: 10px 12px;
+            color: #888; font-weight: 600; font-size: 12px;
+            border-bottom: 1px solid #eee; text-transform: uppercase;
+        }
+        .project-table td {
+            padding: 12px; border-bottom: 1px solid #f0f0f0;
+            vertical-align: middle; color: #333;
+        }
+        .project-table tr:hover td { background: #f9f9f9; }
+
+        /* Avatares integrantes */
+        .avatares { display: flex; gap: 6px; flex-wrap: wrap; }
+        .avatar {
+            width: 30px; height: 30px; border-radius: 50%;
+            background: #0F6E56; color: white;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 11px; font-weight: 700;
+            title: attr(data-nombre);
+        }
+        .avatar.vacio {
+            background: #ccc; color: #666; font-size: 10px;
+        }
+
+        /* Badges de estado */
+        .badge {
+            padding: 4px 10px; border-radius: 20px;
+            font-size: 11px; font-weight: 700; text-transform: uppercase;
+        }
+        .badge-activo { background: #d4edda; color: #155724; }
+        .badge-completado { background: #cce5ff; color: #004085; }
+        .badge-cancelado { background: #f8d7da; color: #721c24; }
+
+        /* Botones acción */
+        .acciones { display: flex; gap: 8px; align-items: center; }
+        .btn-ver-detalle {
+            background: #0F6E56; color: white; border: none;
+            padding: 7px 14px; border-radius: 8px; font-size: 12px;
+            cursor: pointer; text-decoration: none; font-weight: 600;
+            transition: background 0.2s;
+        }
+        .btn-ver-detalle:hover { background: #0a5240; }
+        .btn-del {
+            background: #dc3545; color: white; border: none;
+            padding: 7px 14px; border-radius: 8px; font-size: 12px;
+            cursor: pointer; font-weight: 600; transition: background 0.2s;
+        }
+        .btn-del:hover { background: #b02a37; }
+
+        .empty-msg {
+            text-align: center; color: #aaa;
+            padding: 30px; font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="hero">
+    <div class="overlay"></div>
+    <div class="card">
+
+        <button class="btn-volver" onclick="location.href='/lider/dashboard'">⬅ Volver</button>
+
+        <h1>Vista general de proyectos</h1>
+        <p class="subtitle">Selecciona un proyecto para ver sus tareas y asignar responsables.</p>
+
+        <!-- Sin proyectos -->
+        <div th:if="${#lists.isEmpty(proyectos)}" class="empty-msg">
+            No tienes proyectos creados aún.
+        </div>
+
+        <!-- Tabla de proyectos -->
+        <div th:if="${!#lists.isEmpty(proyectos)}" class="proyecto-section">
+            <h2>Proyectos</h2>
+            <table class="project-table">
+                <thead>
+                    <tr>
+                        <th>Nombre del Proyecto</th>
+                        <th>Integrantes</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="p : ${proyectos}">
+
+                        <!-- Nombre clickeable -->
+                        <td>
+                            <a th:href="@{/lider/proyecto/{id}/detalle(id=${p.id})}"
+                               th:text="${p.nombre}"
+                               style="color:#0F6E56; font-weight:700; text-decoration:none;">
+                               Proyecto
+                            </a>
+                        </td>
+
+                        <!-- Integrantes como avatares -->
+                        <td>
+                            <div class="avatares">
+                                <div th:if="${#lists.isEmpty(p.participantes)}"
+                                     class="avatar vacio">–</div>
+                                <div th:each="uid : ${p.participantes}"
+                                     class="avatar"
+                                     th:title="${uid}"
+                                     th:text="${#strings.substring(uid, 0, 2).toUpperCase()}">
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- Estado -->
+                        <td>
+                            <span th:text="${p.estado}"
+                                  th:classappend="${p.estado == 'ACTIVO'} ? 'badge badge-activo' :
+                                                  (${p.estado == 'COMPLETADO'} ? 'badge badge-completado' :
+                                                  'badge badge-cancelado')"
+                                  class="badge">
+                            </span>
+                        </td>
+
+                
+
+                        <!-- Acciones -->
+                        <td>
+                           <div class="acciones">
+                               <form th:action="@{/lider/proyecto/{id}/aceptar(id=${p.id})}"
+                                     method="post" style="margin:0">
+                                   <button type="submit" class="btn-ver-detalle">
+                                      ✅ Aceptar
+                                   </button>
+                               </form>
+                               <form th:action="@{/lider/proyecto/{id}/eliminar(id=${p.id})}"
+                                     method="post" style="margin:0">
+                                  <button type="submit" class="btn-del"
+                                       onclick="return confirm('¿Eliminar este proyecto?')">
+                                       🗑️ Eliminar
+                                   </button>
+                               </form>
+                           </div>
+                       </td>
+
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+</div>
+
+</body>
+</html>

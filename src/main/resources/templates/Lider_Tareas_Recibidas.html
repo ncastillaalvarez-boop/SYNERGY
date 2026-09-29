@@ -1,141 +1,86 @@
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="UTF-8" />
-    <title>Tareas Recibidas – Synergy</title>
-    <link rel="stylesheet" href="/css/Lider_Asignar_Tareas.css" />
-    <style>
-        .card {
-            background: rgba(255,255,255,0.95);
-            border-radius: 20px;
-            padding: 30px;
-            width: 95%;
-            max-width: 960px;
-            margin: 0 auto;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
-        }
-        .btn-volver {
-            background: #f0f0f0; border: none; border-radius: 8px;
-            padding: 8px 16px; cursor: pointer; font-size: 13px;
-            margin-bottom: 20px;
-        }
-        .entrega-card {
-            border: 1px solid #e0e0e0;
-            border-radius: 14px;
-            padding: 20px;
-            margin-bottom: 20px;
-            background: #fafafa;
-        }
-        .entrega-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-bottom: 12px;
-        }
-        .entrega-titulo {
-            font-size: 17px;
-            font-weight: 700;
-            color: #1a1a2e;
-        }
-        .entrega-meta {
-            font-size: 12px;
-            color: #888;
-        }
-        .badge-proyecto {
-            background: #e8f5f1;
-            color: #0F6E56;
-            border-radius: 20px;
-            padding: 3px 10px;
-            font-size: 11px;
-            font-weight: 700;
-        }
-        .entrega-descripcion {
-            background: #f0f9f6;
-            border-left: 4px solid #0F6E56;
-            padding: 10px 14px;
-            border-radius: 6px;
-            font-size: 14px;
-            color: #333;
-            margin-bottom: 14px;
-            white-space: pre-wrap;
-        }
-        .entrega-imagen {
-            max-width: 100%;
-            max-height: 320px;
-            border-radius: 10px;
-            border: 2px solid #e0e0e0;
-            object-fit: contain;
-        }
-        .empty-msg {
-            text-align: center;
-            color: #aaa;
-            padding: 40px;
-            font-size: 15px;
-        }
-        h1 { color: #1a1a2e; font-size: 24px; margin-bottom: 4px; }
-        .subtitle { color: #666; font-size: 14px; margin-bottom: 24px; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>try{var t=localStorage.getItem('synergy-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
+  <title>Entregas recibidas – Synergy</title>
+  <link rel="icon" type="image/png" href="../static/img/logo-mark.png" th:href="@{/img/logo-mark.png}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <link rel="stylesheet" href="../static/css/core.css" th:href="@{/css/core.css}">
+  <link rel="stylesheet" href="../static/css/dashboard.css" th:href="@{/css/dashboard.css}">
 </head>
 <body>
+  <div class="bg-ambient" aria-hidden="true"></div>
 
-<div class="hero">
-    <div class="overlay"></div>
-    <div class="card">
+<div class="app-shell">
+  <div th:replace="~{fragments/sidebar :: sidebar('lider-entregas')}"></div>
+  <div class="app-main">
+  <div th:replace="~{fragments/sidebar :: topbar}"></div>
 
-        <button class="btn-volver" onclick="location.href='/lider/dashboard'">⬅ Volver</button>
-
-        <h1>Tareas Recibidas</h1>
-        <p class="subtitle">Evidencias enviadas por los participantes de tus proyectos.</p>
-
-        <div th:if="${#lists.isEmpty(entregas)}" class="empty-msg">
-            No hay tareas entregadas aún.
+  <main class="app-container">
+    <section class="app-card">
+      <header class="page-header">
+        <div class="page-heading">
+          <span class="page-icon has-img"><img src="../static/img/icons/reporte-fotografico.png" th:src="@{/img/icons/reporte-fotografico.png}" alt=""></span>
+          <div>
+            <h1 class="page-title">Entregas recibidas</h1>
+            <p class="page-subtitle">Evidencias enviadas por los voluntarios. Apruébalas o recházalas.</p>
+          </div>
         </div>
+      </header>
 
-        <div th:each="e : ${entregas}" class="entrega-card">
+      <div th:if="${mensaje}" class="alert alert-success" data-autohide>
+        <i class="fa-solid fa-circle-check"></i>
+        <span th:text="${mensaje}"></span>
+      </div>
+      <div th:if="${error}" class="alert alert-error">
+        <i class="fa-solid fa-circle-exclamation"></i>
+        <span th:text="${error}"></span>
+      </div>
 
-            <div class="entrega-header">
-                <div>
-                    <div class="entrega-titulo" th:text="${e['titulo']}">Título tarea</div>
-                    <div class="entrega-meta">
-                        👤 <span th:text="${e['usuarioNombre']}">Usuario</span>
-                        &nbsp;·&nbsp;
-                        🕐 <span th:text="${e['fechaEntrega']}">Fecha</span>
-                    </div>
-                </div>
-                <span class="badge-proyecto" th:text="${e['proyectoNombre']}">Proyecto</span>
+      <div th:if="${#lists.isEmpty(entregas)}" class="empty-state">
+        <div class="empty-state-icon has-img"><img src="../static/img/icons/notificaciones.png" th:src="@{/img/icons/notificaciones.png}" alt="" class=""></div>
+        <h3>Sin entregas todavía</h3>
+        <p>Cuando un voluntario entregue una tarea, aparecerá aquí.</p>
+      </div>
+      <div class="list">
+        <div class="list-row" th:each="e, st : ${entregas}" th:style="'--i:' + ${st.index}">
+          <div class="list-row-main">
+            <span class="avatar" th:text="${e.inicialesUsuario}">AB</span>
+            <div class="list-row-body">
+              <div class="list-row-title" th:text="${e.titulo}">Tarea</div>
+              <div class="list-row-desc"><span th:text="${e.nombreUsuario}">Voluntario</span> · <span th:text="${e.proyecto}">Proyecto</span></div>
+              <div class="meta">
+                <span><i class="fa-regular fa-clock"></i> <span th:text="${e.fechaEntrega != null ? #temporals.format(e.fechaEntrega, 'dd/MM/yyyy HH:mm') : '-'}">-</span></span>
+                <span><i class="fa-solid fa-paperclip"></i> <span th:text="${e.nombreArchivo}">archivo</span></span>
+                <span class="badge" th:text="${e.estado}"
+                      th:classappend="${e.estado == 'REVISADO'} ? 'badge-success' : (${e.estado == 'RECHAZADO'} ? 'badge-danger' : 'badge-info')">ENTREGADO</span>
+              </div>
             </div>
-
-            <!-- Descripción de evidencia -->
-            <div th:if="${e['descripcionEvidencia'] != null and !#strings.isEmpty(e['descripcionEvidencia'])}"
-                 class="entrega-descripcion"
-                 th:text="${e['descripcionEvidencia']}">
-                Descripción de la evidencia
-            </div>
-            <div th:unless="${e['descripcionEvidencia'] != null and !#strings.isEmpty(e['descripcionEvidencia'])}"
-                 style="color:#aaa; font-size:13px; margin-bottom:12px; font-style:italic;">
-                Sin descripción adjunta.
-            </div>
-
-            <!-- Imagen de evidencia -->
-            <div th:if="${e['nombreArchivo'] != null}">
-                <p style="font-size:12px; color:#888; margin-bottom:6px;">
-                    📎 <span th:text="${e['nombreArchivo']}">archivo.jpg</span>
-                </p>
-                <img th:src="@{/tareas/entrega/{id}/imagen(id=${e['entregaId']})}"
-                     class="entrega-imagen"
-                     alt="Evidencia fotográfica">
-            </div>
-            <div th:unless="${e['nombreArchivo'] != null}"
-                 style="color:#aaa; font-size:13px; font-style:italic;">
-                Sin imagen adjunta.
-            </div>
-
+          </div>
+          <div class="table-actions">
+            <a th:href="@{/lider/entregas/{id}/archivo(id=${e.id})}" class="btn btn-info btn-sm"><i class="fa-solid fa-download"></i> Descargar</a>
+            <form th:if="${e.estado != 'REVISADO'}" th:action="@{/lider/entregas/{id}/revisar(id=${e.id})}" method="post" class="inline-form">
+              <input type="hidden" name="estado" value="REVISADO">
+              <button type="submit" class="btn btn-success btn-sm"><i class="fa-solid fa-check"></i> Aprobar</button>
+            </form>
+            <form th:if="${e.estado != 'RECHAZADO'}" th:action="@{/lider/entregas/{id}/revisar(id=${e.id})}" method="post" class="inline-form">
+              <input type="hidden" name="estado" value="RECHAZADO">
+              <button type="submit" class="btn btn-danger btn-sm" data-confirm="La tarea volverá a quedar pendiente para el voluntario." data-confirm-ok="Rechazar"><i class="fa-solid fa-xmark"></i> Rechazar</button>
+            </form>
+          </div>
         </div>
+      </div>
 
-    </div>
+    </section>
+  </main>
+  </div>
 </div>
 
+  <script src="../static/js/script.js" th:src="@{/js/script.js}"></script>
 </body>
 </html>

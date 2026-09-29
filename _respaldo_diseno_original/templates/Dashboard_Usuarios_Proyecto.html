@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard de Proyectos – Synergy</title>
+  <link rel="stylesheet" href="/css/Usuarios_Dashboard.css">
+</head>
+
+<body>
+
+  <div class="hero">
+    <div class="overlay"></div>
+
+    <div class="container">
+      <div class="card">
+
+        <!-- ENCABEZADO -->
+        <div class="header">
+          <div class="top-buttons">
+
+            <!-- Volver al dashboard principal -->
+            <a th:href="@{/dashboard}" class="btn-inicio">⬅ Volver</a>
+
+            <!-- Logout -->
+            <a th:href="@{/logout}" class="btn-usuarios">🚪 Cerrar sesión</a>
+          </div>
+
+          <h1>Gestión de Proyectos</h1>
+          <p class="subtitle">Selecciona una opción para continuar.</p>
+        </div>
+
+        <!-- MENÚ DE OPCIONES -->
+        <div class="menu-options">
+
+          <!-- Crear Proyecto -->
+          <a th:href="@{/proyectos/registro}" class="menu-btn">
+            ➕ Crear proyecto
+          </a>
+
+          <!-- Participar en proyecto -->
+          <a th:href="@{/proyectos/participar}" class="menu-btn">
+            🤝 Participar en proyecto
+          </a>
+<a th:href="@{'/proyectos/mis_proyectos/' + ${usuario.id}}" class="menu-btn">
+    Mis Proyectos
+</a>
+
+
+          <!-- Proyectos donde participo -->
+          <a th:href="@{'/participacion/mis-proyectos/' + ${usuario.id}}" class="menu-btn">
+            🚪 Salir de proyectos
+          </a>
+
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

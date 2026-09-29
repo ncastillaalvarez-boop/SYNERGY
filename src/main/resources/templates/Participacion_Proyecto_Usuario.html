@@ -3,213 +3,180 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Proyectos Disponibles – Synergy</title>
-  <link rel="stylesheet" href="/css/Lista_Proyectos.css">
+  <script>try{var t=localStorage.getItem('synergy-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
+  <title>Proyectos disponibles – Synergy</title>
+  <link rel="icon" type="image/png" href="../static/img/logo-mark.png" th:href="@{/img/logo-mark.png}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <link rel="stylesheet" href="../static/css/core.css" th:href="@{/css/core.css}">
+  <link rel="stylesheet" href="../static/css/dashboard.css" th:href="@{/css/dashboard.css}">
 </head>
 <body>
+  <div class="bg-ambient" aria-hidden="true"></div>
 
-  <div class="hero">
-    <div class="overlay"></div>
+<div class="app-shell">
+  <div th:replace="~{fragments/sidebar :: sidebar('explorar')}"></div>
+  <div class="app-main">
+  <div th:replace="~{fragments/sidebar :: topbar}"></div>
 
-    <div class="container">
-      <div class="card">
-
-        <!-- BOTÓN VOLVER (dinámico: panel de usuario o página principal) -->
-        <div class="top-buttons">
-          <a th:href="${returnUrl != null ? returnUrl : '/'}" class="btn-inicio">← Volver</a>
+  <main class="app-container">
+    <section class="app-card">
+      <header class="page-header">
+        <nav class="page-toolbar">
+          <div class="toolbar-group">
+            
+            <a th:if="${modoInvitado}" th:href="@{/}" class="btn btn-secondary btn-sm"><i class="fa-solid fa-house"></i> Inicio</a>
+          </div>
+        </nav>
+        <div class="page-heading">
+          <span class="page-icon has-img"><img src="../static/img/icons/buscar.png" th:src="@{/img/icons/buscar.png}" alt=""></span>
+          <div>
+            <h1 class="page-title">Proyectos disponibles</h1>
+            <p class="page-subtitle">Busca por barrio, categoría u organización y únete a un proyecto ambiental de Cartagena.</p>
+          </div>
         </div>
+      </header>
 
-        <!-- ENCABEZADO -->
-        <div class="header">
-          <h1>Proyectos Disponibles</h1>
-          <p class="subtitle">Explora los proyectos publicados y únete al que más te interese.</p>
+      <div th:if="${mensaje}" class="alert alert-success" data-autohide>
+        <i class="fa-solid fa-circle-check"></i>
+        <span th:text="${mensaje}"></span>
+      </div>
+      <div th:if="${error}" class="alert alert-error">
+        <i class="fa-solid fa-circle-exclamation"></i>
+        <span th:text="${error}"></span>
+      </div>
+
+      <div th:if="${modoInvitado}" class="alert alert-info">
+        <i class="fa-solid fa-circle-info"></i>
+        <span>Estás viendo como invitado. <a th:href="@{/seleccionar-rol}" class="link">Crea una cuenta</a> o <a th:href="@{/login}" class="link">inicia sesión</a> para participar.</span>
+      </div>
+
+      <!-- BÚSQUEDA Y FILTROS (se aplican en el servidor: funcionan con miles de proyectos) -->
+      <form class="filter-bar" th:action="@{${rutaExplorar}}" method="get" role="search" data-autosubmit>
+        <div class="field field-search">
+          <label for="q">Buscar</label>
+          <div class="search-input">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="search" id="q" name="q" th:value="${filtro.q}" maxlength="60"
+                   placeholder="Nombre, barrio, código SYN-…" autocomplete="off">
+          </div>
         </div>
-
-        <!-- FILTROS -->
-        <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px; align-items:center;">
-          <input type="text" id="filtroTexto" oninput="aplicarFiltros()"
-                 placeholder="🔍 Buscar por nombre o descripción..."
-                 style="flex:1; min-width:180px; padding:8px 14px; border:1px solid #ccc;
-                        border-radius:20px; font-size:13px;">
-          <select id="filtroEstado" onchange="aplicarFiltros()"
-                  style="padding:8px 14px; border:1px solid #ccc; border-radius:20px; font-size:13px;">
-            <option value="">Todos los estados</option>
-            <option value="ACTIVO">Activo</option>
-            <option value="COMPLETADO">Completado</option>
-            <option value="CANCELADO">Cancelado</option>
+        <div class="field">
+          <label for="estado">Estado</label>
+          <select id="estado" name="estado">
+            <option value="ACTIVO" th:selected="${filtro.estado == 'ACTIVO'}">Activos</option>
+            <option value="COMPLETADO" th:selected="${filtro.estado == 'COMPLETADO'}">Completados</option>
+            <option value="TODOS" th:selected="${filtro.estado == 'TODOS'}">Activos y completados</option>
           </select>
-          <select id="filtroOrg" onchange="aplicarFiltros()"
-                  style="padding:8px 14px; border:1px solid #ccc; border-radius:20px; font-size:13px;">
-            <option value="">Todas las organizaciones</option>
-            <option value="Empresa">Empresa</option>
-            <option value="Proyecto estudiantil">Proyecto estudiantil</option>
-            <option value="ONG">ONG</option>
-            <option value="Institución educativa">Institución educativa</option>
-            <option value="Entidad gubernamental">Entidad gubernamental</option>
-            <option value="Comunidad">Comunidad</option>
-            <option value="Otro">Otro</option>
+        </div>
+        <div class="field">
+          <label for="categoria">Categoría</label>
+          <select id="categoria" name="categoria">
+            <option value="">Todas</option>
+            <option th:each="c : ${categorias}" th:value="${c}" th:text="${c}" th:selected="${filtro.categoria == c}">Categoría</option>
           </select>
         </div>
-
-        <!-- SIN PROYECTOS -->
-        <div th:if="${#lists.isEmpty(proyectos)}" class="empty-invitado">
-          No hay proyectos disponibles en este momento.
+        <div class="field">
+          <label for="ubicacion">Barrio</label>
+          <select id="ubicacion" name="ubicacion">
+            <option value="">Toda Cartagena</option>
+            <option th:each="b : ${barrios}" th:value="${b}" th:text="${b}" th:selected="${filtro.ubicacion == b}">Barrio</option>
+          </select>
         </div>
+        <div class="field">
+          <label for="organizacion">Organización</label>
+          <select id="organizacion" name="organizacion">
+            <option value="">Todas</option>
+            <option th:each="o : ${organizaciones}" th:value="${o}" th:text="${o}" th:selected="${filtro.organizacion == o}">Org</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="orden">Ordenar por</label>
+          <select id="orden" name="orden">
+            <option th:each="o : ${ordenesProyecto}" th:value="${o.key}" th:text="${o.value}" th:selected="${filtro.orden == o.key}">Orden</option>
+          </select>
+        </div>
+        <div class="filter-actions">
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-filter"></i> Filtrar</button>
+          <a th:if="${filtro.activo or filtro.estado != 'ACTIVO'}" th:href="@{${rutaExplorar}}" class="btn btn-secondary" title="Quitar filtros">
+            <i class="fa-solid fa-xmark"></i></a>
+        </div>
+      </form>
 
-        <!-- GRILLA DE TARJETAS -->
-        <div class="proyectos-grid" id="gridProyectos">
+      <div class="result-summary">
+        <span><strong th:text="${#numbers.formatInteger(paginacion.totalElementos, 1, 'POINT')}">0</strong>
+          <span th:text="${paginacion.totalElementos == 1 ? 'proyecto encontrado' : 'proyectos encontrados'}">proyectos</span></span>
+        <div class="active-filters" th:if="${filtro.activo}">
+          <span class="filter-pill" th:if="${filtro.q != null and !#strings.isEmpty(filtro.q)}"><i class="fa-solid fa-magnifying-glass"></i> <span th:text="${filtro.q}"></span></span>
+          <span class="filter-pill" th:if="${filtro.categoria != null and !#strings.isEmpty(filtro.categoria)}" th:text="${filtro.categoria}"></span>
+          <span class="filter-pill" th:if="${filtro.ubicacion != null and !#strings.isEmpty(filtro.ubicacion)}" th:text="${filtro.ubicacion}"></span>
+          <span class="filter-pill" th:if="${filtro.organizacion != null and !#strings.isEmpty(filtro.organizacion)}" th:text="${filtro.organizacion}"></span>
+        </div>
+      </div>
 
-          <div th:each="p : ${proyectos}" class="proy-card"
-               th:attr="data-nombre=${p.nombre},data-desc=${p.descripcion},data-estado=${p.estado},data-org=${p.tipoOrganizacion}">
+      <div th:if="${#lists.isEmpty(proyectos)}" class="empty-state">
+        <div class="empty-state-icon has-img"><img src="../static/img/icons/buscar.png" th:src="@{/img/icons/buscar.png}" alt=""></div>
+        <h3 th:text="${filtro.activo} ? 'Ningún proyecto coincide con tu búsqueda' : 'No hay proyectos publicados'">Sin resultados</h3>
+        <p th:if="${filtro.activo}">Prueba con otras palabras o <a th:href="@{${rutaExplorar}}" class="link">quita los filtros</a>.</p>
+        <p th:unless="${filtro.activo}">Vuelve pronto: nuevos proyectos se publican cada semana.</p>
+      </div>
 
-            <!-- Imagen del proyecto -->
-            <img th:if="${p.nombreArchivo != null}"
-                 th:src="@{/proyectos/{id}/imagen(id=${p.id})}"
-                 alt="Imagen del proyecto"
-                 style="width:100%; height:140px; object-fit:cover; border-radius:10px; margin-bottom:12px;">
-
-            <!-- Encabezado de tarjeta -->
-            <div class="proy-card-top">
-              <h3 class="proy-nombre" th:text="${p.nombre}">Nombre</h3>
-              <span class="proy-fecha"
-                    th:text="${p.fechaInicio != null ? '📅 ' + p.fechaInicio : ''}">
-              </span>
-            </div>
-
-            <!-- Badge organización -->
-            <div style="margin-bottom:6px;">
-              <span th:if="${p.tipoOrganizacion != null}"
-                    th:text="${p.tipoOrganizacion}"
-                    style="background:rgba(16,185,129,0.15); color:#34D399;
-                           border-radius:20px; padding:2px 10px; font-size:11px; font-weight:700;">
-              </span>
-              <span th:if="${p.tipoOrganizacion == null}"
-                    style="background:rgba(255,255,255,0.06); color:#64748B;
-                           border-radius:20px; padding:2px 10px; font-size:11px;">
-                Sin organización definida
-              </span>
-            </div>
-
-            <!-- Líder -->
-            <div style="margin-bottom:10px;">
-              <span th:text="'👤 ' + ${liderPorProyecto[p.id]}"
-                    style="font-size:12px; color:#94A3B8;">
-              </span>
-            </div>
-
-            <!-- Descripción -->
-            <p class="proy-desc" th:text="${p.descripcion}">Descripción del proyecto.</p>
-
-            <!-- Audiencia -->
-            <p th:if="${p.audiencia != null}"
-               style="font-size:15px; color:#ffffff; font-weight:600; margin-bottom:8px;">
-              🎯 <span th:text="${p.audiencia}"></span>
-            </p>
-
-            <!-- Botón al fondo -->
-            <div class="proy-footer">
-
-              <!-- Ya inscrito -->
-              <div th:if="${inscritosSet != null and inscritosSet.contains(p.id)}"
-                   style="width:100%; text-align:center; padding:10px;
-                          background:#d4edda; border-radius:10px;
-                          color:#155724; font-weight:700; font-size:14px;">
-                ✅ Ya estás inscrito en este proyecto
-              </div>
-
-              <!-- Usuario autenticado: formulario de inscripción -->
-              <form th:if="${usuario != null and usuario.getId() != null
-                             and (inscritosSet == null or !inscritosSet.contains(p.id))}"
-                    th:action="@{'/proyectos/participacion/inscribir/' + ${p.id} + '/' + ${usuario.id}}"
-                    method="post" style="width: 100%;">
-                <button type="submit" class="btn-participar">Participar</button>
-              </form>
-
-              <!-- Invitado: redirige a seleccionar rol -->
-              <button th:if="${usuario == null or usuario.getId() == null}"
-                      class="btn-participar"
-                      onclick="window.location.href='/seleccionar-rol'">
-                Participar
-              </button>
-
+      <div class="card-grid">
+        <article class="item-card project-card" th:each="p, st : ${proyectos}" th:style="'--i:' + ${st.index}">
+          <div class="item-card-head">
+            <span class="item-card-icon"><i class="fa-solid fa-seedling"></i></span>
+            <div style="min-width:0">
+              <h3 th:text="${p.nombre}">Proyecto</h3>
+              <span class="project-code" th:text="${p.codigo}">SYN-2026-00001</span>
             </div>
           </div>
 
-        <!-- PAGINACIÓN -->
-        <div th:if="${totalPages != null and totalPages > 1}"
-             style="display:flex; justify-content:center; align-items:center;
-                    gap:8px; margin-top:32px; flex-wrap:wrap;">
+          <div class="project-tags">
+            <span class="badge" th:classappend="${p.estado == 'ACTIVO'} ? 'badge-success is-live' : 'badge-info'" th:text="${p.estadoEtiqueta}">Activo</span>
+            <span class="tag" th:if="${p.categoria != null}"><i class="fa-solid fa-leaf"></i> <span th:text="${p.categoria}"></span></span>
+            <span class="tag" th:if="${p.ubicacion != null}"><i class="fa-solid fa-location-dot"></i> <span th:text="${p.ubicacion}"></span></span>
+            <span class="tag" th:if="${p.tipoOrganizacion != null}"><i class="fa-solid fa-building"></i> <span th:text="${p.tipoOrganizacion}"></span></span>
+          </div>
 
-          <a th:if="${hasPrev}"
-             th:href="${baseUrl + '?page=' + (currentPage - 1)}"
-             style="padding:8px 16px; border:1px solid rgba(255,255,255,0.1);
-                    border-radius:8px; background:rgba(255,255,255,0.05);
-                    color:#CBD5E1; text-decoration:none; font-size:13px;">
-            ⬅ Anterior
-          </a>
-          <span th:unless="${hasPrev}"
-                style="padding:8px 16px; border:1px solid rgba(255,255,255,0.05);
-                       border-radius:8px; color:#475569; font-size:13px; cursor:default;">
-            ⬅ Anterior
-          </span>
+          <p th:text="${p.descripcion}">Descripción</p>
 
-          <th:block th:with="
-              startPage=${T(java.lang.Math).max(0, currentPage - 2)},
-              endPage=${T(java.lang.Math).min(totalPages - 1, currentPage + 2)}">
-            <th:block th:each="i : ${#numbers.sequence(startPage, endPage)}">
-              <a th:if="${i != currentPage}"
-                 th:href="${baseUrl + '?page=' + i}"
-                 th:text="${i + 1}"
-                 style="padding:8px 14px; border:1px solid rgba(255,255,255,0.1);
-                        border-radius:8px; background:rgba(255,255,255,0.05);
-                        color:#CBD5E1; text-decoration:none; font-size:13px; min-width:36px; text-align:center;">
-              </a>
-              <span th:if="${i == currentPage}"
-                    th:text="${i + 1}"
-                    style="padding:8px 14px; border:1px solid rgba(16,185,129,0.4);
-                           border-radius:8px; background:rgba(16,185,129,0.15);
-                           color:#34D399; font-size:13px; font-weight:700;
-                           min-width:36px; text-align:center;">
-              </span>
+          <div class="meta">
+            <span><i class="fa-regular fa-calendar"></i>
+              <span th:text="${p.fechaInicio != null ? #temporals.format(p.fechaInicio, 'dd/MM/yyyy') : 'Por definir'}">-</span>
+              <th:block th:if="${p.fechaFin != null}">– <span th:text="${#temporals.format(p.fechaFin, 'dd/MM/yyyy')}">-</span></th:block></span>
+            <span><i class="fa-solid fa-users"></i> <strong th:text="${p.totalVoluntarios}">0</strong> voluntarios</span>
+            <span th:if="${lideres[p.idLider] != null}"><i class="fa-solid fa-user-tie"></i> <span th:text="${lideres[p.idLider]}">Líder</span></span>
+            <span th:if="${p.audiencia != null}"><i class="fa-solid fa-bullseye"></i> <span th:text="${p.audiencia}">Audiencia</span></span>
+          </div>
+
+          <div class="item-card-actions">
+            <th:block th:if="${usuario != null}">
+              <span th:if="${p.idLider == usuario.id}" class="badge badge-info">Eres el líder</span>
+              <span th:if="${p.idLider != usuario.id and #sets.contains(inscritos, p.id)}" class="badge badge-success"><i class="fa-solid fa-check"></i> Ya participas</span>
+              <form th:if="${p.estado == 'ACTIVO' and p.idLider != usuario.id and !#sets.contains(inscritos, p.id)}"
+                    th:action="@{'/proyectos/participacion/inscribir/' + ${p.id} + '/' + ${usuario.id}}" method="post" class="inline-form">
+                <input type="hidden" name="volver" th:value="${volver}">
+                <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-hand-point-up"></i> Participar</button>
+              </form>
+              <span th:if="${p.estado != 'ACTIVO' and p.idLider != usuario.id and !#sets.contains(inscritos, p.id)}" class="badge no-dot">Finalizado</span>
             </th:block>
-          </th:block>
-
-          <a th:if="${hasNext}"
-             th:href="${baseUrl + '?page=' + (currentPage + 1)}"
-             style="padding:8px 16px; border:1px solid rgba(255,255,255,0.1);
-                    border-radius:8px; background:rgba(255,255,255,0.05);
-                    color:#CBD5E1; text-decoration:none; font-size:13px;">
-            Siguiente ➡
-          </a>
-          <span th:unless="${hasNext}"
-                style="padding:8px 16px; border:1px solid rgba(255,255,255,0.05);
-                       border-radius:8px; color:#475569; font-size:13px; cursor:default;">
-            Siguiente ➡
-          </span>
-
-        </div>
-
+            <th:block th:if="${usuario == null}">
+              <a th:if="${p.estado == 'ACTIVO'}" th:href="@{/seleccionar-rol}" class="btn btn-primary btn-sm"><i class="fa-solid fa-hand-point-up"></i> Participar</a>
+              <span th:unless="${p.estado == 'ACTIVO'}" class="badge no-dot">Finalizado</span>
+            </th:block>
+          </div>
+        </article>
       </div>
-    </div>
+
+      <div th:replace="~{fragments/paginacion :: paginacion(${paginacion}, 'proyectos')}"></div>
+
+    </section>
+  </main>
   </div>
+</div>
 
-  <script>
-    function aplicarFiltros() {
-      var texto  = document.getElementById('filtroTexto').value.toLowerCase();
-      var estado = document.getElementById('filtroEstado').value.toLowerCase();
-      var org    = document.getElementById('filtroOrg').value.toLowerCase();
-      document.querySelectorAll('.proy-card').forEach(function(card) {
-        var nombre  = (card.getAttribute('data-nombre') || '').toLowerCase();
-        var desc    = (card.getAttribute('data-desc')   || '').toLowerCase();
-        var est     = (card.getAttribute('data-estado') || '').toLowerCase();
-        var orgVal  = (card.getAttribute('data-org')    || '').toLowerCase();
-        var ok = (nombre.includes(texto) || desc.includes(texto))
-              && (estado === '' || est === estado)
-              && (org    === '' || orgVal.includes(org));
-        card.style.display = ok ? '' : 'none';
-      });
-    }
-  </script>
-
+  <script src="../static/js/script.js" th:src="@{/js/script.js}"></script>
 </body>
 </html>

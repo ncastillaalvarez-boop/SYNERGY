@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mis Proyectos – Synergy</title>
+  <link rel="stylesheet" href="/css/Lista_Proyectos.css">
+</head>
+<body>
+
+  <div class="hero">
+    <div class="overlay"></div>
+
+    <div class="container">
+      <div class="card">
+
+        <!-- ENCABEZADO -->
+        <div class="header">
+          <button class="btn-inicio" onclick="location.href='/proyectos/dashboard'">🏠 Volver</button>
+          <h1>Mis Proyectos</h1>
+          <p class="subtitle">Proyectos en los que estás participando.</p>
+        </div>
+
+        <!-- TABLA -->
+        <table class="project-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nombre</th>
+              <th>Descripción</th>
+              <th>Fecha Inicio</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <!-- LISTADO DE PROYECTOS DEL USUARIO -->
+            <tr th:each="p : ${proyectosParticipando}">
+              <td th:text="${p.id}"></td>
+              <td th:text="${p.nombre}"></td>
+              <td th:text="${p.descripcion}"></td>
+              <td th:text="${#temporals.format(p.fechaInicio, 'dd/MM/yyyy')}"></td>
+
+              <td>
+                <div class="acciones">
+
+<form th:action="@{/proyectos/participacion/eliminar/{proyectoId}/{usuarioId}
+                  (proyectoId=${p.id}, usuarioId=${usuario.id})}"
+      method="post">
+    <button type="submit" class="btn-participar" style="background:#d9534f">
+      Salir
+    </button>
+</form>
+
+
+                </div>
+              </td>
+
+            </tr>
+          </tbody>
+
+        </table>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toast" class="toast hidden"></div>
+
+  <script>
+    function showToast(message, type) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+
+      toast.className = "toast " + type;
+
+      setTimeout(() => {
+        toast.classList.add("hidden");
+      }, 2500);
+    }
+  </script>
+
+</body>
+</html>

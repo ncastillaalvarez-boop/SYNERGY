@@ -11,8 +11,8 @@
     <groupId>com.synergy</groupId>
     <artifactId>synergy</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>synergycon</name>
-    <description>Demo project for Spring Boot</description>
+    <name>synergy</name>
+    <description>Synergy - Gestión de proyectos ambientales comunitarios</description>
     <url/>
     <licenses>
         <license/>
@@ -31,12 +31,6 @@
     </properties>
     <dependencies>
 
-    	<dependency>
-    		<groupId>net.optionfactory.spring</groupId>
-    		<artifactId>thymeleaf</artifactId>
-    		<version>21.19</version>
-    	</dependency>
-
         <!-- MongoDB -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -49,7 +43,7 @@
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
 
-        <!-- Spring Security OAuth2 Client -->
+        <!-- Inicio de sesión con Google (OAuth2) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-oauth2-client</artifactId>
@@ -120,13 +114,6 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- Lombok (opcional pero recomendado) -->
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <optional>true</optional>
-        </dependency>
-
     </dependencies>
 
     <build>
@@ -151,7 +138,7 @@
                         <configuration>
                             <rules>
                                 <requireJavaVersion>
-                                    <version>[21,22)</version>
+                                    <version>[21,)</version>
                                 </requireJavaVersion>
                             </rules>
                         </configuration>

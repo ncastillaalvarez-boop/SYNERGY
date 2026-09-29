@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buzón del Proyecto – Synergy</title>
+    <link rel="stylesheet" href="/css/Comentarios_Proyectos.css">
+</head>
+<body>
+
+<section class="hero">
+    <div class="overlay"></div>
+
+    <div class="card">
+        <!-- Logo -->
+        <img src="Logo.png" alt="Logo Synergy" class="Logo">
+
+        <!-- Título dinámico con Thymeleaf -->
+        <h1 th:text="${proyecto.nombre}">Nombre del Proyecto</h1>
+        <p class="subtitle" th:text="${proyecto.descripcion}">
+            Aquí podrás dejar tus comentarios y ver tus tareas asignadas
+        </p>
+
+        <!-- Sección de tareas -->
+        <div class="tareas-section">
+            <h2>📋 Tareas Asignadas</h2>
+            <ul id="listaTareas">
+                <li th:each="tarea : ${tareas}" th:text="${tarea.descripcion}">
+                    Diseñar interfaz principal del sistema
+                </li>
+            </ul>
+        </div>
+
+        <!-- Formulario de comentarios -->
+        <div class="comentarios-section">
+            <h2>💬 Dejar un Comentario</h2>
+
+            <form th:action="@{/proyectos/enviar-comentario}" method="post" enctype="multipart/form-data">
+                <!-- Campo oculto con el ID del proyecto -->
+                <input type="hidden" name="proyectoId" th:value="${proyecto.id}">
+
+                <div class="input-group">
+                    <textarea id="comentario" name="comentario" placeholder="Escribe tu comentario..." required></textarea>
+                </div>
+
+                <div class="file-group">
+                    <label for="archivo" class="file-label">📎 Adjuntar archivo</label>
+                    <input type="file" id="archivo" name="archivo" accept="image/*,.pdf,.doc,.docx,.zip">
+                    <span id="fileName" class="file-name">Ningún archivo seleccionado</span>
+                </div>
+
+                <button type="submit">Enviar Comentario</button>
+            </form>
+        </div>
+
+        <!-- Sección de comentarios anteriores -->
+        <div class="comentarios-lista">
+            <h2>🗨️ Comentarios Recientes</h2>
+            <div class="comentario" th:each="comentario : ${comentarios}">
+                <p><strong th:text="${comentario.usuario.nombre}">Usuario</strong>:</p>
+                <p th:text="${comentario.texto}">Excelente avance en la documentación.</p>
+                <small th:text="${#dates.format(comentario.fecha, 'dd/MM/yyyy HH:mm')}">08/11/2025 15:30</small>
+                <hr>
+            </div>
+        </div>
+
+        <a href="/proyectos/mis-proyectos" class="back-link">← Volver a Mis Proyectos</a>
+    </div>
+</section>
+
+<script>
+  // Mostrar nombre del archivo seleccionado
+  const fileInput = document.getElementById("archivo");
+  const fileName = document.getElementById("fileName");
+  fileInput.addEventListener("change", function () {
+      fileName.textContent = fileInput.files.length > 0 ? fileInput.files[0].name : "Ningún archivo seleccionado";
+  });
+</script>
+
+</body>
+</html>

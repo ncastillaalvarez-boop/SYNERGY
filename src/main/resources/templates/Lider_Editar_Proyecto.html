@@ -1,118 +1,141 @@
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>try{var t=localStorage.getItem('synergy-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
   <title>Editar Proyecto – Synergy</title>
-  <link rel="stylesheet" href="/css/synergy-tokens.css">
-  <link rel="stylesheet" href="/css/Usuarios_Dashboard.css">
-  <link rel="stylesheet" href="/css/Lider_Crear_Proyecto.css">
+  <link rel="icon" type="image/png" href="../static/img/logo-mark.png" th:href="@{/img/logo-mark.png}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <link rel="stylesheet" href="../static/css/core.css" th:href="@{/css/core.css}">
+  <link rel="stylesheet" href="../static/css/dashboard.css" th:href="@{/css/dashboard.css}">
 </head>
-
 <body>
+  <div class="bg-ambient" aria-hidden="true"></div>
 
-  <div class="hero">
-    <div class="overlay"></div>
+  <div class="app-shell">
+  <div th:replace="~{fragments/sidebar :: sidebar('lider-proyectos')}"></div>
+  <div class="app-main">
+  <div th:replace="~{fragments/sidebar :: topbar}"></div>
 
-    <div class="container">
-      <div class="card">
+  <main class="app-container is-narrow">
+    <section class="app-card">
 
-        <!-- ENCABEZADO -->
-        <div class="header">
-          <div class="top-buttons">
-            <a th:href="@{/lider/dashboard}" class="btn-inicio">← Volver</a>
+      <!-- ENCABEZADO -->
+      <header class="page-header">
+        <nav class="page-toolbar">
+          <div class="toolbar-group">
+            <a th:href="@{/lider/dashboard}" class="btn btn-secondary btn-sm"><i class="fa-solid fa-arrow-left"></i> Volver</a>
           </div>
-          <h1>Editar Proyecto</h1>
-          <p class="subtitle">Modifica los datos del proyecto.</p>
+          <a th:href="@{/}" class="mini-brand"><span class="mini-brand-mark"><img src="../static/img/logo-mark.png" th:src="@{/img/logo-mark.png}" alt=""></span><span>Synergy</span></a>
+        </nav>
+        <div class="page-heading">
+          <span class="page-icon has-img"><img src="../static/img/icons/ajustes.png" th:src="@{/img/icons/ajustes.png}" alt="" loading="lazy"></span>
+          <div>
+            <h1 class="page-title">Editar Proyecto</h1>
+            <p class="page-subtitle">Modifica los datos del proyecto.</p>
+          </div>
         </div>
+      </header>
 
-        <!-- FORMULARIO -->
-        <form th:action="@{/lider/proyecto/{id}/actualizar(id=${proyecto.id})}"
-              th:object="${proyecto}" method="post" enctype="multipart/form-data">
 
-          <div class="form-group">
-            <label>Nombre del proyecto</label>
+      <div th:if="${mensaje}" class="alert alert-success" data-autohide>
+        <i class="fa-solid fa-circle-check"></i>
+        <span th:text="${mensaje}"></span>
+      </div>
+      <div th:if="${error}" class="alert alert-error">
+        <i class="fa-solid fa-circle-exclamation"></i>
+        <span th:text="${error}"></span>
+      </div>
+
+      <!-- FORMULARIO -->
+      <form th:action="@{/lider/proyecto/{id}/actualizar(id=${proyecto.id})}"
+            th:object="${proyecto}" method="post" data-loading>
+        <input type="hidden" name="origen" value="editar">
+
+        <div class="form-grid">
+          <div class="field span-2">
+            <label th:for="nombre"><i class="fa-solid fa-signature"></i> Nombre del proyecto</label>
             <input type="text" th:field="*{nombre}" placeholder="Nombre del proyecto" required />
           </div>
 
-          <!-- AUDIENCIA — campo destacado -->
-          <div class="form-group" style="background:#f0f9f6; border:2px solid #0F6E56; border-radius:12px; padding:16px 20px; margin-bottom:20px;">
-            <label style="font-size:17px; font-weight:700; color:#0F6E56; display:block; margin-bottom:6px;">
-              ¿A quién va dirigido este proyecto?
-            </label>
-            <p style="font-size:13px; color:#555; margin-bottom:10px;">
-              Describe la audiencia o público objetivo del proyecto.
-            </p>
-            <textarea th:field="*{audiencia}" placeholder="Ej: Jóvenes universitarios de primer año, comunidades rurales..."
-                      rows="3" required
-                      style="width:100%; padding:10px 14px; border:1px solid #ccc; border-radius:8px; font-size:14px; resize:vertical;"></textarea>
-          </div>
-
-          <div class="form-group">
-            <label>Descripción</label>
+          <div class="field span-2">
+            <label th:for="descripcion"><i class="fa-solid fa-align-left"></i> Descripción</label>
             <textarea th:field="*{descripcion}" placeholder="Descripción del proyecto..." rows="4" required></textarea>
           </div>
 
-          <div class="form-group">
-            <label>Tipo de organización</label>
-            <select th:field="*{tipoOrganizacion}" required>
-              <option value="">— Selecciona el tipo —</option>
-              <option value="Empresa">Empresa</option>
-              <option value="Proyecto estudiantil">Proyecto estudiantil</option>
-              <option value="ONG">ONG</option>
-              <option value="Institución educativa">Institución educativa</option>
-              <option value="Entidad gubernamental">Entidad gubernamental</option>
-              <option value="Comunidad">Comunidad</option>
-              <option value="Otro">Otro</option>
+          <div class="field">
+            <label th:for="fechaInicio"><i class="fa-regular fa-calendar"></i> Fecha de inicio</label>
+            <input type="date" th:field="*{fechaInicio}" required />
+          </div>
+
+          <div class="field">
+            <label th:for="fechaFin"><i class="fa-regular fa-calendar-check"></i> Fecha de fin</label>
+            <input type="date" th:field="*{fechaFin}" required />
+          </div>
+
+          <div class="field">
+            <label th:for="categoria"><i class="fa-solid fa-leaf"></i> Categoría</label>
+            <select th:field="*{categoria}" required>
+              <option value="">Selecciona…</option>
+              <option th:each="c : ${categorias}" th:value="${c}" th:text="${c}">Categoría</option>
             </select>
           </div>
 
-          <div class="form-row">
-            <div class="form-group">
-              <label for="fechaInicio">Fecha de inicio</label>
-              <input type="date" id="fechaInicio" th:field="*{fechaInicio}" required />
-            </div>
-            <div class="form-group">
-              <label for="fechaFin">Fecha de fin</label>
-              <input type="date" id="fechaFin" th:field="*{fechaFin}" required />
-            </div>
+          <div class="field">
+            <label th:for="ubicacion"><i class="fa-solid fa-location-dot"></i> Barrio / sector</label>
+            <select th:field="*{ubicacion}" required>
+              <option value="">Selecciona…</option>
+              <option th:each="b : ${barrios}" th:value="${b}" th:text="${b}">Barrio</option>
+            </select>
           </div>
 
-          <div class="form-group">
-            <label>Estado</label>
+          <div class="field">
+            <label th:for="tipoOrganizacion"><i class="fa-solid fa-building"></i> Organización</label>
+            <select th:field="*{tipoOrganizacion}" required>
+              <option value="">Selecciona…</option>
+              <option th:each="o : ${organizaciones}" th:value="${o}" th:text="${o}">Org</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label th:for="audiencia"><i class="fa-solid fa-bullseye"></i> Dirigido a</label>
+            <select th:field="*{audiencia}">
+              <option value="">Público general</option>
+              <option th:each="a : ${audiencias}" th:value="${a}" th:text="${a}">Audiencia</option>
+            </select>
+          </div>
+          <div class="field span-2" th:if="${proyecto.estado != 'PENDIENTE'}">
+            <label th:for="estado"><i class="fa-solid fa-signal"></i> Estado</label>
             <select th:field="*{estado}">
               <option value="ACTIVO">Activo</option>
               <option value="COMPLETADO">Completado</option>
               <option value="CANCELADO">Cancelado</option>
             </select>
           </div>
-
-          <!-- Imagen del proyecto -->
-          <div class="form-group">
-            <label>Imagen del proyecto</label>
-            <div th:if="${proyecto.nombreArchivo != null}"
-                 style="margin-bottom:10px;">
-              <img th:src="@{/proyectos/{id}/imagen(id=${proyecto.id})}"
-                   alt="Imagen actual"
-                   style="max-height:160px; border-radius:10px; object-fit:cover; display:block; margin-bottom:6px;">
-              <span style="font-size:12px; color:#888;">Imagen actual · Sube una nueva para reemplazarla</span>
+          <div class="field span-2" th:if="${proyecto.estado == 'PENDIENTE'}">
+            <div class="alert alert-warning" style="margin:0">
+              <i class="fa-solid fa-hourglass-half"></i>
+              <span>Este proyecto está <strong>pendiente de aprobación</strong>: el administrador lo publicará.</span>
             </div>
-            <input type="file" name="archivo" accept="image/*"
-                   style="padding:6px 0; font-size:13px;" />
           </div>
+        </div>
 
-          <div class="form-actions">
-            <button type="submit" class="btn-submit">Guardar cambios</button>
-            <a th:href="@{/lider/dashboard}" class="btn-cancelar">Cancelar</a>
-          </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary btn-lg"><i class="fa-solid fa-floppy-disk"></i> Guardar cambios</button>
+          <a th:href="@{/lider/dashboard}" class="btn btn-secondary btn-lg">Cancelar</a>
+        </div>
 
-        </form>
+      </form>
 
-      </div>
-    </div>
+    </section>
+  </main>
   </div>
+</div>
 
+  <script src="../static/js/script.js" th:src="@{/js/script.js}"></script>
 </body>
-
 </html>

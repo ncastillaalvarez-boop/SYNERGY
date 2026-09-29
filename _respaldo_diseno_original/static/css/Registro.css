@@ -1,0 +1,237 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* ===== Estilo general ===== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+html, body {
+  width: 100%;
+  min-height: 100%;
+  background-color: #0B0E14;
+  color: #F8FAFC;
+}
+
+/* ===== Fondo principal con efecto ===== */
+.hero {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: radial-gradient(circle at top left, rgba(16,185,129,0.08), transparent 40%),
+              radial-gradient(circle at bottom right, rgba(59,130,246,0.08), transparent 40%);
+  padding: 40px 20px;
+}
+
+/* ===== Capa de difuminado y transparencia ===== */
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+/* ===== Contenedor central ===== */
+.container {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+/* ===== Tarjeta con efecto vidrio ===== */
+.card {
+  background: rgba(17, 24, 39, 0.75);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  padding: 48px 40px;
+  width: 100%;
+  max-width: 440px;
+  text-align: center;
+  animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== Logo ===== */
+.Logo {
+  width: 140px;
+  margin-bottom: 24px;
+}
+
+/* ===== Títulos ===== */
+h1 {
+  font-size: 1.8rem;
+  margin-bottom: 8px;
+  font-weight: 700;
+  color: #F8FAFC;
+  letter-spacing: -0.5px;
+}
+
+.subtitle {
+  font-size: 0.95rem;
+  color: #94A3B8;
+  margin-bottom: 32px;
+}
+
+/* ===== Mensajes de Error ===== */
+.error-msg {
+  background: rgba(239, 68, 68, 0.1);
+  color: #FCA5A5;
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  margin-bottom: 24px;
+  font-size: 0.9rem;
+}
+
+/* ===== Campos de entrada ===== */
+.input-group {
+  position: relative;
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.input-group input,
+.input-group textarea {
+  width: 100%;
+  padding: 14px 16px;
+  font-size: 0.95rem;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #F8FAFC;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.input-group textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.input-group input:focus,
+.input-group textarea:focus {
+  background: rgba(15, 23, 42, 0.9);
+  border-color: #10B981;
+  box-shadow: 0 0 0 1px #10B981;
+}
+
+/* ===== Etiquetas flotantes ===== */
+.input-group label {
+  position: absolute;
+  top: 14px;
+  left: 16px;
+  color: #64748B;
+  font-size: 0.95rem;
+  pointer-events: none;
+  transition: all 0.2s ease;
+  background: transparent;
+}
+
+.input-group input:focus + label,
+.input-group input:valid + label,
+.input-group textarea:focus + label,
+.input-group textarea:valid + label {
+  top: -10px;
+  left: 12px;
+  font-size: 0.75rem;
+  color: #10B981;
+  background: #111827;
+  padding: 0 6px;
+  font-weight: 500;
+}
+
+/* ===== Botón elegante ===== */
+button[type="submit"], .btn-comenzar {
+  width: 100%;
+  background: #10B981;
+  color: #022C22;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  padding: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 10px;
+}
+
+button[type="submit"]:hover, .btn-comenzar:hover {
+  background: #059669;
+  transform: translateY(-1px);
+}
+
+/* ===== Enlace inferior ===== */
+.login-text {
+  margin-top: 24px;
+  color: #94A3B8;
+  font-size: 0.9rem;
+}
+
+.login-text a {
+  color: #10B981;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.login-text a:hover {
+  color: #34D399;
+}
+
+/* ===== Adaptación móvil ===== */
+@media (max-width: 768px) {
+  .card {
+    padding: 32px 24px;
+  }
+}
+
+/* ===== Botón Pequeño Volver ===== */
+.btn-small {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  z-index: 9999;
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  color: #64748B;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.btn-small:hover {
+  background: rgba(255,255,255,0.05);
+  color: #F8FAFC;
+}
+
+/* ===== Badge Rol ===== */
+.rol-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(16, 185, 129, 0.1);
+  color: #10B981;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 20px;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}

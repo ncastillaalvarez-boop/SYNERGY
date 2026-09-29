@@ -1,8 +1,21 @@
 package com.proaula.spring.synergy.Controller;
 
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,25 +24,31 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import com.proaula.spring.synergy.Dto.EntregaVista;
 import com.proaula.spring.synergy.Model.EntregaTarea;
+import com.proaula.spring.synergy.Model.Catalogos;
 import com.proaula.spring.synergy.Model.Proyecto;
 import com.proaula.spring.synergy.Model.Tarea;
 import com.proaula.spring.synergy.Model.Usuarios;
-import com.proaula.spring.synergy.Service.EntregaTareaService;
-import com.proaula.spring.synergy.Service.ParticipacionService;
+import com.proaula.spring.synergy.Repository.EntregaTareaRepository;
+import com.proaula.spring.synergy.Repository.ProyectoRepository;
+import com.proaula.spring.synergy.Repository.UsuarioRepository;
+import com.proaula.spring.synergy.Security.SesionUtil;
+import com.proaula.spring.synergy.Service.HistorialService;
 import com.proaula.spring.synergy.Service.ProyectoService;
-import com.proaula.spring.synergy.Service.UsuarioService;
 import com.proaula.spring.synergy.Service.TareaService;
 
-
-import java.security.Principal;
+import jakarta.servlet.http.HttpSession;
 
 @Controller
 @RequestMapping("/lider")
 public class LiderController {
+
+    /** Estados que el líder puede poner. PENDIENTE lo pone/quita solo el administrador. */
+    private static final Set<String> ESTADOS_PROYECTO = Set.of("ACTIVO", "COMPLETADO", "CANCELADO");
+    private static final Set<String> ESTADOS_ENTREGA = Set.of("REVISADO", "RECHAZADO");
 
     @Autowired
     private TareaService tareaService;
@@ -38,293 +57,420 @@ public class LiderController {
     private ProyectoService proyectoService;
 
     @Autowired
-    private UsuarioService usuarioService;
+    private ProyectoRepository proyectoRepository;
 
     @Autowired
-    private ParticipacionService participacionService;
+    private UsuarioRepository usuarioRepository;
 
     @Autowired
-    private EntregaTareaService entregaTareaService;
+    private EntregaTareaRepository entregaTareaRepository;
+
+    @Autowired
+    private HistorialService historialService;
 
     // =======================================================
-    // VALIDAR QUE EL USUARIO SEA LÍDER
+    // UTILIDADES
     // =======================================================
-    private Usuarios validarLider(Principal principal) {
-        if (principal == null) return null;
-        Usuarios usuario = usuarioService.buscarPorCorreo(principal.getName());
+    private Usuarios validarLider(HttpSession session) {
+        Usuarios usuario = SesionUtil.usuario(session);
+        return SesionUtil.esLider(usuario) ? usuario : null;
+    }
 
-        if (usuario == null)
+    /** Devuelve el proyecto solo si pertenece al líder. */
+    private Proyecto proyectoDelLider(String id, Usuarios lider) {
+        Proyecto proyecto = proyectoService.buscarPorId(id);
+        if (proyecto == null || !Objects.equals(proyecto.getIdLider(), lider.getId())) {
             return null;
+        }
+        return proyecto;
+    }
 
-        if (!"LIDER".equalsIgnoreCase(usuario.getRol()))
-            return null;
+    private static boolean completada(Tarea t) {
+        return "COMPLETADA".equalsIgnoreCase(t.getEstado());
+    }
 
-        return usuario;
+    /** Solo acepta valores de la lista (evita que se guarde cualquier texto desde el formulario). */
+    static String deCatalogo(String valor, java.util.List<String> opciones) {
+        return valor != null && opciones.contains(valor) ? valor : null;
+    }
+
+    private static String estadoValido(String estado) {
+        String e = estado == null ? "" : estado.trim().toUpperCase();
+        return ESTADOS_PROYECTO.contains(e) ? e : "ACTIVO";
     }
 
     // =======================================================
-    // DASHBOARD DEL LÍDER
+    // DASHBOARD
     // =======================================================
     @GetMapping("/dashboard")
-    public String dashboardLider(Principal principal, Model model) {
-
-        Usuarios lider = validarLider(principal);
-        if (lider == null)
+    public String dashboardLider(HttpSession session, Model model) {
+        Usuarios lider = validarLider(session);
+        if (lider == null) {
             return "redirect:/login";
+        }
 
-        List<Proyecto> proyectos = proyectoService.obtenerProyectosDeLiderSinDatos(lider.getId());
+        List<Proyecto> proyectos = proyectoService.obtenerProyectosDeLider(lider.getId());
+
+        Map<String, Integer> progresos = new HashMap<>();
+        int totalTareas = 0;
+        int tareasCompletadas = 0;
+        int entregas = 0;
+        for (Proyecto p : proyectos) {
+            List<Tarea> tareas = tareaService.obtenerTareasPorProyecto(p.getId());
+            int hechas = (int) tareas.stream().filter(LiderController::completada).count();
+            totalTareas += tareas.size();
+            tareasCompletadas += hechas;
+            progresos.put(p.getId(), tareas.isEmpty() ? 0 : Math.round(hechas * 100f / tareas.size()));
+            for (Tarea t : tareas) {
+                entregas += entregaTareaRepository.findByIdTarea(t.getId()).size();
+            }
+        }
+
+        Map<String, Long> porEstado = new LinkedHashMap<>();
+        for (String estado : List.of("ACTIVO", "PENDIENTE", "COMPLETADO", "CANCELADO")) {
+            porEstado.put(estado, proyectos.stream().filter(p -> estado.equalsIgnoreCase(p.getEstado())).count());
+        }
 
         model.addAttribute("usuario", lider);
         model.addAttribute("proyectos", proyectos);
-
+        model.addAttribute("progresos", progresos);
+        model.addAttribute("porEstado", porEstado);
+        model.addAttribute("totalProyectos", proyectos.size());
+        model.addAttribute("totalTareas", totalTareas);
+        model.addAttribute("tareasCompletadas", tareasCompletadas);
+        model.addAttribute("tareasPendientes", totalTareas - tareasCompletadas);
+        model.addAttribute("porcentajeGlobal", totalTareas == 0 ? 0 : Math.round(tareasCompletadas * 100f / totalTareas));
+        model.addAttribute("entregasRecibidas", entregas);
         return "Lider_Proyecto_Dashboard";
     }
 
     // =======================================================
-    // FORMULARIO CREAR PROYECTO
+    // CREAR / EDITAR PROYECTO
     // =======================================================
     @GetMapping("/proyecto/nuevo")
-    public String formularioNuevoProyecto(Principal principal, Model model) {
-
-        Usuarios lider = validarLider(principal);
-        if (lider == null)
+    public String formularioNuevoProyecto(HttpSession session, Model model) {
+        if (validarLider(session) == null) {
             return "redirect:/login";
-
+        }
         model.addAttribute("proyecto", new Proyecto());
         return "Lider_Crear_Proyecto";
     }
 
-    // =======================================================
-    // GUARDAR PROYECTO
-    // =======================================================
     @PostMapping("/proyecto/guardar")
-    public String guardarProyecto(@ModelAttribute Proyecto proyecto,
-                                  @RequestParam(value = "archivo", required = false)
-                                  MultipartFile archivo,
-                                  Principal principal) {
-
-        Usuarios lider = validarLider(principal);
-        if (lider == null)
+    public String guardarProyecto(@ModelAttribute Proyecto proyecto, HttpSession session, RedirectAttributes ra) {
+        Usuarios lider = validarLider(session);
+        if (lider == null) {
             return "redirect:/login";
+        }
+        if (proyecto.getFechaInicio() != null && proyecto.getFechaFin() != null
+                && proyecto.getFechaFin().isBefore(proyecto.getFechaInicio())) {
+            ra.addFlashAttribute("error", "La fecha de fin no puede ser anterior a la de inicio");
+            return "redirect:/lider/proyecto/nuevo";
+        }
 
+        proyecto.setId(null);
+        proyecto.setCodigo(null);
         proyecto.setIdLider(lider.getId());
-        proyectoService.guardar(proyecto, archivo);
+        // Un proyecto nuevo del líder se publica activo (no tiene sentido crearlo "completado")
+        proyecto.setEstado("ACTIVO");
+        proyecto.setFechaCreacion(LocalDateTime.now());
+        proyecto.setCategoria(deCatalogo(proyecto.getCategoria(), Catalogos.CATEGORIAS));
+        proyecto.setTipoOrganizacion(deCatalogo(proyecto.getTipoOrganizacion(), Catalogos.ORGANIZACIONES));
+        proyecto.setUbicacion(deCatalogo(proyecto.getUbicacion(), Catalogos.BARRIOS));
+        proyecto.setAudiencia(deCatalogo(proyecto.getAudiencia(), Catalogos.AUDIENCIAS));
+        Proyecto guardado = proyectoService.guardar(proyecto, null);
 
+        historialService.registrarAccion("CREAR", "PROYECTO", "Proyecto creado: " + guardado.getNombre(), lider.getCorreo());
+        ra.addFlashAttribute("mensaje", "Proyecto '" + guardado.getNombre() + "' creado");
         return "redirect:/lider/dashboard";
     }
 
-    // =======================================================
-    // EDITAR PROYECTO
-    // =======================================================
     @GetMapping("/proyecto/{id}/editar")
-    public String editarProyecto(@PathVariable String id,
-                                 Principal principal,
-                                 Model model) {
-
-        Usuarios lider = validarLider(principal);
-        if (lider == null)
+    public String editarProyecto(@PathVariable String id, HttpSession session, Model model) {
+        Usuarios lider = validarLider(session);
+        if (lider == null) {
             return "redirect:/login";
-
-        Proyecto proyecto = proyectoService.buscarPorId(id);
-        if (proyecto == null || !proyecto.getIdLider().equals(lider.getId()))
+        }
+        Proyecto proyecto = proyectoDelLider(id, lider);
+        if (proyecto == null) {
             return "redirect:/lider/dashboard";
-
+        }
         model.addAttribute("proyecto", proyecto);
-
         return "Lider_Editar_Proyecto";
     }
 
-    // =======================================================
-    // ACTUALIZAR PROYECTO
-    // =======================================================
+    /**
+     * Actualiza SOLO los campos enviados. Así el formulario de "Guardar fechas"
+     * del detalle no borra el nombre ni la descripción.
+     */
     @PostMapping("/proyecto/{id}/actualizar")
     public String actualizarProyecto(@PathVariable String id,
-                                     @ModelAttribute Proyecto proyecto,
-                                     @RequestParam(value = "archivo", required = false) MultipartFile archivo,
-                                     Principal principal) {
-
-        Usuarios lider = validarLider(principal);
-        if (lider == null)
+                                     @ModelAttribute("datos") Proyecto datos,
+                                     @RequestParam(required = false) String origen,
+                                     HttpSession session,
+                                     RedirectAttributes ra) {
+        Usuarios lider = validarLider(session);
+        if (lider == null) {
             return "redirect:/login";
-
-        proyecto.setId(id);
-        proyecto.setIdLider(lider.getId());
-
-        // Si no se sube un archivo nuevo, preservar la imagen existente
-        if (archivo == null || archivo.isEmpty()) {
-            Proyecto existing = proyectoService.buscarPorId(id);
-            if (existing != null && existing.getDatos() != null) {
-                proyecto.setDatos(existing.getDatos());
-                proyecto.setNombreArchivo(existing.getNombreArchivo());
-                proyecto.setTipoArchivo(existing.getTipoArchivo());
-            }
+        }
+        Proyecto proyecto = proyectoDelLider(id, lider);
+        if (proyecto == null) {
+            return "redirect:/lider/dashboard";
         }
 
-        proyectoService.guardar(proyecto, archivo);
+        if (datos.getNombre() != null && !datos.getNombre().isBlank()) {
+            proyecto.setNombre(datos.getNombre().trim());
+        }
+        if (datos.getDescripcion() != null && !datos.getDescripcion().isBlank()) {
+            proyecto.setDescripcion(datos.getDescripcion().trim());
+        }
+        if (datos.getFechaInicio() != null) {
+            proyecto.setFechaInicio(datos.getFechaInicio());
+        }
+        if (datos.getFechaFin() != null) {
+            proyecto.setFechaFin(datos.getFechaFin());
+        }
+        // El constructor de Proyecto pone "ACTIVO" por defecto: solo se cambia si viene del formulario de edición.
+        // Un proyecto PENDIENTE no lo puede activar el propio líder (lo aprueba el administrador).
+        if ("editar".equals(origen) && datos.getEstado() != null
+                && !"PENDIENTE".equalsIgnoreCase(proyecto.getEstado())) {
+            proyecto.setEstado(estadoValido(datos.getEstado()));
+        }
+        if ("editar".equals(origen)) {
+            proyecto.setCategoria(deCatalogo(datos.getCategoria(), Catalogos.CATEGORIAS));
+            proyecto.setTipoOrganizacion(deCatalogo(datos.getTipoOrganizacion(), Catalogos.ORGANIZACIONES));
+            proyecto.setUbicacion(deCatalogo(datos.getUbicacion(), Catalogos.BARRIOS));
+            proyecto.setAudiencia(deCatalogo(datos.getAudiencia(), Catalogos.AUDIENCIAS));
+        }
+        if (proyecto.getFechaInicio() != null && proyecto.getFechaFin() != null
+                && proyecto.getFechaFin().isBefore(proyecto.getFechaInicio())) {
+            ra.addFlashAttribute("error", "La fecha de fin no puede ser anterior a la de inicio");
+            return "detalle".equals(origen) ? "redirect:/lider/proyecto/" + id + "/detalle" : "redirect:/lider/proyecto/" + id + "/editar";
+        }
 
+        proyecto.setFechaActualizacion(LocalDateTime.now());
+        proyectoRepository.save(proyecto);
+        historialService.registrarAccion("EDITAR", "PROYECTO", "Proyecto actualizado: " + proyecto.getNombre(), lider.getCorreo());
+        ra.addFlashAttribute("mensaje", "Cambios guardados");
+
+        return "detalle".equals(origen) ? "redirect:/lider/proyecto/" + id + "/detalle" : "redirect:/lider/dashboard";
+    }
+
+    @PostMapping("/proyecto/{id}/eliminar")
+    public String eliminarProyecto(@PathVariable String id, HttpSession session, RedirectAttributes ra) {
+        Usuarios lider = validarLider(session);
+        if (lider == null) {
+            return "redirect:/login";
+        }
+        Proyecto proyecto = proyectoDelLider(id, lider);
+        if (proyecto != null) {
+            proyectoService.eliminar(id);
+            historialService.registrarAccion("ELIMINAR", "PROYECTO", "Proyecto eliminado: " + proyecto.getNombre(), lider.getCorreo());
+            ra.addFlashAttribute("mensaje", "Proyecto eliminado correctamente");
+        }
         return "redirect:/lider/dashboard";
     }
 
-    // =======================================================
-    // ASIGNAR TAREAS
-    // =======================================================
+    /** Marca el proyecto como COMPLETADO (antes se llamaba "aceptar"). */
+    @PostMapping({"/proyecto/{id}/completar", "/proyecto/{id}/aceptar"})
+    public String completarProyecto(@PathVariable String id, HttpSession session, RedirectAttributes ra) {
+        Usuarios lider = validarLider(session);
+        if (lider == null) {
+            return "redirect:/login";
+        }
+        Proyecto proyecto = proyectoDelLider(id, lider);
+        if (proyecto != null) {
+            proyecto.setEstado("COMPLETADO");
+            proyecto.setFechaActualizacion(LocalDateTime.now());
+            proyectoRepository.save(proyecto);
+            historialService.registrarAccion("EDITAR", "PROYECTO", "Proyecto completado: " + proyecto.getNombre(), lider.getCorreo());
+            ra.addFlashAttribute("mensaje", "Proyecto marcado como completado");
+        }
+        return "redirect:/lider/tareas/asignar";
+    }
 
+    // =======================================================
+    // PROYECTOS Y TAREAS
+    // =======================================================
     @GetMapping("/tareas/asignar")
-    public String asignarTareas(Principal principal, Model model) {
-
-        Usuarios lider = validarLider(principal);
-        if (lider == null)
+    public String asignarTareas(HttpSession session, Model model) {
+        Usuarios lider = validarLider(session);
+        if (lider == null) {
             return "redirect:/login";
-
-        List<Proyecto> proyectos = proyectoService.obtenerProyectosDeLiderSinDatos(lider.getId());
-        model.addAttribute("proyectos", proyectos);
-
-        java.util.Map<String, java.util.List<Usuarios>> participantesPorProyecto = new java.util.HashMap<>();
-        for (Proyecto p : proyectos) {
-            participantesPorProyecto.put(p.getId(), participacionService.listarUsuariosPorProyecto(p.getId()));
         }
-        model.addAttribute("participantesPorProyecto", participantesPorProyecto);
-
-        return "Lider_Asignar_Tareas";
-    }
-
-    // VER USUARIOS INSCRITOS AL PROYECTO
-    @GetMapping("/usuarios")
-    public String usuariosInscritos(Principal principal, Model model) {
-
-        Usuarios lider = validarLider(principal);
-        if (lider == null)
-            return "redirect:/login";
-
         List<Proyecto> proyectos = proyectoService.obtenerProyectosDeLider(lider.getId());
 
-        java.util.LinkedHashMap<String, Usuarios> vistos = new java.util.LinkedHashMap<>();
-        java.util.Map<String, java.util.List<String>> proyectosDeUsuario = new java.util.HashMap<>();
-
+        // Iniciales de los integrantes para los avatares de la tabla
+        Map<String, String> iniciales = new HashMap<>();
+        Map<String, String> nombres = new HashMap<>();
         for (Proyecto p : proyectos) {
-            for (Usuarios u : participacionService.listarUsuariosPorProyecto(p.getId())) {
-                vistos.putIfAbsent(u.getId(), u);
-                proyectosDeUsuario
-                    .computeIfAbsent(u.getId(), k -> new java.util.ArrayList<>())
-                    .add(p.getNombre());
-            }
-        }
-
-        model.addAttribute("usuarios", new java.util.ArrayList<>(vistos.values()));
-        model.addAttribute("proyectosDeUsuario", proyectosDeUsuario);
-        return "Lider_Usuarios_Proyecto";
-    }
-
-    // VER TAREAS RECIBIDAS
-    @GetMapping("/tareas/recibidas")
-    public String tareasRecibidas(Principal principal, Model model) {
-
-        Usuarios lider = validarLider(principal);
-        if (lider == null)
-            return "redirect:/login";
-
-        List<Proyecto> proyectos = proyectoService.obtenerProyectosDeLider(lider.getId());
-
-        java.util.List<java.util.Map<String, Object>> entregas = new java.util.ArrayList<>();
-        for (Proyecto proyecto : proyectos) {
-            List<Tarea> tareas = tareaService.obtenerTareasPorProyecto(proyecto.getId());
-            for (Tarea tarea : tareas) {
-                List<EntregaTarea> entregasTarea = entregaTareaService.obtenerEntregasPorTarea(tarea.getId());
-                for (EntregaTarea entrega : entregasTarea) {
-                    Usuarios usuario = entrega.getIdUsuario() != null
-                            ? usuarioService.obtenerUsuarioPorId(entrega.getIdUsuario())
-                            : null;
-                    java.util.Map<String, Object> item = new java.util.HashMap<>();
-                    item.put("entregaId",           entrega.getId());
-                    item.put("titulo",              tarea.getTitulo());
-                    item.put("proyectoNombre",      proyecto.getNombre());
-                    item.put("usuarioNombre",       usuario != null ? usuario.getNombre() : "Desconocido");
-                    item.put("descripcionEvidencia",entrega.getDescripcionEvidencia());
-                    item.put("nombreArchivo",       entrega.getNombreArchivo());
-                    item.put("tipoArchivo",         entrega.getTipoArchivo());
-                    item.put("fechaEntrega",        entrega.getFechaEntrega());
-                    entregas.add(item);
+            for (String uid : p.getParticipantes()) {
+                if (!iniciales.containsKey(uid)) {
+                    usuarioRepository.findById(uid).ifPresent(u -> {
+                        iniciales.put(uid, u.getIniciales());
+                        nombres.put(uid, u.getNombre());
+                    });
                 }
             }
         }
 
-        model.addAttribute("entregas", entregas);
-        return "Lider_Tareas_Recibidas";
+        model.addAttribute("proyectos", proyectos);
+        model.addAttribute("iniciales", iniciales);
+        model.addAttribute("nombres", nombres);
+        return "Lider_Asignar_Tareas";
     }
 
-     // =======================================================
-    // ELIMINAR PROYECTO
-    // =======================================================
-    @PostMapping("/proyecto/{id}/eliminar")
-     public String eliminarProyecto(@PathVariable String id,
-                                Principal principal,
-                                RedirectAttributes redirectAttributes) {
-
-        Usuarios lider = validarLider(principal);
-        if (lider == null)
-            return "redirect:/login";
-
-        Proyecto proyecto = proyectoService.buscarPorId(id);
-        if (proyecto == null || !proyecto.getIdLider().equals(lider.getId()))
-            return "redirect:/lider/dashboard";
-
-        proyectoService.eliminar(id);
-
-        redirectAttributes.addFlashAttribute("popup", "success");
-        redirectAttributes.addFlashAttribute("mensaje", "Proyecto eliminado correctamente.");
-
-        return "redirect:/lider/dashboard";
-    }
-
-    // =======================================================
-    // VER DETALLE DEL PROYECTO CON TAREAS
-    // =======================================================
     @GetMapping("/proyecto/{id}/detalle")
-     public String verDetalleProyecto(@PathVariable String id,
-                                  Principal principal,
-                                  Model model) {
-
-        Usuarios lider = validarLider(principal);
-        if (lider == null)
+    public String verDetalleProyecto(@PathVariable String id, HttpSession session, Model model) {
+        Usuarios lider = validarLider(session);
+        if (lider == null) {
             return "redirect:/login";
+        }
+        Proyecto proyecto = proyectoDelLider(id, lider);
+        if (proyecto == null) {
+            return "redirect:/lider/tareas/asignar";
+        }
 
-        Proyecto proyecto = proyectoService.buscarPorId(id);
-        if (proyecto == null || !proyecto.getIdLider().equals(lider.getId()))
-        return "redirect:/lider/tareas/asignar";
-
-        // Tareas del proyecto
         List<Tarea> tareas = tareaService.obtenerTareasPorProyecto(id);
-
-        // Integrantes desde la colección participaciones (fuente de verdad)
-        List<Usuarios> integrantes = participacionService.listarUsuariosPorProyecto(id);
+        List<Usuarios> integrantes = new ArrayList<>();
+        for (String uid : proyecto.getParticipantes()) {
+            usuarioRepository.findById(uid).ifPresent(integrantes::add);
+        }
+        int hechas = (int) tareas.stream().filter(LiderController::completada).count();
 
         model.addAttribute("proyecto", proyecto);
         model.addAttribute("tareas", tareas);
         model.addAttribute("integrantes", integrantes);
+        model.addAttribute("progreso", tareas.isEmpty() ? 0 : Math.round(hechas * 100f / tareas.size()));
         model.addAttribute("usuario", lider);
-
         return "Lider_Detalle_Proyecto";
     }
 
-    @PostMapping("/proyecto/{id}/aceptar")
-    public String aceptarProyecto(@PathVariable String id,
-                                  Principal principal,
-                                  RedirectAttributes redirectAttributes) {
+    // =======================================================
+    // USUARIOS INSCRITOS EN LOS PROYECTOS DEL LÍDER
+    // =======================================================
+    @GetMapping("/usuarios")
+    public String usuariosInscritos(HttpSession session, Model model) {
+        Usuarios lider = validarLider(session);
+        if (lider == null) {
+            return "redirect:/login";
+        }
 
-            Usuarios lider = validarLider(principal);
-            if (lider == null)
-                return "redirect:/login";
-
-            Proyecto proyecto = proyectoService.buscarPorId(id);
-            if (proyecto != null) {
-                proyecto.setEstado("COMPLETADO");
-                proyectoService.guardar(proyecto, null);
-                redirectAttributes.addFlashAttribute("mensaje", "✅ Proyecto aceptado correctamente");
+        Map<String, Usuarios> usuarios = new LinkedHashMap<>();
+        Map<String, List<String>> proyectosPorUsuario = new HashMap<>();
+        for (Proyecto p : proyectoService.obtenerProyectosDeLider(lider.getId())) {
+            for (String uid : p.getParticipantes()) {
+                if (uid.equals(lider.getId())) {
+                    continue;
+                }
+                usuarioRepository.findById(uid).ifPresent(u -> {
+                    usuarios.putIfAbsent(uid, u);
+                    proyectosPorUsuario.computeIfAbsent(uid, k -> new ArrayList<>()).add(p.getNombre());
+                });
             }
+        }
 
-            return "redirect:/lider/tareas/asignar";
+        model.addAttribute("usuarios", new ArrayList<>(usuarios.values()));
+        model.addAttribute("proyectosPorUsuario", proyectosPorUsuario);
+        return "Lider_Usuarios_Proyecto";
     }
 
+    // =======================================================
+    // ENTREGAS RECIBIDAS
+    // =======================================================
+    @GetMapping("/tareas/recibidas")
+    public String tareasRecibidas(HttpSession session, Model model) {
+        Usuarios lider = validarLider(session);
+        if (lider == null) {
+            return "redirect:/login";
+        }
 
+        List<EntregaVista> vistas = new ArrayList<>();
+        for (Proyecto p : proyectoService.obtenerProyectosDeLider(lider.getId())) {
+            for (Tarea t : tareaService.obtenerTareasPorProyecto(p.getId())) {
+                for (EntregaTarea e : entregaTareaRepository.findByIdTarea(t.getId())) {
+                    Usuarios autor = e.getIdUsuario() == null ? null
+                            : usuarioRepository.findById(e.getIdUsuario()).orElse(null);
+                    vistas.add(new EntregaVista(
+                            e.getId(), t.getTitulo(), t.getDescripcion(), p.getNombre(),
+                            autor != null ? autor.getNombre() : "Usuario desconocido",
+                            autor != null ? autor.getIniciales() : "?",
+                            e.getNombreArchivo(), e.getFechaEntrega(), e.getEstado()));
+                }
+            }
+        }
+        vistas.sort(Comparator.comparing(EntregaVista::getFechaEntrega,
+                Comparator.nullsLast(Comparator.reverseOrder())));
 
+        model.addAttribute("entregas", vistas);
+        return "Lider_Tareas_Recibidas";
+    }
+
+    /** Descarga el archivo de una entrega (solo el líder del proyecto). */
+    @GetMapping("/entregas/{id}/archivo")
+    public ResponseEntity<byte[]> descargarEntrega(@PathVariable String id, HttpSession session) {
+        EntregaTarea entrega = entregaDelLider(id, validarLider(session));
+        if (entrega == null || entrega.getDatos() == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        MediaType tipo;
+        try {
+            tipo = entrega.getTipoArchivo() != null ? MediaType.parseMediaType(entrega.getTipoArchivo())
+                    : MediaType.APPLICATION_OCTET_STREAM;
+        } catch (RuntimeException ex) {
+            tipo = MediaType.APPLICATION_OCTET_STREAM;
+        }
+        String nombre = entrega.getNombreArchivo() != null ? entrega.getNombreArchivo() : "entrega";
+
+        return ResponseEntity.ok()
+                .contentType(tipo)
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.attachment().filename(nombre, StandardCharsets.UTF_8).build().toString())
+                .body(entrega.getDatos());
+    }
+
+    /** Marca una entrega como REVISADO (aprobada) o RECHAZADO. */
+    @PostMapping("/entregas/{id}/revisar")
+    public String revisarEntrega(@PathVariable String id,
+                                 @RequestParam String estado,
+                                 @RequestParam(required = false) String comentario,
+                                 HttpSession session,
+                                 RedirectAttributes ra) {
+        Usuarios lider = validarLider(session);
+        if (lider == null) {
+            return "redirect:/login";
+        }
+        EntregaTarea entrega = entregaDelLider(id, lider);
+        String nuevo = estado == null ? "" : estado.trim().toUpperCase();
+        if (entrega != null && ESTADOS_ENTREGA.contains(nuevo)) {
+            entrega.setEstado(nuevo);
+            if (comentario != null && !comentario.isBlank()) {
+                entrega.setComentariosRevisor(comentario.trim());
+            }
+            entregaTareaRepository.save(entrega);
+
+            // Si se rechaza, la tarea vuelve a quedar pendiente para que se entregue de nuevo
+            if ("RECHAZADO".equals(nuevo)) {
+                tareaService.cambiarEstado(entrega.getIdTarea(), "PENDIENTE");
+            }
+            ra.addFlashAttribute("mensaje", "REVISADO".equals(nuevo) ? "Entrega aprobada" : "Entrega rechazada");
+        }
+        return "redirect:/lider/tareas/recibidas";
+    }
+
+    private EntregaTarea entregaDelLider(String idEntrega, Usuarios lider) {
+        if (lider == null) {
+            return null;
+        }
+        EntregaTarea entrega = entregaTareaRepository.findById(idEntrega).orElse(null);
+        if (entrega == null) {
+            return null;
+        }
+        Tarea tarea = tareaService.obtenerTareaPorId(entrega.getIdTarea());
+        if (tarea == null || proyectoDelLider(tarea.getIdProyecto(), lider) == null) {
+            return null;
+        }
+        return entrega;
+    }
 }

@@ -38,6 +38,7 @@ public class CustomErrorController implements ErrorController {
             model.addAttribute("status", 500);
         }
 
-        return "error";
+        // Plantilla: templates/Error.html
+        return "Error";
     }
 }

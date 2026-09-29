@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard de Usuario – Synergy</title>
+  <link rel="stylesheet" href="/css/Usuarios_Dashboard.css">
+</head>
+<body>
+
+  <div class="hero">
+    <div class="overlay"></div>
+
+    <div class="container">
+      <div class="card">
+
+        <!-- ENCABEZADO -->
+        <div class="header">
+          <div class="top-buttons">
+            
+            <!-- Inicio -->
+            <a th:href="@{/index}" class="btn-inicio">🏠 Inicio</a>
+
+            <!-- Logout -->
+            <a th:href="@{/logout}" class="btn-usuarios">🚪 Cerrar sesión</a>
+
+          </div>
+
+          <h1>Bienvenido <span th:text="${usuario.nombre}">Usuario</span></h1>
+          <p class="subtitle">Selecciona una acción para continuar.</p>
+        </div>
+
+        <!-- MENÚ PRINCIPAL DE OPCIONES -->
+        <div class="menu-options">
+        
+        <a th:href="@{/proyectos/participar}" class="menu-btn">
+           📁 Proyectos disponibles
+        </a>
+
+          <!-- BUZÓN DE TAREAS -->
+          <a th:href="@{/tareas/buzon}" class="menu-btn">
+            📬 Buzón de tareas
+          </a>
+
+          <!-- CAMBIAR CREDENCIALES -->
+          <a th:href="@{/usuario/credenciales}" class="menu-btn">
+            🔐 Cambiar mis credenciales
+          </a>
+
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

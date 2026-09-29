@@ -42,14 +42,11 @@ public class UsuarioServiceImpl {
     }
 
     public List<Usuarios> listarLideres() {
-        // Búsqueda semántica por nombre de rol movida a UsuarioService.obtenerUsuariosPorRol()
-        return usuarioRepository.findAll().stream()
-                .filter(u -> u.getIdRol() != null)
-                .collect(java.util.stream.Collectors.toList());
+        return usuarioRepository.findByRol("LIDER");
     }
 
     public List<Usuarios> listarActivos() {
-        return usuarioRepository.findByEstado("ACTIVO");
+        return usuarioRepository.findByActivo(true);
     }
 
     public Usuarios crearUsuario(Usuarios usuario) {
@@ -57,9 +54,10 @@ public class UsuarioServiceImpl {
             throw new RuntimeException("El correo ya está registrado");
         }
         usuario.setContrasena(passwordEncoder.encode(usuario.getContrasena()));
+        usuario.setActivo(true);
         usuario.setEstado("ACTIVO");
         usuario.setFechaCreacion(LocalDateTime.now());
-        usuario.setUltimoCambioContrasena(LocalDateTime.now());
+        usuario.setUltimaCambioContrasena(LocalDateTime.now());
         return usuarioRepository.save(usuario);
     }
 }

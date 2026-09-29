@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mis Tareas – Synergy</title>
+  <link rel="stylesheet" href="/css/Usuarios_Dashboard.css">
+</head>
+
+<body>
+
+<div class="hero">
+  <div class="overlay"></div>
+
+  <div class="container">
+    <div class="card">
+
+      <!-- ENCABEZADO -->
+      <div class="header">
+        <div class="top-buttons">
+
+          <!-- Volver al dashboard -->
+          <a th:href="@{/proyectos/dashboard}" class="btn-inicio">⬅ Volver</a>
+
+          <!-- Logout -->
+          <a th:href="@{/logout}" class="btn-usuarios">🚪 Cerrar sesión</a>
+
+        </div>
+
+        <h1>Mis Tareas</h1>
+        <p class="subtitle">Aquí aparecen las tareas que te asignó tu líder de proyecto.</p>
+      </div>
+
+      <!-- LISTADO DE TAREAS -->
+      <div class="menu-options" style="display:flex; flex-direction:column; gap:20px;">
+
+        <!-- Si no hay tareas -->
+        <p th:if="${tareas.size() == 0}" style="color:white; text-align:center;">
+          No tienes tareas asignadas actualmente.
+        </p>
+
+        <!-- Cada tarea -->
+        <div th:each="t : ${tareas}" class="menu-btn"
+             style="
+                display:flex;
+                justify-content:space-between;
+                align-items:center;
+                padding:15px;
+                border:1px solid rgba(255,255,255,0.3);
+                border-radius:15px;
+             ">
+
+          <div style="display:flex; flex-direction:column;">
+            <span style="font-size:18px; font-weight:bold;" th:text="${t.titulo}">Título</span>
+
+            <span style="font-size:14px; opacity:0.8;" th:text="${t.descripcion}">
+              Descripción de la tarea
+            </span>
+
+            <span style="margin-top:5px; font-size:14px;">
+              ⏳ Fecha límite:
+              <strong th:text="${t.fechaEntrega}"></strong>
+            </span>
+
+            <span style="margin-top:5px; font-size:14px;">
+              📌 Estado:
+              <strong th:text="${t.estado}"></strong>
+            </span>
+          </div>
+
+          <!-- 📤 BOTÓN PARA ENTREGAR LA TAREA -->
+          <a th:href="@{/tareas/entregar/{id}(id=${t.id})}"
+             class="btn-usuarios"
+             style="padding:10px 15px; font-size:14px; background:#00aaff;">
+              📤 Entregar tarea
+          </a>
+
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
+

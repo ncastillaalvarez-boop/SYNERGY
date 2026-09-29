@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>try{var t=localStorage.getItem('synergy-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
+  <title>Nueva tarea – Synergy</title>
+  <link rel="icon" type="image/png" href="../static/img/logo-mark.png" th:href="@{/img/logo-mark.png}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <link rel="stylesheet" href="../static/css/core.css" th:href="@{/css/core.css}">
+  <link rel="stylesheet" href="../static/css/dashboard.css" th:href="@{/css/dashboard.css}">
+</head>
+<body>
+  <div class="bg-ambient" aria-hidden="true"></div>
+
+<div class="app-shell">
+  <div th:replace="~{fragments/sidebar :: sidebar('lider-proyectos')}"></div>
+  <div class="app-main">
+  <div th:replace="~{fragments/sidebar :: topbar}"></div>
+
+  <main class="app-container">
+    <section class="app-card">
+      <header class="page-header">
+        <nav class="page-toolbar">
+          <div class="toolbar-group">
+            <a th:href="@{/lider/proyecto/{id}/detalle(id=${proyecto.id})}" class="btn btn-secondary btn-sm"><i class="fa-solid fa-arrow-left"></i> Volver al proyecto</a>
+            
+          </div>
+        </nav>
+        <div class="page-heading">
+          <span class="page-icon has-img"><img src="../static/img/icons/agregar.png" th:src="@{/img/icons/agregar.png}" alt=""></span>
+          <div>
+            <h1 class="page-title">Nueva tarea</h1>
+            <p class="page-subtitle" th:text="'Proyecto: ' + ${proyecto.nombre}">Proyecto</p>
+          </div>
+        </div>
+      </header>
+
+      <div th:if="${mensaje}" class="alert alert-success" data-autohide>
+        <i class="fa-solid fa-circle-check"></i>
+        <span th:text="${mensaje}"></span>
+      </div>
+      <div th:if="${error}" class="alert alert-error">
+        <i class="fa-solid fa-circle-exclamation"></i>
+        <span th:text="${error}"></span>
+      </div>
+
+      <div class="panel">
+        <form th:action="@{/tareas/guardar}" method="post" data-loading>
+          <input type="hidden" name="proyectoId" th:value="${proyecto.id}">
+          <div class="form-grid">
+            <div class="field span-2">
+              <label for="titulo"><i class="fa-solid fa-heading"></i> Título de la tarea</label>
+              <input type="text" id="titulo" name="titulo" maxlength="120" placeholder="Ej: Jornada de recolección en el sector norte" required>
+            </div>
+            <div class="field span-2">
+              <label for="descripcion"><i class="fa-solid fa-align-left"></i> Descripción</label>
+              <textarea id="descripcion" name="descripcion" rows="3" placeholder="¿Qué debe hacer el voluntario y qué evidencia debe entregar?"></textarea>
+            </div>
+            <div class="field">
+              <label for="fechaEntrega"><i class="fa-regular fa-calendar"></i> Fecha de entrega</label>
+              <input type="date" id="fechaEntrega" name="fechaEntrega" th:min="${hoy}" required>
+            </div>
+          </div>
+
+          <h2 class="section-heading"><i class="fa-solid fa-user-check"></i> Asignar a</h2>
+          <div th:if="${#lists.isEmpty(integrantes)}" class="note" style="color:var(--text-muted)">
+            <i class="fa-solid fa-circle-info"></i>
+            <div>Todavía no hay voluntarios inscritos en este proyecto. Puedes crear la tarea y asignarla cuando se unan.</div>
+          </div>
+          <div class="check-grid">
+            <label class="check-card" th:each="u : ${integrantes}">
+              <input type="checkbox" name="usuariosSeleccionados" th:value="${u.id}">
+              <span class="avatar avatar-sm" th:text="${u.iniciales}">AB</span>
+              <span class="chip-body"><span class="chip-title" th:text="${u.nombre}">Nombre</span><span class="chip-sub" th:text="${u.correo}">correo</span></span>
+              <span class="check-box"><i class="fa-solid fa-check"></i></span>
+            </label>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary btn-lg"><i class="fa-solid fa-paper-plane"></i> Asignar tarea</button>
+          </div>
+        </form>
+      </div>
+
+      <h2 class="section-heading"><i class="fa-solid fa-list-check"></i> Tareas del proyecto
+        <span class="count" th:text="${#lists.size(tareas)}">0</span></h2>
+      <div th:if="${#lists.isEmpty(tareas)}" class="text-subtle">Aún no hay tareas en este proyecto.</div>
+      <div class="list">
+        <div class="list-row" th:each="t, st : ${tareas}" th:style="'--i:' + ${st.index}">
+          <div class="list-row-main">
+            <span class="item-card-icon"><i class="fa-solid fa-clipboard-check"></i></span>
+            <div class="list-row-body">
+              <div class="list-row-title" th:text="${t.titulo}">Título</div>
+              <div class="meta">
+                <span><i class="fa-regular fa-clock"></i> <span th:text="${t.fechaEntrega != null ? #temporals.format(t.fechaEntrega, 'dd/MM/yyyy') : '-'}">-</span></span>
+                <span><i class="fa-solid fa-users"></i> <strong th:text="${#lists.size(t.usuariosAsignados)}">0</strong> asignados</span>
+                <span class="badge" th:text="${t.estado}"
+                      th:classappend="${#strings.toUpperCase(t.estado) == 'COMPLETADA'} ? 'badge-success' : 'badge-warning'">PENDIENTE</span>
+              </div>
+            </div>
+          </div>
+          <form th:action="@{/tareas/{id}/eliminar(id=${t.id})}" method="post" class="inline-form">
+            <button type="submit" class="btn btn-danger btn-sm" data-confirm="¿Eliminar esta tarea?" data-confirm-ok="Eliminar"><i class="fa-regular fa-trash-can"></i> Eliminar</button>
+          </form>
+        </div>
+      </div>
+
+    </section>
+  </main>
+  </div>
+</div>
+
+  <script src="../static/js/script.js" th:src="@{/js/script.js}"></script>
+</body>
+</html>

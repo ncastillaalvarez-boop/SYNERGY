@@ -31,3 +31,9 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Claves privadas ###
+src/main/resources/application-secrets.properties
+
+### Respaldos automáticos de la base de datos ###
+respaldos/

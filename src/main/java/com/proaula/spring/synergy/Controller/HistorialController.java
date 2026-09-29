@@ -1,80 +1,90 @@
 package com.proaula.spring.synergy.Controller;
 
-import com.proaula.spring.synergy.Service.HistorialService;
-import com.proaula.spring.synergy.Service.HistorialService.AccionHistorial;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.util.List;
+import com.proaula.spring.synergy.Security.SesionUtil;
+import com.proaula.spring.synergy.Service.HistorialService;
+import com.proaula.spring.synergy.Service.HistorialService.AccionHistorial;
 
+import jakarta.servlet.http.HttpSession;
+
+/**
+ * Historial de acciones (estructura de datos tipo pila: deshacer / rehacer).
+ * Solo lo ve el administrador.
+ */
 @Controller
 @RequestMapping("/historial")
 public class HistorialController {
-    
+
     @Autowired
     private HistorialService historialService;
-    
-    // Ver historial completo
+
+    private boolean noEsAdmin(HttpSession session) {
+        return !SesionUtil.esAdmin(SesionUtil.usuario(session));
+    }
+
     @GetMapping
-    public String verHistorial(Model model) {
-        List<AccionHistorial> historial = historialService.obtenerHistorialCompleto();
-        
-        model.addAttribute("historial", historial);
+    public String verHistorial(HttpSession session, Model model) {
+        if (noEsAdmin(session)) {
+            return "redirect:/login";
+        }
+        model.addAttribute("historial", historialService.obtenerHistorialCompleto());
         model.addAttribute("totalAcciones", historialService.contarAcciones());
         model.addAttribute("hayDeshacer", historialService.hayAccionesParaDeshacer());
         model.addAttribute("hayRehacer", historialService.hayAccionesParaRehacer());
-        
-        // Mostrar en consola también
-        historialService.mostrarHistorial();
-        
-        return "historial";
+        return "Historial";
     }
-    
-    // Deshacer última acción
+
     @PostMapping("/deshacer")
-    public String deshacer(Model model) {
+    public String deshacer(HttpSession session, RedirectAttributes ra) {
+        if (noEsAdmin(session)) {
+            return "redirect:/login";
+        }
         AccionHistorial accion = historialService.deshacer();
-        
-        if (accion != null) {
-            model.addAttribute("mensaje", "✅ Acción deshecha: " + accion.getDescripcion());
-        } else {
-            model.addAttribute("mensaje", "⚠️ No hay acciones para deshacer");
-        }
-        
+        ra.addFlashAttribute("mensaje", accion != null
+                ? "Acción deshecha: " + accion.getDescripcion()
+                : "No hay acciones para deshacer");
         return "redirect:/historial";
     }
-    
-    // Rehacer última acción deshecha
+
     @PostMapping("/rehacer")
-    public String rehacer(Model model) {
-        AccionHistorial accion = historialService.rehacer();
-        
-        if (accion != null) {
-            model.addAttribute("mensaje", "✅ Acción rehecha: " + accion.getDescripcion());
-        } else {
-            model.addAttribute("mensaje", "⚠️ No hay acciones para rehacer");
+    public String rehacer(HttpSession session, RedirectAttributes ra) {
+        if (noEsAdmin(session)) {
+            return "redirect:/login";
         }
-        
+        AccionHistorial accion = historialService.rehacer();
+        ra.addFlashAttribute("mensaje", accion != null
+                ? "Acción rehecha: " + accion.getDescripcion()
+                : "No hay acciones para rehacer");
         return "redirect:/historial";
     }
-    
-    // Limpiar historial
+
     @PostMapping("/limpiar")
-    public String limpiarHistorial() {
+    public String limpiarHistorial(HttpSession session, RedirectAttributes ra) {
+        if (noEsAdmin(session)) {
+            return "redirect:/login";
+        }
         historialService.limpiarHistorial();
+        ra.addFlashAttribute("mensaje", "Historial limpiado");
         return "redirect:/historial";
     }
-    
-    // Ver últimas N acciones (API REST)
+
     @GetMapping("/ultimas/{cantidad}")
     @ResponseBody
     public List<AccionHistorial> obtenerUltimas(@PathVariable int cantidad) {
         return historialService.obtenerUltimasAcciones(cantidad);
     }
-    
-    // Filtrar por tipo
+
     @GetMapping("/tipo/{tipo}")
     @ResponseBody
     public List<AccionHistorial> filtrarPorTipo(@PathVariable String tipo) {

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<!--
+  Fragmentos compartidos de los paneles:
+    - sidebar(activo): menú lateral según el rol del usuario de la sesión (usuarioActual / rolActual)
+    - topbar: barra superior en móvil con el botón de menú
+    - confirmModal: ventana de confirmación con el diseño de Synergy
+  Uso: <div th:replace="~{fragments/sidebar :: sidebar('lider-panel')}"></div>
+-->
+<body>
+
+<aside th:fragment="sidebar(activo)" class="sidebar" id="sidebar" aria-label="Menú principal">
+
+  <a th:href="@{/}" class="sidebar-brand">
+    <img th:src="@{/img/logo-mark.png}" alt="">
+    <span>Synergy</span>
+  </a>
+
+  <!-- Usuario en sesión -->
+  <div class="sidebar-user" th:if="${usuarioActual != null}">
+    <span class="avatar sidebar-avatar" th:if="${usuarioActual.fotoUrl == null}" th:text="${usuarioActual.iniciales}">SY</span>
+    <img class="avatar sidebar-avatar" th:if="${usuarioActual.fotoUrl != null}" th:src="${usuarioActual.fotoUrl}"
+         alt="" referrerpolicy="no-referrer">
+    <div class="sidebar-user-info">
+      <strong th:text="${usuarioActual.nombre}">Usuario</strong>
+      <span th:switch="${rolActual}">
+        <span th:case="'ADMINISTRADOR'">Administrador</span>
+        <span th:case="'LIDER'">Líder de proyecto</span>
+        <span th:case="*">Voluntario</span>
+      </span>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+
+    <!-- ===== ADMINISTRADOR ===== -->
+    <th:block th:if="${rolActual == 'ADMINISTRADOR'}">
+      <span class="sidebar-label">Administración</span>
+      <a th:href="@{/admin/proyectos}" class="sidebar-link" th:classappend="${activo == 'admin-proyectos'} ? 'is-active'">
+        <img th:src="@{/img/icons/proyectos.png}" alt=""> Proyectos
+      </a>
+      <a th:href="@{/admin/usuarios}" class="sidebar-link" th:classappend="${activo == 'admin-usuarios'} ? 'is-active'">
+        <img th:src="@{/img/icons/comunidad.png}" alt=""> Usuarios
+      </a>
+      <a th:href="@{/historial}" class="sidebar-link" th:classappend="${activo == 'historial'} ? 'is-active'">
+        <img th:src="@{/img/icons/progreso.png}" alt=""> Historial
+      </a>
+      <a th:href="@{/jerarquia}" class="sidebar-link" th:classappend="${activo == 'jerarquia'} ? 'is-active'">
+        <img th:src="@{/img/icons/reforestacion.png}" alt=""> Jerarquía
+      </a>
+    </th:block>
+
+    <!-- ===== LÍDER ===== -->
+    <th:block th:if="${rolActual == 'LIDER'}">
+      <span class="sidebar-label">Liderazgo</span>
+      <a th:href="@{/lider/dashboard}" class="sidebar-link" th:classappend="${activo == 'lider-panel'} ? 'is-active'">
+        <img th:src="@{/img/icons/inicio.png}" alt=""> Panel
+      </a>
+      <a th:href="@{/lider/tareas/asignar}" class="sidebar-link" th:classappend="${activo == 'lider-proyectos'} ? 'is-active'">
+        <img th:src="@{/img/icons/tareas.png}" alt=""> Proyectos y tareas
+      </a>
+      <a th:href="@{/lider/proyecto/nuevo}" class="sidebar-link" th:classappend="${activo == 'lider-nuevo'} ? 'is-active'">
+        <img th:src="@{/img/icons/agregar.png}" alt=""> Nuevo proyecto
+      </a>
+      <a th:href="@{/lider/usuarios}" class="sidebar-link" th:classappend="${activo == 'lider-usuarios'} ? 'is-active'">
+        <img th:src="@{/img/icons/comunidad.png}" alt=""> Voluntarios
+      </a>
+      <a th:href="@{/lider/tareas/recibidas}" class="sidebar-link" th:classappend="${activo == 'lider-entregas'} ? 'is-active'">
+        <img th:src="@{/img/icons/notificaciones.png}" alt=""> Entregas
+      </a>
+    </th:block>
+
+    <!-- ===== VOLUNTARIO ===== -->
+    <th:block th:if="${rolActual == 'PARTICIPANTE'}">
+      <span class="sidebar-label">Voluntariado</span>
+      <a th:href="@{/dashboard}" class="sidebar-link" th:classappend="${activo == 'inicio'} ? 'is-active'">
+        <img th:src="@{/img/icons/inicio.png}" alt=""> Inicio
+      </a>
+      <a th:href="@{/proyectos/participar}" class="sidebar-link" th:classappend="${activo == 'explorar'} ? 'is-active'">
+        <img th:src="@{/img/icons/buscar.png}" alt=""> Explorar proyectos
+      </a>
+      <a th:href="@{/participacion/mis-proyectos}" class="sidebar-link" th:classappend="${activo == 'mis-proyectos'} ? 'is-active'">
+        <img th:src="@{/img/icons/proyectos.png}" alt=""> Mis proyectos
+      </a>
+      <a th:href="@{/tareas/buzon}" class="sidebar-link" th:classappend="${activo == 'tareas'} ? 'is-active'">
+        <img th:src="@{/img/icons/tareas.png}" alt=""> Mis tareas
+      </a>
+      <a th:href="@{/proyectos/registro}" class="sidebar-link" th:classappend="${activo == 'proponer'} ? 'is-active'">
+        <img th:src="@{/img/icons/agregar.png}" alt=""> Proponer proyecto
+      </a>
+    </th:block>
+
+    <!-- ===== COMÚN ===== -->
+    <th:block th:if="${usuarioActual != null}">
+      <span class="sidebar-label">Cuenta</span>
+      <a th:href="@{/usuario/credenciales}" class="sidebar-link" th:classappend="${activo == 'perfil'} ? 'is-active'">
+        <img th:src="@{/img/icons/perfil.png}" alt=""> Mi perfil
+      </a>
+    </th:block>
+
+    <!-- ===== INVITADO ===== -->
+    <th:block th:if="${usuarioActual == null}">
+      <span class="sidebar-label">Invitado</span>
+      <a th:href="@{/publico/proyectos}" class="sidebar-link" th:classappend="${activo == 'explorar'} ? 'is-active'">
+        <img th:src="@{/img/icons/buscar.png}" alt=""> Proyectos
+      </a>
+      <a th:href="@{/login}" class="sidebar-link">
+        <img th:src="@{/img/icons/perfil.png}" alt=""> Iniciar sesión
+      </a>
+      <a th:href="@{/seleccionar-rol}" class="sidebar-link">
+        <img th:src="@{/img/icons/agregar.png}" alt=""> Crear cuenta
+      </a>
+    </th:block>
+  </nav>
+
+  <div class="sidebar-footer">
+    <button type="button" class="sidebar-action" data-theme-toggle aria-label="Cambiar tema claro/oscuro">
+      <i class="fa-solid fa-moon theme-icon-dark"></i>
+      <i class="fa-solid fa-sun theme-icon-light"></i>
+      <span class="theme-label">Cambiar tema</span>
+    </button>
+    <a th:if="${usuarioActual != null}" th:href="@{/logout}" class="sidebar-action is-danger"
+       data-confirm="¿Quieres cerrar tu sesión?" data-confirm-ok="Cerrar sesión">
+      <i class="fa-solid fa-right-from-bracket"></i> <span>Cerrar sesión</span>
+    </a>
+  </div>
+</aside>
+
+<!-- Barra superior (solo móvil) -->
+<header th:fragment="topbar" class="mobile-topbar">
+  <button type="button" class="btn btn-secondary btn-icon" data-sidebar-toggle aria-label="Abrir menú" aria-controls="sidebar">
+    <i class="fa-solid fa-bars"></i>
+  </button>
+  <a th:href="@{/}" class="mini-brand">
+    <span class="mini-brand-mark"><img th:src="@{/img/logo-mark.png}" alt=""></span><span>Synergy</span>
+  </a>
+  <button type="button" class="btn btn-secondary btn-icon" data-theme-toggle aria-label="Cambiar tema">
+    <i class="fa-solid fa-moon theme-icon-dark"></i>
+    <i class="fa-solid fa-sun theme-icon-light"></i>
+  </button>
+</header>
+
+</body>
+</html>

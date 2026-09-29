@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mis Credenciales – Synergy</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      padding: 40px;
+      border-radius: 15px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      max-width: 600px;
+      width: 100%;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .header h1 {
+      color: #667eea;
+      font-size: 28px;
+      margin-bottom: 10px;
+    }
+
+    .header p {
+      color: #666;
+      font-size: 14px;
+    }
+
+    .alert {
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+
+    .alert-success {
+      background-color: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+
+    .alert-error {
+      background-color: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+
+    .section {
+      margin-bottom: 30px;
+      padding-bottom: 30px;
+      border-bottom: 2px solid #f0f0f0;
+    }
+
+    .section:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .section-title {
+      font-size: 18px;
+      color: #333;
+      margin-bottom: 15px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: #555;
+      font-weight: 500;
+      font-size: 14px;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 12px 15px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 15px;
+      transition: all 0.3s;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .form-group input[readonly] {
+      background-color: #f5f5f5;
+      color: #888;
+      cursor: not-allowed;
+    }
+
+    .info-badge {
+      display: inline-block;
+      padding: 5px 12px;
+      background-color: #e3f2fd;
+      color: #1976d2;
+      border-radius: 15px;
+      font-size: 12px;
+      margin-top: 5px;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 15px;
+      margin-top: 30px;
+    }
+
+    .btn {
+      padding: 12px 30px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      text-decoration: none;
+      display: inline-block;
+      text-align: center;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      flex: 1;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-secondary {
+      background-color: #f0f0f0;
+      color: #666;
+      flex: 1;
+    }
+
+    .btn-secondary:hover {
+      background-color: #e0e0e0;
+    }
+
+    .password-requirements {
+      background-color: #fff9e6;
+      border-left: 4px solid #ffc107;
+      padding: 12px;
+      margin-top: 10px;
+      border-radius: 5px;
+      font-size: 13px;
+      color: #856404;
+    }
+
+    .password-requirements ul {
+      margin-left: 20px;
+      margin-top: 8px;
+    }
+
+    .password-requirements li {
+      margin-bottom: 5px;
+    }
+
+    @media (max-width: 600px) {
+      .container {
+        padding: 25px;
+      }
+
+      .button-group {
+        flex-direction: column;
+      }
+
+      .btn {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    
+    <!-- HEADER -->
+    <div class="header">
+      <h1>🔐 Mis Credenciales</h1>
+      <p>Gestiona tu información personal y seguridad</p>
+    </div>
+
+    <!-- MENSAJES -->
+    <div th:if="${mensaje}" class="alert alert-success">
+      <span th:text="${mensaje}"></span>
+    </div>
+
+    <div th:if="${error}" class="alert alert-error">
+      <span th:text="${error}"></span>
+    </div>
+
+    <!-- FORMULARIO -->
+    <form th:action="@{/usuario/actualizar-credenciales}" method="post">
+
+      <!-- SECCIÓN 1: INFORMACIÓN BÁSICA -->
+      <div class="section">
+        <div class="section-title">
+          👤 Información Básica
+        </div>
+
+        <div class="form-group">
+          <label for="nombre">Nombre Completo</label>
+          <input type="text" 
+                 id="nombre" 
+                 name="nombre" 
+                 th:value="${usuario.nombre}" 
+                 placeholder="Tu nombre completo">
+        </div>
+
+        <div class="form-group">
+          <label for="correo">Correo Electrónico</label>
+          <input type="email" 
+                 id="correo" 
+                 name="correo" 
+                 th:value="${usuario.correo}" 
+                 placeholder="tu@email.com">
+        </div>
+
+        <div class="form-group">
+          <label>Rol Actual</label>
+          <input type="text" 
+                 th:value="${usuario.rol}" 
+                 readonly>
+          <span class="info-badge" th:text="${usuario.rol}">Participante</span>
+        </div>
+      </div>
+
+      <!-- SECCIÓN 2: CAMBIAR CONTRASEÑA -->
+      <div class="section">
+        <div class="section-title">
+          🔒 Cambiar Contraseña
+        </div>
+
+        <div class="form-group">
+          <label for="contrasenaActual">Contraseña Actual</label>
+          <input type="password" 
+                 id="contrasenaActual" 
+                 name="contrasenaActual" 
+                 placeholder="Tu contraseña actual">
+        </div>
+
+        <div class="form-group">
+          <label for="contrasenaNueva">Nueva Contraseña</label>
+          <input type="password" 
+                 id="contrasenaNueva" 
+                 name="contrasenaNueva" 
+                 placeholder="Nueva contraseña">
+        </div>
+
+        <div class="form-group">
+          <label for="contrasenaConfirmacion">Confirmar Nueva Contraseña</label>
+          <input type="password" 
+                 id="contrasenaConfirmacion" 
+                 name="contrasenaConfirmacion" 
+                 placeholder="Repite la nueva contraseña">
+        </div>
+
+        <div class="password-requirements">
+          <strong>⚠️ Requisitos de contraseña:</strong>
+          <ul>
+            <li>Mínimo 6 caracteres</li>
+            <li>Dejar vacío si no deseas cambiarla</li>
+            <li>Ambas contraseñas deben coincidir</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- BOTONES -->
+      <div class="button-group">
+        <button type="submit" class="btn btn-primary">
+          💾 Guardar Cambios
+        </button>
+        <a th:href="@{/dashboard}" class="btn btn-secondary">
+          ← Volver al Dashboard
+        </a>
+      </div>
+
+    </form>
+
+  </div>
+
+</body>
+</html>
