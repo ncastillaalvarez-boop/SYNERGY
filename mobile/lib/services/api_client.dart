@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
 
@@ -16,17 +18,22 @@ class ApiClient {
 
   Uri _uri(String path) => Uri.parse('${AppConfig.apiBaseUrl}$path');
 
-  Future<dynamic> get(String path) async => _handle(await _client.get(_uri(path), headers: await _headers()));
+  /// Login y registro no deben enviar un token viejo guardado en el teléfono.
+  bool _esPublica(String path) => path.startsWith('/auth/login') || path.startsWith('/auth/registrar');
 
-  Future<dynamic> post(String path, {Object? body}) async => _handle(
-        await _client.post(_uri(path), headers: await _headers(), body: body == null ? null : jsonEncode(body)),
+  Future<dynamic> get(String path) => _send(path, (headers) => _client.get(_uri(path), headers: headers));
+
+  Future<dynamic> post(String path, {Object? body}) => _send(
+        path,
+        (headers) => _client.post(_uri(path), headers: headers, body: body == null ? null : jsonEncode(body)),
       );
 
-  Future<dynamic> put(String path, {Object? body}) async => _handle(
-        await _client.put(_uri(path), headers: await _headers(), body: body == null ? null : jsonEncode(body)),
+  Future<dynamic> put(String path, {Object? body}) => _send(
+        path,
+        (headers) => _client.put(_uri(path), headers: headers, body: body == null ? null : jsonEncode(body)),
       );
 
-  Future<dynamic> delete(String path) async => _handle(await _client.delete(_uri(path), headers: await _headers()));
+  Future<dynamic> delete(String path) => _send(path, (headers) => _client.delete(_uri(path), headers: headers));
 
   Future<dynamic> upload(
     String path, {
@@ -36,7 +43,7 @@ class ApiClient {
     String? filePath,
   }) async {
     final request = http.MultipartRequest('POST', _uri(path));
-    request.headers.addAll(await _headers(jsonContent: false));
+    request.headers.addAll(await _headers(path, jsonContent: false));
     if (bytes != null) {
       request.files.add(http.MultipartFile.fromBytes(field, bytes, filename: filename));
     } else if (filePath != null) {
@@ -44,11 +51,41 @@ class ApiClient {
     } else {
       throw const ApiException('No fue posible leer el archivo seleccionado.');
     }
-    return _handle(await http.Response.fromStream(await request.send()));
+    return _conRed(() async {
+      final streamed = await request.send().timeout(const Duration(seconds: 60));
+      return _handle(await http.Response.fromStream(streamed));
+    });
   }
 
-  Future<Map<String, String>> _headers({bool jsonContent = true}) async {
-    final session = await _sessionStore.read();
+  Future<dynamic> _send(String path, Future<http.Response> Function(Map<String, String> headers) llamada) async {
+    final headers = await _headers(path);
+    return _conRed(() async => _handle(await llamada(headers).timeout(AppConfig.requestTimeout)));
+  }
+
+  /// Convierte los fallos de red (servidor apagado, IP equivocada, sin Wi-Fi) en un mensaje claro.
+  /// Antes estos errores no se mostraban y parecía que el botón no hacía nada.
+  Future<dynamic> _conRed(Future<dynamic> Function() accion) async {
+    try {
+      return await accion();
+    } on ApiException {
+      rethrow;
+    } on TimeoutException {
+      throw ApiException('El servidor no respondió a tiempo (${AppConfig.apiBaseUrl}). '
+          'Revisa que Synergy esté encendido y que el teléfono esté en la misma red Wi-Fi.');
+    } on SocketException {
+      throw ApiException(_sinConexion());
+    } on http.ClientException {
+      throw ApiException(_sinConexion());
+    } on HandshakeException {
+      throw ApiException('No se pudo establecer una conexión segura con ${AppConfig.apiBaseUrl}.');
+    }
+  }
+
+  String _sinConexion() => 'No se pudo conectar con el servidor (${AppConfig.apiBaseUrl}). '
+      'Si usas un teléfono real, cambia la dirección en "Servidor" por la IP de tu PC.';
+
+  Future<Map<String, String>> _headers(String path, {bool jsonContent = true}) async {
+    final session = _esPublica(path) ? null : await _sessionStore.read();
     return {
       if (jsonContent) 'Content-Type': 'application/json; charset=UTF-8',
       'Accept': 'application/json',
@@ -66,7 +103,9 @@ class ApiClient {
       }
     }
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      final message = body is Map ? (body['message'] ?? body['error'] ?? 'Error de comunicación') : '$body';
+      final message = body is Map
+          ? (body['message'] ?? body['error'] ?? body['mensaje'] ?? 'Error de comunicación (${response.statusCode})')
+          : (body == null || '$body'.isEmpty ? 'Error de comunicación (${response.statusCode})' : '$body');
       throw ApiException(message.toString(), statusCode: response.statusCode);
     }
     return body;

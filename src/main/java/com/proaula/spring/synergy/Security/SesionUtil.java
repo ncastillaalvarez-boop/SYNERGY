@@ -14,6 +14,11 @@ public final class SesionUtil {
 
     public static final String ATTR_USUARIO = "usuario";
     public static final String ATTR_USUARIO_ID = "usuarioId";
+    /** Página a la que se vuelve después de registrarse o iniciar sesión (p. ej. la lista de proyectos). */
+    public static final String ATTR_VOLVER = "volverTrasLogin";
+
+    /** Rutas internas a las que se permite volver (evita redirecciones a otros sitios). */
+    private static final String[] RUTAS_VOLVER = {"/publico/proyectos", "/proyectos/participar", "/proyectos/publico"};
 
     private SesionUtil() {
     }
@@ -58,5 +63,36 @@ public final class SesionUtil {
             case "PARTICIPANTE" -> "/dashboard";
             default -> "/login";
         };
+    }
+
+    /**
+     * Devuelve la ruta solo si es una página interna permitida (lista de proyectos con sus filtros);
+     * cualquier otra cosa (URL externa, "//", "\\") devuelve null.
+     */
+    public static String rutaVolverSegura(String ruta) {
+        if (ruta == null || ruta.isBlank() || ruta.length() > 500) {
+            return null;
+        }
+        String r = ruta.trim();
+        if (!r.startsWith("/") || r.startsWith("//") || r.contains("\\") || r.contains("\r") || r.contains("\n")) {
+            return null;
+        }
+        for (String permitida : RUTAS_VOLVER) {
+            if (r.equals(permitida) || r.startsWith(permitida + "?")) {
+                return r;
+            }
+        }
+        return null;
+    }
+
+    /** Destino después de entrar: la página guardada en la sesión (si es segura) o el panel del rol. */
+    public static String destinoTrasEntrar(HttpSession session, Usuarios usuario, String volver) {
+        String destino = rutaVolverSegura(volver);
+        if (destino == null) {
+            Object guardado = session.getAttribute(ATTR_VOLVER);
+            destino = rutaVolverSegura(guardado == null ? null : guardado.toString());
+        }
+        session.removeAttribute(ATTR_VOLVER);
+        return destino != null ? destino : panelPorRol(usuario);
     }
 }

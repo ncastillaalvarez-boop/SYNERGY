@@ -29,6 +29,7 @@ import com.proaula.spring.synergy.Security.SesionUtil;
 import com.proaula.spring.synergy.Service.BusquedaService;
 import com.proaula.spring.synergy.Service.HistorialService;
 import com.proaula.spring.synergy.Service.ProyectoService;
+import com.proaula.spring.synergy.Service.RiesgoProyectoService;
 import com.proaula.spring.synergy.Service.UsuarioService;
 
 import jakarta.servlet.http.HttpSession;
@@ -55,6 +56,9 @@ public class AdminController {
 
     @Autowired
     private BusquedaService busquedaService;
+
+    @Autowired
+    private RiesgoProyectoService riesgoService;
 
     private Usuarios validarAdmin(HttpSession session) {
         Usuarios usuario = SesionUtil.usuario(session);
@@ -87,7 +91,53 @@ public class AdminController {
         model.addAttribute("pendientes", busquedaService.contarProyectos("PENDIENTE"));
         model.addAttribute("activos", busquedaService.contarProyectos("ACTIVO"));
         model.addAttribute("totalUsuarios", busquedaService.contarUsuarios(null));
+        // Modelo predictivo y gráficas
+        java.util.Map<String, Long> porRiesgo = busquedaService.activosPorRiesgo();
+        model.addAttribute("porRiesgo", porRiesgo);
+        model.addAttribute("riesgoAlto", porRiesgo.getOrDefault("Alto", 0L));
+        java.util.Map<String, Long> porCategoria = busquedaService.proyectosPorCategoria();
+        model.addAttribute("porCategoria", porCategoria);
+        model.addAttribute("maxCategoria", Math.max(1L, porCategoria.values().stream().mapToLong(Long::longValue).max().orElse(1L)));
+        model.addAttribute("ordenesAdmin", ordenesAdmin());
+        model.addAttribute("nivelesRiesgo", com.proaula.spring.synergy.Service.RiesgoCalculadora.NIVELES);
         return "Administrador_Dashboard";
+    }
+
+    /** Órdenes del administrador: los del catálogo + prioridad por riesgo. */
+    private static java.util.Map<String, String> ordenesAdmin() {
+        java.util.Map<String, String> m = new java.util.LinkedHashMap<>(com.proaula.spring.synergy.Model.Catalogos.ORDENES_PROYECTO);
+        m.put("riesgo", "Mayor riesgo primero");
+        return m;
+    }
+
+    // ---------------------------------------------------------
+    // MODELO PREDICTIVO
+    // ---------------------------------------------------------
+    /** Dataset para entrenar el modelo en Google Colab (CSV) o en Weka (ARFF). */
+    @GetMapping("/modelo/dataset.{formato}")
+    public org.springframework.http.ResponseEntity<byte[]> descargarDataset(@PathVariable String formato, HttpSession session) {
+        if (validarAdmin(session) == null) {
+            return org.springframework.http.ResponseEntity.status(org.springframework.http.HttpStatus.FOUND)
+                    .header(org.springframework.http.HttpHeaders.LOCATION, "/login").build();
+        }
+        boolean arff = "arff".equalsIgnoreCase(formato);
+        var filas = riesgoService.construirDataset();
+        String contenido = arff ? RiesgoProyectoService.aArff(filas) : RiesgoProyectoService.aCsv(filas);
+        return org.springframework.http.ResponseEntity.ok()
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"dataset_riesgo_synergy." + (arff ? "arff" : "csv") + "\"")
+                .contentType(org.springframework.http.MediaType.parseMediaType(arff ? "text/plain; charset=UTF-8" : "text/csv; charset=UTF-8"))
+                .body(contenido.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    }
+
+    @PostMapping("/modelo/recalcular")
+    public String recalcularRiesgo(HttpSession session, RedirectAttributes ra) {
+        if (validarAdmin(session) == null) {
+            return "redirect:/login";
+        }
+        int n = riesgoService.recalcularTodos();
+        ra.addFlashAttribute("mensaje", "Riesgo recalculado para " + n + " proyectos activos.");
+        return "redirect:/admin/proyectos?estado=ACTIVO&orden=riesgo";
     }
 
     @GetMapping("/proyecto/{id}")
@@ -132,6 +182,7 @@ public class AdminController {
             proyecto.setEstado("ACTIVO");
             proyecto.setFechaActualizacion(LocalDateTime.now());
             proyectoRepository.save(proyecto);
+            riesgoService.recalcularProyecto(proyecto.getId());
 
             // Quien propuso el proyecto pasa a ser LÍDER al aprobarse (no antes)
             try {

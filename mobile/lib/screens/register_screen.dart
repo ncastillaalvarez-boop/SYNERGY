@@ -42,7 +42,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ));
       if (mounted) Navigator.of(context).pop<AuthSession>(session);
     } on ApiException catch (error) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message), duration: const Duration(seconds: 6)));
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ocurrió un error inesperado. Intenta de nuevo.')));
+      }
     } finally {
       if (mounted) setState(() => _submitting = false);
     }

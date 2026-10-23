@@ -1,0 +1,617 @@
+% Synergy - dataset del modelo predictivo de riesgo
+% Variables medidas a la mitad del proyecto; nivel_riesgo segun como termino.
+@RELATION riesgo_proyectos_synergy
+
+@ATTRIBUTE categoria {'Limpieza de playas','Reforestación','Manglares y ciénagas','Reciclaje y residuos','Huertas comunitarias','Educación ambiental','Fauna y aves','Agua y saneamiento','Energía limpia','Espacios verdes','Calidad del aire','Canales y caños'}
+@ATTRIBUTE dias_retraso NUMERIC
+@ATTRIBUTE pct_tareas_pendientes NUMERIC
+@ATTRIBUTE participantes NUMERIC
+@ATTRIBUTE tasa_participacion NUMERIC
+@ATTRIBUTE duracion_dias NUMERIC
+@ATTRIBUTE avance_real NUMERIC
+@ATTRIBUTE avance_esperado NUMERIC
+@ATTRIBUTE brecha_avance NUMERIC
+@ATTRIBUTE actividades NUMERIC
+@ATTRIBUTE nivel_riesgo {Bajo,Medio,Alto}
+
+@DATA
+'Espacios verdes',0,0.667,3,0.333,169,0.333,0.497,-0.164,2,Alto
+'Reforestación',8,0.875,8,0.750,105,0.125,0.495,-0.370,8,Medio
+'Energía limpia',0,0.500,10,1.000,104,0.500,0.500,0.000,15,Alto
+'Agua y saneamiento',41,0.857,5,0.400,180,0.143,0.500,-0.357,4,Alto
+'Calidad del aire',0,0.500,8,0.625,173,0.500,0.497,0.003,9,Bajo
+'Energía limpia',6,1.000,8,0.375,73,0.000,0.493,-0.493,3,Alto
+'Energía limpia',7,0.857,3,0.333,52,0.143,0.500,-0.357,2,Alto
+'Canales y caños',3,0.875,6,0.333,134,0.125,0.500,-0.375,3,Alto
+'Calidad del aire',5,0.857,4,0.750,113,0.143,0.496,-0.353,3,Alto
+'Agua y saneamiento',0,0.750,7,0.714,173,0.250,0.497,-0.247,7,Medio
+'Reforestación',0,0.455,5,0.800,94,0.545,0.500,0.045,10,Bajo
+'Energía limpia',26,0.778,9,0.556,140,0.222,0.500,-0.278,10,Alto
+'Calidad del aire',22,0.571,3,0.333,86,0.429,0.500,-0.071,3,Alto
+'Agua y saneamiento',29,0.500,5,0.800,118,0.500,0.500,0.000,7,Alto
+'Reforestación',0,1.000,7,0.143,169,0.000,0.497,-0.497,2,Alto
+'Fauna y aves',11,1.000,8,0.500,90,0.000,0.500,-0.500,5,Alto
+'Reforestación',0,0.500,5,0.200,102,0.500,0.500,0.000,2,Alto
+'Manglares y ciénagas',29,0.778,4,0.750,147,0.222,0.497,-0.274,7,Alto
+'Espacios verdes',0,0.500,10,0.700,166,0.500,0.500,0.000,13,Medio
+'Espacios verdes',11,0.917,7,0.143,59,0.083,0.492,-0.408,2,Alto
+'Agua y saneamiento',0,0.750,4,1.000,105,0.250,0.495,-0.245,5,Bajo
+'Reciclaje y residuos',6,0.750,9,0.667,61,0.250,0.492,-0.242,7,Alto
+'Fauna y aves',1,0.800,5,0.200,54,0.200,0.500,-0.300,1,Alto
+'Manglares y ciénagas',0,0.600,4,0.750,88,0.400,0.500,-0.100,5,Bajo
+'Reciclaje y residuos',0,1.000,9,0.556,143,0.000,0.497,-0.497,9,Medio
+'Huertas comunitarias',22,1.000,6,0.333,85,0.000,0.494,-0.494,3,Alto
+'Educación ambiental',0,1.000,3,0.333,79,0.000,0.494,-0.494,1,Bajo
+'Limpieza de playas',3,0.750,8,0.750,103,0.250,0.495,-0.245,9,Alto
+'Huertas comunitarias',8,0.889,8,0.250,139,0.111,0.496,-0.385,3,Alto
+'Reforestación',0,1.000,3,0.333,58,0.000,0.500,-0.500,1,Alto
+'Manglares y ciénagas',14,0.556,4,1.000,105,0.444,0.495,-0.051,9,Alto
+'Educación ambiental',0,0.667,4,0.250,162,0.333,0.500,-0.167,4,Alto
+'Limpieza de playas',30,0.625,3,1.000,165,0.375,0.497,-0.122,7,Alto
+'Limpieza de playas',0,0.286,10,0.900,180,0.714,0.500,0.214,17,Bajo
+'Canales y caños',51,0.750,8,0.500,144,0.250,0.500,-0.250,6,Alto
+'Calidad del aire',4,0.875,6,0.333,52,0.125,0.500,-0.375,3,Alto
+'Energía limpia',0,0.273,3,1.000,165,0.727,0.497,0.230,8,Bajo
+'Reforestación',0,0.545,8,0.875,169,0.455,0.497,-0.042,13,Medio
+'Reforestación',0,0.600,7,0.429,128,0.400,0.500,-0.100,5,Bajo
+'Canales y caños',0,0.000,4,0.500,122,1.000,0.500,0.500,5,Medio
+'Educación ambiental',61,1.000,10,0.100,136,0.000,0.500,-0.500,1,Alto
+'Manglares y ciénagas',52,1.000,5,0.400,177,0.000,0.497,-0.497,4,Alto
+'Reciclaje y residuos',1,0.429,3,0.667,154,0.571,0.500,0.071,6,Medio
+'Reciclaje y residuos',0,1.000,5,0.600,141,0.000,0.496,-0.496,4,Alto
+'Reforestación',0,0.000,7,0.714,163,1.000,0.497,0.503,9,Bajo
+'Reforestación',3,0.500,3,1.000,101,0.500,0.495,0.005,7,Bajo
+'Reforestación',28,0.833,6,0.167,102,0.167,0.500,-0.333,4,Alto
+'Calidad del aire',0,0.455,10,0.800,111,0.545,0.495,0.050,15,Bajo
+'Espacios verdes',18,0.700,3,0.667,180,0.300,0.500,-0.200,5,Alto
+'Reforestación',0,0.750,6,0.500,109,0.250,0.495,-0.245,5,Bajo
+'Educación ambiental',50,1.000,4,0.250,152,0.000,0.500,-0.500,1,Alto
+'Calidad del aire',0,0.750,7,0.429,126,0.250,0.500,-0.250,7,Medio
+'Energía limpia',0,0.571,3,1.000,176,0.429,0.500,-0.071,7,Medio
+'Reciclaje y residuos',26,0.500,6,0.667,132,0.500,0.500,0.000,10,Alto
+'Limpieza de playas',15,1.000,5,0.400,120,0.000,0.500,-0.500,4,Alto
+'Manglares y ciénagas',0,1.000,3,0.667,61,0.000,0.492,-0.492,4,Alto
+'Manglares y ciénagas',52,0.800,9,0.333,139,0.200,0.496,-0.296,6,Alto
+'Fauna y aves',13,0.750,8,0.250,58,0.250,0.500,-0.250,4,Alto
+'Energía limpia',0,0.714,9,0.333,147,0.286,0.497,-0.211,8,Alto
+'Reciclaje y residuos',0,0.429,8,0.625,141,0.571,0.496,0.075,10,Medio
+'Reciclaje y residuos',2,1.000,4,1.000,114,0.000,0.500,-0.500,6,Medio
+'Canales y caños',23,0.600,9,1.000,127,0.400,0.496,-0.096,15,Alto
+'Energía limpia',0,0.600,3,1.000,110,0.400,0.500,-0.100,5,Medio
+'Energía limpia',0,0.833,8,0.125,180,0.167,0.500,-0.333,1,Alto
+'Canales y caños',0,0.667,3,0.667,57,0.333,0.491,-0.158,3,Medio
+'Energía limpia',0,0.750,10,0.400,64,0.250,0.500,-0.250,7,Medio
+'Limpieza de playas',22,0.545,8,0.500,121,0.455,0.496,-0.041,10,Alto
+'Canales y caños',6,0.667,4,0.250,68,0.333,0.500,-0.167,2,Alto
+'Canales y caños',0,0.333,9,0.889,169,0.667,0.497,0.170,14,Bajo
+'Reforestación',0,0.222,6,1.000,91,0.778,0.495,0.283,17,Bajo
+'Reciclaje y residuos',9,0.500,8,0.375,47,0.500,0.489,0.011,9,Alto
+'Canales y caños',0,0.500,3,0.667,107,0.500,0.495,0.005,4,Medio
+'Fauna y aves',0,0.000,4,1.000,160,1.000,0.500,0.500,6,Medio
+'Canales y caños',0,0.400,9,0.667,172,0.600,0.500,0.100,12,Medio
+'Educación ambiental',0,0.500,5,0.800,74,0.500,0.500,0.000,8,Bajo
+'Calidad del aire',42,0.875,5,0.200,121,0.125,0.496,-0.371,2,Alto
+'Manglares y ciénagas',20,0.889,7,0.571,73,0.111,0.493,-0.382,5,Alto
+'Energía limpia',14,0.833,10,0.100,103,0.167,0.495,-0.328,1,Alto
+'Agua y saneamiento',0,0.333,4,0.750,176,0.667,0.500,0.167,6,Bajo
+'Energía limpia',0,0.385,3,1.000,48,0.615,0.500,0.115,10,Bajo
+'Espacios verdes',0,0.600,9,0.444,174,0.400,0.500,-0.100,10,Bajo
+'Fauna y aves',0,1.000,5,0.200,61,0.000,0.492,-0.492,1,Alto
+'Limpieza de playas',0,0.286,10,0.800,78,0.714,0.500,0.214,14,Bajo
+'Reforestación',12,0.800,6,0.167,112,0.200,0.500,-0.300,2,Alto
+'Limpieza de playas',2,0.600,8,0.750,158,0.400,0.500,-0.100,10,Medio
+'Limpieza de playas',0,0.455,5,1.000,88,0.545,0.500,0.045,12,Bajo
+'Calidad del aire',0,0.400,5,0.800,62,0.600,0.500,0.100,7,Bajo
+'Espacios verdes',2,0.545,8,0.625,110,0.455,0.500,-0.045,10,Bajo
+'Calidad del aire',0,0.364,5,1.000,159,0.636,0.497,0.140,14,Bajo
+'Calidad del aire',0,1.000,4,0.250,73,0.000,0.493,-0.493,1,Alto
+'Huertas comunitarias',0,0.429,4,0.750,177,0.571,0.497,0.074,8,Bajo
+'Manglares y ciénagas',0,0.750,4,0.750,106,0.250,0.500,-0.250,6,Alto
+'Fauna y aves',26,0.625,6,0.500,120,0.375,0.500,-0.125,7,Alto
+'Energía limpia',5,0.750,9,0.556,66,0.250,0.500,-0.250,7,Bajo
+'Fauna y aves',1,0.833,7,0.429,91,0.167,0.495,-0.328,4,Medio
+'Manglares y ciénagas',0,0.222,9,0.889,162,0.778,0.500,0.278,16,Bajo
+'Manglares y ciénagas',0,0.625,10,0.400,180,0.375,0.500,-0.125,7,Alto
+'Reciclaje y residuos',0,1.000,6,0.333,125,0.000,0.496,-0.496,3,Medio
+'Canales y caños',0,0.600,7,0.571,142,0.400,0.500,-0.100,5,Medio
+'Huertas comunitarias',0,0.000,7,0.429,110,1.000,0.500,0.500,8,Bajo
+'Agua y saneamiento',45,1.000,6,0.333,164,0.000,0.500,-0.500,2,Alto
+'Calidad del aire',47,0.889,4,0.750,138,0.111,0.500,-0.389,5,Alto
+'Educación ambiental',14,0.889,9,0.222,84,0.111,0.500,-0.389,2,Alto
+'Huertas comunitarias',14,0.778,8,0.250,97,0.222,0.495,-0.273,3,Alto
+'Espacios verdes',0,0.500,10,0.800,81,0.500,0.494,0.006,11,Bajo
+'Limpieza de playas',26,0.500,8,0.500,107,0.500,0.495,0.005,9,Alto
+'Limpieza de playas',9,1.000,8,0.125,45,0.000,0.489,-0.489,1,Alto
+'Huertas comunitarias',7,0.667,8,0.375,97,0.333,0.495,-0.162,7,Alto
+'Reforestación',5,0.625,9,0.778,67,0.375,0.493,-0.118,14,Alto
+'Educación ambiental',0,0.400,9,0.778,135,0.600,0.496,0.104,10,Medio
+'Reciclaje y residuos',0,0.333,7,0.571,160,0.667,0.500,0.167,8,Bajo
+'Calidad del aire',0,0.667,6,0.833,129,0.333,0.496,-0.163,8,Bajo
+'Canales y caños',10,0.625,4,0.750,84,0.375,0.500,-0.125,5,Alto
+'Agua y saneamiento',3,0.857,7,0.143,100,0.143,0.500,-0.357,2,Alto
+'Limpieza de playas',16,0.778,3,0.667,137,0.222,0.496,-0.274,7,Alto
+'Fauna y aves',23,1.000,7,0.143,106,0.000,0.500,-0.500,3,Alto
+'Reciclaje y residuos',15,0.889,6,0.500,67,0.111,0.493,-0.381,5,Alto
+'Fauna y aves',8,1.000,4,0.500,75,0.000,0.493,-0.493,3,Alto
+'Reforestación',3,1.000,3,0.333,52,0.000,0.500,-0.500,3,Alto
+'Huertas comunitarias',37,0.545,8,0.375,124,0.455,0.500,-0.045,9,Alto
+'Calidad del aire',7,0.800,5,0.400,51,0.200,0.490,-0.290,2,Alto
+'Manglares y ciénagas',0,0.714,9,0.778,136,0.286,0.500,-0.214,12,Medio
+'Agua y saneamiento',0,0.833,3,0.333,73,0.167,0.493,-0.326,2,Alto
+'Canales y caños',0,0.667,6,0.667,109,0.333,0.495,-0.162,6,Medio
+'Agua y saneamiento',0,0.333,8,0.625,149,0.667,0.497,0.170,17,Medio
+'Agua y saneamiento',0,0.714,5,0.600,88,0.286,0.500,-0.214,5,Medio
+'Energía limpia',0,0.364,3,1.000,164,0.636,0.500,0.136,11,Alto
+'Fauna y aves',0,0.667,9,0.667,167,0.333,0.497,-0.164,8,Medio
+'Espacios verdes',0,0.500,8,0.375,64,0.500,0.500,0.000,7,Alto
+'Manglares y ciénagas',2,0.500,9,0.444,125,0.500,0.496,0.004,8,Alto
+'Canales y caños',24,1.000,3,0.000,124,0.000,0.500,-0.500,0,Alto
+'Reforestación',0,0.857,10,0.600,151,0.143,0.497,-0.354,8,Medio
+'Huertas comunitarias',7,0.556,9,0.444,154,0.444,0.500,-0.056,8,Medio
+'Fauna y aves',3,0.625,3,0.667,73,0.375,0.493,-0.118,3,Bajo
+'Limpieza de playas',0,0.500,6,1.000,176,0.500,0.500,0.000,10,Bajo
+'Reforestación',0,0.125,7,0.857,125,0.875,0.496,0.379,15,Bajo
+'Huertas comunitarias',19,0.750,9,0.556,131,0.250,0.496,-0.246,9,Alto
+'Limpieza de playas',13,0.750,8,0.250,161,0.250,0.497,-0.247,4,Alto
+'Espacios verdes',0,0.500,7,0.714,70,0.500,0.500,0.000,9,Bajo
+'Energía limpia',0,0.750,5,1.000,137,0.250,0.496,-0.246,9,Bajo
+'Limpieza de playas',11,0.833,6,0.167,126,0.167,0.500,-0.333,1,Alto
+'Reforestación',0,0.250,3,0.667,138,0.750,0.500,0.250,8,Medio
+'Canales y caños',0,0.714,4,0.750,97,0.286,0.495,-0.209,7,Medio
+'Educación ambiental',4,0.545,8,0.625,139,0.455,0.496,-0.042,10,Alto
+'Energía limpia',50,0.900,6,0.333,134,0.100,0.500,-0.400,3,Alto
+'Fauna y aves',0,0.600,10,1.000,79,0.400,0.494,-0.094,15,Bajo
+'Espacios verdes',0,0.250,8,0.750,122,0.750,0.500,0.250,12,Bajo
+'Huertas comunitarias',0,0.000,6,0.500,167,1.000,0.497,0.503,11,Medio
+'Limpieza de playas',1,0.857,9,0.667,51,0.143,0.490,-0.347,8,Medio
+'Limpieza de playas',0,0.167,3,0.667,111,0.833,0.495,0.338,6,Medio
+'Reforestación',0,0.375,9,0.556,79,0.625,0.494,0.131,8,Bajo
+'Canales y caños',0,0.167,5,1.000,129,0.833,0.496,0.337,12,Bajo
+'Fauna y aves',3,1.000,10,0.100,50,0.000,0.500,-0.500,1,Alto
+'Canales y caños',0,0.500,7,0.571,132,0.500,0.500,0.000,11,Bajo
+'Reciclaje y residuos',0,0.714,5,0.800,83,0.286,0.494,-0.208,9,Bajo
+'Educación ambiental',0,0.600,5,0.400,97,0.400,0.495,-0.095,7,Medio
+'Agua y saneamiento',26,0.500,8,0.500,137,0.500,0.496,0.004,5,Alto
+'Agua y saneamiento',0,0.800,8,0.625,144,0.200,0.500,-0.300,8,Medio
+'Limpieza de playas',9,0.667,8,0.750,119,0.333,0.496,-0.162,12,Alto
+'Reciclaje y residuos',0,0.400,9,0.778,46,0.600,0.500,0.100,12,Bajo
+'Reciclaje y residuos',0,0.273,9,1.000,74,0.727,0.500,0.227,19,Bajo
+'Calidad del aire',0,1.000,5,0.200,64,0.000,0.500,-0.500,1,Alto
+'Reciclaje y residuos',40,1.000,10,0.400,170,0.000,0.500,-0.500,6,Alto
+'Huertas comunitarias',10,0.875,6,0.333,169,0.125,0.497,-0.372,3,Alto
+'Calidad del aire',0,0.545,8,1.000,153,0.455,0.497,-0.042,13,Bajo
+'Huertas comunitarias',8,1.000,4,0.750,93,0.000,0.495,-0.495,6,Alto
+'Limpieza de playas',0,0.200,5,0.400,85,0.800,0.494,0.306,8,Medio
+'Limpieza de playas',0,0.200,3,1.000,147,0.800,0.497,0.303,6,Bajo
+'Calidad del aire',27,1.000,4,0.250,130,0.000,0.500,-0.500,2,Alto
+'Educación ambiental',6,0.833,5,0.200,98,0.167,0.500,-0.333,3,Alto
+'Energía limpia',0,0.857,10,0.400,51,0.143,0.490,-0.347,7,Alto
+'Calidad del aire',0,0.286,8,0.750,156,0.714,0.500,0.214,11,Bajo
+'Reciclaje y residuos',11,0.778,8,0.250,124,0.222,0.500,-0.278,5,Alto
+'Energía limpia',37,0.857,9,0.333,119,0.143,0.496,-0.353,5,Alto
+'Espacios verdes',30,0.375,3,0.333,145,0.625,0.497,0.128,6,Alto
+'Calidad del aire',0,0.000,9,0.667,144,1.000,0.500,0.500,14,Bajo
+'Manglares y ciénagas',7,0.778,8,0.625,100,0.222,0.500,-0.278,8,Alto
+'Educación ambiental',9,0.800,9,0.444,177,0.200,0.497,-0.297,10,Medio
+'Espacios verdes',2,0.833,9,0.444,59,0.167,0.492,-0.325,5,Alto
+'Energía limpia',0,0.400,5,1.000,62,0.600,0.500,0.100,11,Bajo
+'Agua y saneamiento',0,0.500,5,0.800,48,0.500,0.500,0.000,6,Bajo
+'Educación ambiental',6,0.500,10,0.700,123,0.500,0.496,0.004,11,Alto
+'Canales y caños',0,0.750,9,0.778,70,0.250,0.500,-0.250,9,Bajo
+'Limpieza de playas',36,0.889,10,0.100,101,0.111,0.495,-0.384,2,Alto
+'Limpieza de playas',0,0.500,9,0.333,164,0.500,0.500,0.000,4,Alto
+'Reforestación',0,0.545,5,1.000,137,0.455,0.496,-0.042,13,Medio
+'Manglares y ciénagas',33,0.625,9,0.889,120,0.375,0.500,-0.125,12,Alto
+'Espacios verdes',0,0.286,9,0.667,65,0.714,0.492,0.222,12,Bajo
+'Limpieza de playas',0,0.667,4,1.000,175,0.333,0.497,-0.164,7,Bajo
+'Educación ambiental',21,0.800,5,0.600,147,0.200,0.497,-0.297,3,Alto
+'Manglares y ciénagas',0,0.571,10,0.700,147,0.429,0.497,-0.068,11,Bajo
+'Limpieza de playas',0,0.250,6,0.833,88,0.750,0.500,0.250,12,Medio
+'Manglares y ciénagas',0,0.625,5,0.400,123,0.375,0.496,-0.121,6,Alto
+'Fauna y aves',1,1.000,7,0.286,48,0.000,0.500,-0.500,3,Alto
+'Energía limpia',0,0.500,9,0.556,115,0.500,0.496,0.004,8,Medio
+'Calidad del aire',5,1.000,9,0.333,65,0.000,0.492,-0.492,3,Alto
+'Espacios verdes',0,0.571,8,0.750,82,0.429,0.500,-0.071,10,Medio
+'Calidad del aire',1,0.500,9,0.778,87,0.500,0.494,0.006,15,Bajo
+'Fauna y aves',12,0.833,6,0.333,52,0.167,0.500,-0.333,5,Alto
+'Fauna y aves',0,1.000,8,0.500,114,0.000,0.500,-0.500,5,Alto
+'Huertas comunitarias',3,0.667,3,0.667,112,0.333,0.500,-0.167,4,Alto
+'Huertas comunitarias',0,0.500,7,0.857,48,0.500,0.500,0.000,7,Bajo
+'Canales y caños',0,0.375,7,0.714,94,0.625,0.500,0.125,11,Bajo
+'Energía limpia',0,0.250,9,0.667,180,0.750,0.500,0.250,10,Medio
+'Energía limpia',0,0.300,5,0.800,49,0.700,0.490,0.210,13,Bajo
+'Agua y saneamiento',4,0.286,3,0.667,160,0.714,0.500,0.214,9,Medio
+'Agua y saneamiento',0,0.667,6,0.833,128,0.333,0.500,-0.167,7,Bajo
+'Limpieza de playas',0,0.333,7,1.000,45,0.667,0.489,0.178,15,Bajo
+'Energía limpia',15,1.000,8,0.125,52,0.000,0.500,-0.500,3,Alto
+'Espacios verdes',37,0.500,8,0.500,160,0.500,0.500,0.000,7,Alto
+'Limpieza de playas',40,0.750,7,0.286,144,0.250,0.500,-0.250,5,Alto
+'Manglares y ciénagas',0,0.364,6,0.667,84,0.636,0.500,0.136,13,Medio
+'Calidad del aire',14,0.625,7,0.857,172,0.375,0.500,-0.125,11,Alto
+'Huertas comunitarias',2,0.667,4,0.250,102,0.333,0.500,-0.167,1,Alto
+'Educación ambiental',0,0.444,8,0.500,123,0.556,0.496,0.060,8,Alto
+'Fauna y aves',0,0.833,5,0.200,91,0.167,0.495,-0.328,1,Alto
+'Energía limpia',0,0.600,5,0.800,65,0.400,0.492,-0.092,8,Bajo
+'Canales y caños',20,1.000,3,0.667,159,0.000,0.497,-0.497,2,Alto
+'Agua y saneamiento',13,0.714,9,0.556,55,0.286,0.491,-0.205,10,Alto
+'Fauna y aves',4,0.750,3,0.333,69,0.250,0.493,-0.243,3,Alto
+'Agua y saneamiento',0,0.500,3,1.000,74,0.500,0.500,0.000,4,Alto
+'Reciclaje y residuos',21,0.800,6,0.167,141,0.200,0.496,-0.296,4,Alto
+'Reforestación',0,0.636,9,0.556,106,0.364,0.500,-0.136,9,Bajo
+'Manglares y ciénagas',0,0.625,8,0.500,72,0.375,0.500,-0.125,8,Medio
+'Energía limpia',0,0.286,10,0.700,173,0.714,0.497,0.217,12,Bajo
+'Calidad del aire',0,0.667,6,0.500,85,0.333,0.494,-0.161,6,Alto
+'Reforestación',0,1.000,8,0.625,162,0.000,0.500,-0.500,6,Bajo
+'Fauna y aves',0,0.250,7,0.571,153,0.750,0.497,0.253,7,Bajo
+'Espacios verdes',0,0.250,6,0.833,108,0.750,0.500,0.250,8,Bajo
+'Calidad del aire',5,0.600,6,0.500,167,0.400,0.497,-0.097,5,Alto
+'Canales y caños',0,0.667,4,0.250,134,0.333,0.500,-0.167,3,Alto
+'Manglares y ciénagas',0,0.167,9,0.778,172,0.833,0.500,0.333,12,Bajo
+'Reciclaje y residuos',0,0.700,8,0.500,67,0.300,0.493,-0.193,9,Medio
+'Reciclaje y residuos',5,0.833,4,0.250,61,0.167,0.492,-0.325,1,Medio
+'Canales y caños',0,0.600,9,0.333,72,0.400,0.500,-0.100,6,Medio
+'Huertas comunitarias',6,1.000,9,0.222,136,0.000,0.500,-0.500,3,Alto
+'Energía limpia',0,0.667,8,0.375,45,0.333,0.489,-0.156,5,Alto
+'Energía limpia',0,0.400,5,1.000,48,0.600,0.500,0.100,6,Bajo
+'Canales y caños',4,1.000,10,0.300,108,0.000,0.500,-0.500,3,Alto
+'Espacios verdes',0,0.250,4,0.500,158,0.750,0.500,0.250,6,Bajo
+'Educación ambiental',4,1.000,5,0.000,166,0.000,0.500,-0.500,0,Alto
+'Reciclaje y residuos',0,0.286,7,0.571,171,0.714,0.497,0.217,12,Medio
+'Fauna y aves',13,0.750,8,0.500,58,0.250,0.500,-0.250,6,Alto
+'Huertas comunitarias',45,0.625,6,0.333,175,0.375,0.497,-0.122,6,Alto
+'Fauna y aves',0,0.667,10,0.700,151,0.333,0.497,-0.163,11,Medio
+'Huertas comunitarias',0,0.556,9,0.778,88,0.444,0.500,-0.056,13,Bajo
+'Reforestación',0,0.364,4,1.000,108,0.636,0.500,0.136,13,Medio
+'Agua y saneamiento',0,1.000,6,0.500,95,0.000,0.495,-0.495,4,Alto
+'Educación ambiental',32,1.000,4,0.750,152,0.000,0.500,-0.500,5,Alto
+'Limpieza de playas',0,0.333,4,1.000,118,0.667,0.500,0.167,7,Alto
+'Reciclaje y residuos',11,0.778,9,0.111,54,0.222,0.500,-0.278,4,Alto
+'Manglares y ciénagas',0,0.857,8,0.750,103,0.143,0.495,-0.352,8,Medio
+'Huertas comunitarias',0,0.750,6,0.833,85,0.250,0.494,-0.244,8,Bajo
+'Calidad del aire',0,0.750,10,0.900,76,0.250,0.500,-0.250,12,Medio
+'Energía limpia',0,0.333,4,0.750,120,0.667,0.500,0.167,10,Bajo
+'Energía limpia',0,0.333,9,0.889,90,0.667,0.500,0.167,12,Bajo
+'Manglares y ciénagas',0,0.750,6,0.500,180,0.250,0.500,-0.250,5,Alto
+'Reforestación',0,0.500,3,0.667,117,0.500,0.496,0.004,5,Medio
+'Huertas comunitarias',0,0.400,4,1.000,87,0.600,0.494,0.106,11,Bajo
+'Fauna y aves',13,0.714,8,0.125,92,0.286,0.500,-0.214,3,Alto
+'Reforestación',0,0.400,4,0.750,62,0.600,0.500,0.100,7,Bajo
+'Reciclaje y residuos',0,1.000,10,0.300,76,0.000,0.500,-0.500,5,Alto
+'Energía limpia',0,0.600,10,0.500,105,0.400,0.495,-0.095,8,Medio
+'Reforestación',0,0.833,9,0.444,153,0.167,0.497,-0.330,6,Alto
+'Agua y saneamiento',0,0.000,4,1.000,129,1.000,0.496,0.504,10,Bajo
+'Educación ambiental',0,1.000,4,0.250,177,0.000,0.497,-0.497,1,Alto
+'Fauna y aves',9,1.000,10,0.200,55,0.000,0.491,-0.491,2,Alto
+'Agua y saneamiento',11,1.000,8,0.000,45,0.000,0.489,-0.489,0,Alto
+'Espacios verdes',27,0.818,7,0.286,95,0.182,0.495,-0.313,6,Alto
+'Fauna y aves',0,0.667,7,0.857,109,0.333,0.495,-0.162,8,Bajo
+'Agua y saneamiento',49,0.556,9,0.444,141,0.444,0.496,-0.052,9,Alto
+'Canales y caños',0,0.714,9,0.778,149,0.286,0.497,-0.211,11,Alto
+'Manglares y ciénagas',5,0.625,10,0.400,56,0.375,0.500,-0.125,9,Medio
+'Espacios verdes',0,1.000,7,0.857,160,0.000,0.500,-0.500,10,Medio
+'Canales y caños',21,0.625,3,0.667,84,0.375,0.500,-0.125,7,Alto
+'Manglares y ciénagas',0,0.000,7,0.429,147,1.000,0.497,0.503,5,Medio
+'Huertas comunitarias',5,0.800,3,0.667,66,0.200,0.500,-0.300,2,Alto
+'Espacios verdes',12,0.889,8,0.500,105,0.111,0.495,-0.384,9,Alto
+'Manglares y ciénagas',10,1.000,6,0.500,122,0.000,0.500,-0.500,4,Alto
+'Fauna y aves',0,0.625,8,0.750,91,0.375,0.495,-0.120,11,Medio
+'Calidad del aire',6,1.000,4,0.250,46,0.000,0.500,-0.500,1,Alto
+'Reciclaje y residuos',0,0.500,8,0.625,97,0.500,0.495,0.005,7,Medio
+'Huertas comunitarias',0,1.000,8,0.500,68,0.000,0.500,-0.500,4,Medio
+'Manglares y ciénagas',21,1.000,7,0.429,82,0.000,0.500,-0.500,3,Alto
+'Manglares y ciénagas',13,0.750,6,0.833,97,0.250,0.495,-0.245,9,Alto
+'Huertas comunitarias',0,1.000,7,0.714,83,0.000,0.494,-0.494,8,Alto
+'Manglares y ciénagas',0,0.600,3,0.667,171,0.400,0.497,-0.097,4,Medio
+'Agua y saneamiento',10,1.000,7,0.143,90,0.000,0.500,-0.500,1,Alto
+'Espacios verdes',0,0.429,3,1.000,53,0.571,0.491,0.081,6,Bajo
+'Limpieza de playas',0,0.625,9,0.556,130,0.375,0.500,-0.125,8,Medio
+'Agua y saneamiento',13,1.000,3,0.667,68,0.000,0.500,-0.500,4,Medio
+'Agua y saneamiento',0,0.222,3,0.667,118,0.778,0.500,0.278,9,Bajo
+'Agua y saneamiento',0,0.400,4,1.000,149,0.600,0.497,0.103,5,Medio
+'Energía limpia',0,0.714,4,0.500,136,0.286,0.500,-0.214,3,Alto
+'Fauna y aves',0,0.250,7,0.571,179,0.750,0.497,0.253,9,Bajo
+'Manglares y ciénagas',0,0.667,8,0.500,156,0.333,0.500,-0.167,8,Medio
+'Reforestación',5,0.556,3,0.667,66,0.444,0.500,-0.056,4,Medio
+'Limpieza de playas',21,0.875,9,0.222,68,0.125,0.500,-0.375,4,Alto
+'Energía limpia',1,0.714,8,0.625,142,0.286,0.500,-0.214,7,Medio
+'Espacios verdes',0,1.000,5,0.400,87,0.000,0.494,-0.494,3,Alto
+'Fauna y aves',0,1.000,4,0.500,67,0.000,0.493,-0.493,3,Alto
+'Canales y caños',0,0.000,7,0.429,125,1.000,0.496,0.504,8,Bajo
+'Reforestación',1,0.750,5,0.400,180,0.250,0.500,-0.250,2,Alto
+'Huertas comunitarias',10,1.000,6,0.500,45,0.000,0.489,-0.489,5,Alto
+'Reforestación',36,1.000,5,0.400,158,0.000,0.500,-0.500,2,Alto
+'Reciclaje y residuos',4,0.875,5,0.200,164,0.125,0.500,-0.375,3,Alto
+'Fauna y aves',3,1.000,10,0.200,45,0.000,0.489,-0.489,3,Alto
+'Energía limpia',0,0.500,10,0.400,129,0.500,0.496,0.004,8,Alto
+'Manglares y ciénagas',0,0.571,4,0.750,73,0.429,0.493,-0.065,7,Bajo
+'Educación ambiental',0,0.222,9,0.778,124,0.778,0.500,0.278,15,Bajo
+'Canales y caños',0,0.750,6,0.333,93,0.250,0.495,-0.245,3,Alto
+'Educación ambiental',0,0.800,10,0.700,69,0.200,0.493,-0.293,11,Medio
+'Limpieza de playas',0,0.143,4,0.500,48,0.857,0.500,0.357,6,Medio
+'Reforestación',0,0.556,6,1.000,160,0.444,0.500,-0.056,14,Bajo
+'Agua y saneamiento',24,1.000,10,0.300,146,0.000,0.500,-0.500,3,Alto
+'Reforestación',0,0.455,8,0.750,141,0.545,0.496,0.049,13,Medio
+'Reforestación',17,1.000,8,0.375,166,0.000,0.500,-0.500,3,Alto
+'Limpieza de playas',21,0.750,6,0.333,86,0.250,0.500,-0.250,2,Alto
+'Agua y saneamiento',0,0.556,6,0.667,168,0.444,0.500,-0.056,7,Bajo
+'Canales y caños',4,0.800,7,0.571,66,0.200,0.500,-0.300,7,Medio
+'Reforestación',0,0.250,8,0.750,90,0.750,0.500,0.250,9,Bajo
+'Limpieza de playas',7,0.900,5,0.400,64,0.100,0.500,-0.400,4,Alto
+'Espacios verdes',33,0.889,6,0.667,141,0.111,0.496,-0.385,5,Alto
+'Manglares y ciénagas',0,0.833,8,0.625,162,0.167,0.500,-0.333,7,Bajo
+'Huertas comunitarias',0,0.667,8,0.625,107,0.333,0.495,-0.162,10,Alto
+'Reciclaje y residuos',0,0.500,6,0.833,127,0.500,0.496,0.004,11,Medio
+'Reforestación',0,0.857,7,0.286,133,0.143,0.496,-0.353,2,Medio
+'Limpieza de playas',6,1.000,5,0.600,115,0.000,0.496,-0.496,3,Alto
+'Reciclaje y residuos',0,0.750,3,1.000,132,0.250,0.500,-0.250,5,Medio
+'Espacios verdes',8,0.800,9,0.778,86,0.200,0.500,-0.300,12,Alto
+'Huertas comunitarias',0,1.000,10,0.200,84,0.000,0.500,-0.500,3,Alto
+'Espacios verdes',0,1.000,7,0.286,102,0.000,0.500,-0.500,2,Alto
+'Canales y caños',0,0.750,5,0.800,151,0.250,0.497,-0.247,6,Alto
+'Fauna y aves',0,0.750,7,0.714,60,0.250,0.500,-0.250,8,Bajo
+'Fauna y aves',0,0.286,4,0.750,124,0.714,0.500,0.214,9,Bajo
+'Reforestación',1,1.000,5,0.000,46,0.000,0.500,-0.500,0,Alto
+'Educación ambiental',12,0.800,7,0.143,63,0.200,0.492,-0.292,2,Alto
+'Manglares y ciénagas',1,0.444,3,1.000,139,0.556,0.496,0.059,7,Alto
+'Huertas comunitarias',15,0.889,8,0.500,140,0.111,0.500,-0.389,7,Alto
+'Espacios verdes',58,0.600,8,0.500,176,0.400,0.500,-0.100,9,Alto
+'Canales y caños',7,1.000,4,0.000,76,0.000,0.500,-0.500,0,Alto
+'Espacios verdes',5,0.833,4,0.250,151,0.167,0.497,-0.330,2,Alto
+'Fauna y aves',0,0.400,3,0.667,145,0.600,0.497,0.103,4,Medio
+'Reciclaje y residuos',7,0.857,8,0.375,121,0.143,0.496,-0.353,4,Medio
+'Reforestación',0,0.500,6,0.833,61,0.500,0.492,0.008,9,Bajo
+'Energía limpia',0,0.250,4,0.750,104,0.750,0.500,0.250,6,Bajo
+'Agua y saneamiento',0,0.250,7,1.000,55,0.750,0.491,0.259,14,Bajo
+'Reforestación',0,0.800,9,0.889,97,0.200,0.495,-0.295,13,Bajo
+'Huertas comunitarias',0,0.500,4,0.750,136,0.500,0.500,0.000,7,Medio
+'Educación ambiental',0,0.429,6,0.667,66,0.571,0.500,0.071,10,Medio
+'Huertas comunitarias',0,0.625,3,0.333,96,0.375,0.500,-0.125,3,Alto
+'Manglares y ciénagas',0,0.750,7,0.429,169,0.250,0.497,-0.247,5,Alto
+'Calidad del aire',0,1.000,5,0.600,66,0.000,0.500,-0.500,5,Bajo
+'Espacios verdes',0,0.556,3,1.000,163,0.444,0.497,-0.052,7,Bajo
+'Limpieza de playas',0,0.400,5,1.000,82,0.600,0.500,0.100,11,Bajo
+'Reforestación',14,0.667,9,0.444,76,0.333,0.500,-0.167,6,Alto
+'Energía limpia',0,0.400,8,0.750,153,0.600,0.497,0.103,9,Medio
+'Canales y caños',1,1.000,8,0.375,129,0.000,0.496,-0.496,6,Alto
+'Espacios verdes',31,0.800,3,0.333,97,0.200,0.495,-0.295,2,Alto
+'Espacios verdes',0,0.400,10,0.300,135,0.600,0.496,0.104,5,Alto
+'Fauna y aves',0,0.364,5,0.800,134,0.636,0.500,0.136,14,Alto
+'Limpieza de playas',14,0.714,7,0.429,120,0.286,0.500,-0.214,5,Alto
+'Espacios verdes',0,0.800,4,0.750,75,0.200,0.493,-0.293,5,Bajo
+'Canales y caños',0,0.333,9,0.111,100,0.667,0.500,0.167,3,Alto
+'Energía limpia',0,0.250,6,0.833,139,0.750,0.496,0.254,9,Bajo
+'Huertas comunitarias',0,0.500,6,1.000,141,0.500,0.496,0.004,10,Alto
+'Reciclaje y residuos',0,0.600,9,0.667,51,0.400,0.490,-0.090,13,Medio
+'Reforestación',0,0.667,6,0.667,55,0.333,0.491,-0.158,6,Bajo
+'Huertas comunitarias',33,0.750,4,0.250,92,0.250,0.500,-0.250,2,Alto
+'Reciclaje y residuos',0,0.571,3,0.667,129,0.429,0.496,-0.068,4,Bajo
+'Limpieza de playas',0,0.600,8,0.500,134,0.400,0.500,-0.100,7,Medio
+'Reciclaje y residuos',0,0.375,8,0.750,120,0.625,0.500,0.125,11,Medio
+'Limpieza de playas',0,0.200,6,0.667,53,0.800,0.491,0.309,7,Bajo
+'Reciclaje y residuos',15,1.000,3,1.000,146,0.000,0.500,-0.500,3,Alto
+'Agua y saneamiento',0,0.750,6,0.500,124,0.250,0.500,-0.250,5,Alto
+'Educación ambiental',40,0.750,8,0.125,126,0.250,0.500,-0.250,4,Alto
+'Agua y saneamiento',13,1.000,6,0.167,62,0.000,0.500,-0.500,1,Alto
+'Limpieza de playas',10,0.556,3,0.667,85,0.444,0.494,-0.050,7,Medio
+'Energía limpia',17,1.000,4,0.500,152,0.000,0.500,-0.500,2,Alto
+'Reciclaje y residuos',0,0.250,8,0.875,74,0.750,0.500,0.250,12,Bajo
+'Calidad del aire',0,1.000,3,0.667,106,0.000,0.500,-0.500,3,Medio
+'Espacios verdes',0,0.500,6,1.000,87,0.500,0.494,0.006,6,Bajo
+'Reforestación',11,0.625,8,0.750,82,0.375,0.500,-0.125,12,Alto
+'Calidad del aire',4,0.250,8,0.625,96,0.750,0.500,0.250,12,Bajo
+'Canales y caños',0,0.286,8,0.750,147,0.714,0.497,0.218,15,Bajo
+'Energía limpia',0,0.800,4,0.250,126,0.200,0.500,-0.300,1,Medio
+'Limpieza de playas',14,0.875,5,0.600,168,0.125,0.500,-0.375,4,Alto
+'Reforestación',0,0.625,8,0.625,78,0.375,0.500,-0.125,10,Bajo
+'Huertas comunitarias',0,0.250,7,1.000,116,0.750,0.500,0.250,12,Bajo
+'Fauna y aves',0,0.250,5,0.800,90,0.750,0.500,0.250,9,Bajo
+'Huertas comunitarias',7,0.889,9,0.333,128,0.111,0.500,-0.389,7,Alto
+'Canales y caños',0,0.375,4,0.750,100,0.625,0.500,0.125,6,Bajo
+'Calidad del aire',0,0.500,8,0.750,163,0.500,0.497,0.003,9,Medio
+'Espacios verdes',17,0.667,4,0.500,168,0.333,0.500,-0.167,5,Alto
+'Energía limpia',0,0.571,8,0.500,69,0.429,0.493,-0.064,5,Medio
+'Agua y saneamiento',0,0.667,7,0.571,129,0.333,0.496,-0.163,11,Bajo
+'Energía limpia',23,0.714,10,0.400,152,0.286,0.500,-0.214,7,Alto
+'Espacios verdes',2,0.700,6,0.500,96,0.300,0.500,-0.200,7,Alto
+'Reciclaje y residuos',0,1.000,6,0.500,108,0.000,0.500,-0.500,6,Medio
+'Energía limpia',0,0.375,5,0.800,88,0.625,0.500,0.125,7,Bajo
+'Agua y saneamiento',0,0.143,3,0.667,96,0.857,0.500,0.357,9,Medio
+'Agua y saneamiento',0,0.375,6,0.833,91,0.625,0.495,0.130,12,Bajo
+'Educación ambiental',0,0.333,9,0.778,105,0.667,0.495,0.171,12,Medio
+'Manglares y ciénagas',0,0.800,6,0.500,112,0.200,0.500,-0.300,4,Medio
+'Limpieza de playas',0,0.667,5,0.400,146,0.333,0.500,-0.167,3,Medio
+'Agua y saneamiento',0,1.000,7,0.000,151,0.000,0.497,-0.497,0,Alto
+'Reciclaje y residuos',0,0.625,10,0.400,142,0.375,0.500,-0.125,7,Medio
+'Educación ambiental',0,0.714,6,0.667,86,0.286,0.500,-0.214,6,Medio
+'Huertas comunitarias',0,0.714,3,0.667,178,0.286,0.500,-0.214,5,Alto
+'Reforestación',0,0.600,4,1.000,179,0.400,0.497,-0.097,6,Medio
+'Espacios verdes',0,0.500,7,0.857,81,0.500,0.494,0.006,11,Bajo
+'Reforestación',11,0.800,4,0.750,146,0.200,0.500,-0.300,5,Alto
+'Fauna y aves',0,0.250,8,0.625,141,0.750,0.496,0.254,10,Medio
+'Huertas comunitarias',0,0.444,10,0.800,78,0.556,0.500,0.056,12,Medio
+'Calidad del aire',0,0.500,7,0.143,173,0.500,0.497,0.003,3,Alto
+'Limpieza de playas',34,0.800,3,0.667,137,0.200,0.496,-0.296,4,Alto
+'Canales y caños',0,0.250,5,0.600,46,0.750,0.500,0.250,9,Medio
+'Educación ambiental',5,0.500,7,0.714,66,0.500,0.500,0.000,11,Alto
+'Energía limpia',0,0.750,6,0.500,146,0.250,0.500,-0.250,4,Medio
+'Agua y saneamiento',12,0.800,5,0.200,65,0.200,0.492,-0.292,2,Alto
+'Calidad del aire',46,0.400,4,0.750,177,0.600,0.497,0.103,3,Alto
+'Espacios verdes',14,1.000,4,0.250,175,0.000,0.497,-0.497,3,Alto
+'Canales y caños',38,0.727,4,0.500,108,0.273,0.500,-0.227,8,Alto
+'Calidad del aire',0,0.667,5,1.000,55,0.333,0.491,-0.158,7,Bajo
+'Reciclaje y residuos',0,0.429,4,0.750,164,0.571,0.500,0.071,8,Medio
+'Huertas comunitarias',0,0.250,6,0.833,47,0.750,0.489,0.261,11,Bajo
+'Limpieza de playas',0,0.750,3,1.000,93,0.250,0.495,-0.245,5,Bajo
+'Espacios verdes',8,0.875,7,0.714,137,0.125,0.496,-0.371,9,Medio
+'Manglares y ciénagas',10,0.667,9,0.556,82,0.333,0.500,-0.167,11,Alto
+'Agua y saneamiento',0,0.778,7,0.714,179,0.222,0.497,-0.275,6,Medio
+'Reciclaje y residuos',0,0.800,4,0.500,111,0.200,0.495,-0.295,2,Bajo
+'Fauna y aves',10,1.000,3,0.667,68,0.000,0.500,-0.500,2,Alto
+'Reciclaje y residuos',0,0.667,8,0.750,79,0.333,0.494,-0.160,8,Bajo
+'Limpieza de playas',0,0.667,3,0.667,98,0.333,0.500,-0.167,4,Medio
+'Huertas comunitarias',0,0.615,6,0.833,73,0.385,0.493,-0.109,10,Bajo
+'Limpieza de playas',7,0.625,9,0.444,120,0.375,0.500,-0.125,5,Medio
+'Agua y saneamiento',14,1.000,5,0.000,51,0.000,0.490,-0.490,0,Alto
+'Reforestación',3,0.667,4,0.500,171,0.333,0.497,-0.164,8,Medio
+'Reforestación',0,0.500,7,0.571,93,0.500,0.495,0.005,8,Bajo
+'Espacios verdes',0,0.250,4,0.500,100,0.750,0.500,0.250,6,Medio
+'Educación ambiental',0,0.250,4,0.750,89,0.750,0.494,0.256,8,Bajo
+'Energía limpia',0,0.400,6,0.833,131,0.600,0.496,0.104,10,Bajo
+'Limpieza de playas',0,1.000,4,0.000,94,0.000,0.500,-0.500,0,Alto
+'Energía limpia',0,0.333,9,0.333,99,0.667,0.495,0.172,7,Alto
+'Reciclaje y residuos',2,0.583,9,0.556,49,0.417,0.490,-0.073,14,Medio
+'Huertas comunitarias',0,0.600,8,0.625,140,0.400,0.500,-0.100,10,Bajo
+'Energía limpia',0,0.333,3,1.000,60,0.667,0.500,0.167,9,Bajo
+'Manglares y ciénagas',20,0.800,3,0.333,108,0.200,0.500,-0.300,4,Alto
+'Educación ambiental',0,0.000,8,0.875,155,1.000,0.497,0.503,13,Bajo
+'Agua y saneamiento',0,0.444,10,0.600,59,0.556,0.492,0.064,13,Medio
+'Educación ambiental',0,0.200,3,1.000,152,0.800,0.500,0.300,11,Bajo
+'Espacios verdes',7,1.000,5,0.600,75,0.000,0.493,-0.493,5,Alto
+'Manglares y ciénagas',0,0.429,8,0.750,158,0.571,0.500,0.071,8,Bajo
+'Canales y caños',0,0.600,7,0.714,141,0.400,0.496,-0.096,9,Bajo
+'Educación ambiental',0,0.500,5,0.800,171,0.500,0.497,0.003,7,Bajo
+'Educación ambiental',13,0.375,3,1.000,105,0.625,0.495,0.130,7,Alto
+'Educación ambiental',0,0.250,3,1.000,66,0.750,0.500,0.250,8,Bajo
+'Calidad del aire',0,0.500,3,0.667,95,0.500,0.495,0.005,5,Bajo
+'Fauna y aves',6,0.600,10,0.600,115,0.400,0.496,-0.096,7,Medio
+'Energía limpia',0,0.500,7,0.714,141,0.500,0.496,0.004,10,Bajo
+'Reciclaje y residuos',3,1.000,5,0.800,83,0.000,0.494,-0.494,7,Alto
+'Manglares y ciénagas',0,1.000,5,0.400,126,0.000,0.500,-0.500,3,Alto
+'Fauna y aves',0,0.714,7,0.714,68,0.286,0.500,-0.214,8,Medio
+'Reforestación',0,0.500,3,1.000,98,0.500,0.500,0.000,6,Bajo
+'Agua y saneamiento',0,0.429,5,0.800,125,0.571,0.496,0.075,10,Bajo
+'Limpieza de playas',0,0.667,9,0.444,160,0.333,0.500,-0.167,6,Medio
+'Huertas comunitarias',0,0.500,9,0.667,116,0.500,0.500,0.000,12,Medio
+'Agua y saneamiento',22,0.800,3,0.333,144,0.200,0.500,-0.300,2,Alto
+'Canales y caños',20,0.800,9,0.556,99,0.200,0.495,-0.295,7,Alto
+'Espacios verdes',0,0.400,10,0.600,154,0.600,0.500,0.100,10,Bajo
+'Calidad del aire',0,0.500,8,0.625,135,0.500,0.496,0.004,10,Medio
+'Canales y caños',0,0.750,5,0.400,82,0.250,0.500,-0.250,4,Medio
+'Energía limpia',0,0.500,5,0.400,156,0.500,0.500,0.000,6,Alto
+'Canales y caños',0,0.857,7,0.429,70,0.143,0.500,-0.357,5,Medio
+'Limpieza de playas',0,0.500,5,0.800,75,0.500,0.493,0.007,10,Medio
+'Educación ambiental',0,0.750,5,0.800,174,0.250,0.500,-0.250,6,Bajo
+'Limpieza de playas',0,0.667,6,0.500,148,0.333,0.500,-0.167,7,Alto
+'Reciclaje y residuos',0,0.417,4,0.750,165,0.583,0.497,0.086,11,Medio
+'Huertas comunitarias',0,1.000,7,0.571,49,0.000,0.490,-0.490,4,Alto
+'Limpieza de playas',0,0.250,7,0.857,171,0.750,0.497,0.253,14,Bajo
+'Limpieza de playas',0,0.200,4,0.500,134,0.800,0.500,0.300,8,Medio
+'Huertas comunitarias',0,0.600,6,0.500,152,0.400,0.500,-0.100,5,Medio
+'Espacios verdes',1,0.600,9,0.556,158,0.400,0.500,-0.100,11,Bajo
+'Canales y caños',0,1.000,9,0.111,150,0.000,0.500,-0.500,2,Alto
+'Calidad del aire',0,0.615,5,0.600,68,0.385,0.500,-0.115,9,Medio
+'Espacios verdes',1,0.500,8,0.500,90,0.500,0.500,0.000,9,Medio
+'Reforestación',0,1.000,9,0.444,53,0.000,0.491,-0.491,4,Alto
+'Educación ambiental',0,1.000,5,0.400,82,0.000,0.500,-0.500,3,Medio
+'Calidad del aire',29,0.400,4,0.500,142,0.600,0.500,0.100,7,Alto
+'Educación ambiental',16,0.833,4,0.750,75,0.167,0.493,-0.327,6,Alto
+'Limpieza de playas',0,0.500,9,0.556,137,0.500,0.496,0.004,7,Bajo
+'Manglares y ciénagas',15,0.667,9,0.667,178,0.333,0.500,-0.167,11,Alto
+'Reforestación',0,0.167,8,0.625,148,0.833,0.500,0.333,10,Alto
+'Espacios verdes',28,0.800,7,0.714,153,0.200,0.497,-0.297,9,Alto
+'Educación ambiental',48,0.625,5,0.200,133,0.375,0.496,-0.121,5,Alto
+'Fauna y aves',10,0.857,7,0.286,118,0.143,0.500,-0.357,2,Alto
+'Fauna y aves',14,0.750,5,0.200,115,0.250,0.496,-0.246,3,Alto
+'Reciclaje y residuos',0,0.444,9,0.889,50,0.556,0.500,0.056,17,Medio
+'Canales y caños',2,1.000,8,0.125,102,0.000,0.500,-0.500,1,Alto
+'Energía limpia',0,0.667,8,0.875,142,0.333,0.500,-0.167,13,Medio
+'Reforestación',0,0.455,6,0.667,171,0.545,0.497,0.048,10,Medio
+'Calidad del aire',23,0.444,10,0.500,175,0.556,0.497,0.058,9,Alto
+'Canales y caños',5,0.600,4,0.750,94,0.400,0.500,-0.100,7,Bajo
+'Calidad del aire',2,1.000,7,0.143,86,0.000,0.500,-0.500,1,Alto
+'Reforestación',28,0.714,6,0.833,84,0.286,0.500,-0.214,11,Alto
+'Educación ambiental',0,0.333,8,1.000,169,0.667,0.497,0.170,19,Bajo
+'Agua y saneamiento',0,0.500,6,0.667,147,0.500,0.497,0.003,7,Bajo
+'Agua y saneamiento',0,0.286,9,0.667,169,0.714,0.497,0.217,12,Bajo
+'Reforestación',12,0.667,4,0.750,50,0.333,0.500,-0.167,5,Alto
+'Calidad del aire',4,1.000,6,0.167,48,0.000,0.500,-0.500,1,Alto
+'Reforestación',0,0.444,8,0.875,62,0.556,0.500,0.056,12,Bajo
+'Energía limpia',0,0.444,8,0.625,163,0.556,0.497,0.059,10,Medio
+'Canales y caños',21,0.700,9,0.889,144,0.300,0.500,-0.200,13,Alto
+'Reforestación',0,0.300,4,1.000,154,0.700,0.500,0.200,12,Bajo
+'Huertas comunitarias',0,0.167,6,0.333,107,0.833,0.495,0.338,8,Alto
+'Agua y saneamiento',8,0.667,5,0.600,115,0.333,0.496,-0.162,8,Medio
+'Reciclaje y residuos',5,0.833,9,0.778,153,0.167,0.497,-0.330,9,Alto
+'Manglares y ciénagas',21,1.000,10,0.500,102,0.000,0.500,-0.500,11,Alto
+'Fauna y aves',0,0.250,3,1.000,180,0.750,0.500,0.250,13,Bajo
+'Reciclaje y residuos',0,0.500,6,0.833,111,0.500,0.495,0.005,9,Bajo
+'Huertas comunitarias',0,0.625,10,0.300,100,0.375,0.500,-0.125,7,Alto
+'Manglares y ciénagas',37,0.500,8,0.625,147,0.500,0.497,0.003,10,Alto
+'Fauna y aves',0,0.222,5,1.000,161,0.778,0.497,0.281,13,Bajo
+'Fauna y aves',0,0.700,7,0.571,130,0.300,0.500,-0.200,6,Medio
+'Energía limpia',2,0.375,9,0.667,58,0.625,0.500,0.125,12,Medio
+'Limpieza de playas',0,0.556,10,0.600,180,0.444,0.500,-0.056,9,Medio
+'Espacios verdes',0,0.286,5,0.800,141,0.714,0.496,0.218,9,Bajo
+'Agua y saneamiento',20,0.857,5,0.400,71,0.143,0.493,-0.350,4,Alto
+'Reforestación',0,0.556,7,0.857,111,0.444,0.495,-0.051,8,Bajo
+'Limpieza de playas',0,0.250,8,0.875,143,0.750,0.497,0.253,13,Bajo
+'Agua y saneamiento',7,0.833,6,0.500,124,0.167,0.500,-0.333,4,Alto
+'Espacios verdes',3,0.333,9,0.556,134,0.667,0.500,0.167,9,Bajo
+'Limpieza de playas',2,1.000,9,0.556,163,0.000,0.497,-0.497,7,Medio
+'Espacios verdes',2,0.500,10,1.000,108,0.500,0.500,0.000,13,Bajo
+'Huertas comunitarias',0,1.000,5,0.400,76,0.000,0.500,-0.500,3,Medio
+'Agua y saneamiento',0,0.500,8,0.750,120,0.500,0.500,0.000,8,Bajo
+'Fauna y aves',0,0.600,9,0.222,136,0.400,0.500,-0.100,2,Alto
+'Agua y saneamiento',0,0.667,5,0.200,131,0.333,0.496,-0.163,4,Alto
+'Agua y saneamiento',29,0.833,4,0.750,128,0.167,0.500,-0.333,6,Alto
+'Calidad del aire',0,0.222,8,0.750,48,0.778,0.500,0.278,17,Bajo
+'Huertas comunitarias',0,0.333,9,0.556,49,0.667,0.490,0.177,10,Bajo
+'Limpieza de playas',0,0.625,10,0.800,71,0.375,0.493,-0.118,16,Medio
+'Huertas comunitarias',0,0.500,4,1.000,140,0.500,0.500,0.000,10,Bajo
+'Energía limpia',0,0.375,5,0.600,140,0.625,0.500,0.125,6,Medio
+'Huertas comunitarias',0,1.000,6,0.333,142,0.000,0.500,-0.500,2,Alto
+'Fauna y aves',8,1.000,4,1.000,97,0.000,0.495,-0.495,5,Alto
+'Manglares y ciénagas',7,0.889,6,0.500,164,0.111,0.500,-0.389,5,Bajo
+'Huertas comunitarias',0,0.714,6,0.667,175,0.286,0.497,-0.211,7,Medio
+'Calidad del aire',0,1.000,6,0.333,103,0.000,0.495,-0.495,2,Alto
+'Espacios verdes',0,1.000,7,0.429,104,0.000,0.500,-0.500,3,Alto
+'Manglares y ciénagas',0,0.500,5,1.000,134,0.500,0.500,0.000,11,Medio
+'Reciclaje y residuos',0,0.600,9,0.333,108,0.400,0.500,-0.100,5,Medio
+'Agua y saneamiento',0,0.750,4,0.500,64,0.250,0.500,-0.250,3,Medio
+'Energía limpia',3,0.714,5,0.600,54,0.286,0.500,-0.214,4,Alto
+'Energía limpia',0,0.556,10,0.600,150,0.444,0.500,-0.056,10,Medio
+'Huertas comunitarias',0,0.667,8,0.500,88,0.333,0.500,-0.167,8,Medio
+'Reforestación',15,0.778,10,0.200,108,0.222,0.500,-0.278,6,Alto
+'Reforestación',0,0.250,5,0.800,101,0.750,0.495,0.255,10,Bajo
+'Reciclaje y residuos',0,1.000,4,0.750,61,0.000,0.492,-0.492,5,Medio
+'Reforestación',0,0.167,7,0.857,95,0.833,0.495,0.339,12,Bajo
+'Reciclaje y residuos',0,0.400,3,0.667,119,0.600,0.496,0.104,5,Medio
+'Huertas comunitarias',8,1.000,3,1.000,52,0.000,0.500,-0.500,4,Alto
+'Canales y caños',0,0.200,8,0.625,121,0.800,0.496,0.304,10,Bajo
+'Educación ambiental',23,0.909,4,0.750,105,0.091,0.495,-0.404,5,Alto
+'Huertas comunitarias',1,0.500,10,0.500,149,0.500,0.497,0.003,10,Medio
+'Educación ambiental',0,0.571,4,0.750,58,0.429,0.500,-0.071,6,Medio
+'Canales y caños',0,0.400,4,1.000,130,0.600,0.500,0.100,10,Bajo
+'Huertas comunitarias',0,0.714,8,0.500,129,0.286,0.496,-0.210,9,Medio
+'Reforestación',0,0.250,8,0.375,141,0.750,0.496,0.254,5,Medio
+'Energía limpia',1,0.857,7,0.429,116,0.143,0.500,-0.357,5,Alto
+'Agua y saneamiento',0,0.429,10,0.500,131,0.571,0.496,0.075,13,Medio
+'Reforestación',0,0.667,8,0.250,121,0.333,0.496,-0.163,2,Alto
+'Fauna y aves',5,1.000,5,0.400,59,0.000,0.492,-0.492,4,Alto
+'Manglares y ciénagas',0,0.500,3,0.667,147,0.500,0.497,0.003,6,Medio
+'Espacios verdes',4,0.500,10,0.800,149,0.500,0.497,0.003,13,Bajo
+'Manglares y ciénagas',3,0.500,6,0.333,98,0.500,0.500,0.000,5,Alto
+'Limpieza de playas',0,0.286,6,0.667,61,0.714,0.492,0.222,10,Medio
+'Calidad del aire',0,1.000,4,0.750,80,0.000,0.500,-0.500,5,Medio
+'Reciclaje y residuos',13,1.000,8,0.250,53,0.000,0.491,-0.491,3,Alto
+'Huertas comunitarias',37,0.545,3,0.667,103,0.455,0.495,-0.041,7,Alto
+'Canales y caños',2,0.800,9,0.333,62,0.200,0.500,-0.300,6,Alto
+'Educación ambiental',6,1.000,3,1.000,49,0.000,0.490,-0.490,4,Alto
+'Agua y saneamiento',0,1.000,6,0.833,120,0.000,0.500,-0.500,5,Bajo
+'Reciclaje y residuos',1,0.667,10,0.500,145,0.333,0.497,-0.163,6,Medio
+'Canales y caños',0,0.750,3,0.667,132,0.250,0.500,-0.250,4,Bajo
+'Canales y caños',8,1.000,10,0.100,53,0.000,0.491,-0.491,1,Alto
+'Educación ambiental',8,0.600,8,0.500,105,0.400,0.495,-0.095,9,Alto
+'Reforestación',0,0.375,5,1.000,62,0.625,0.500,0.125,11,Medio
+'Agua y saneamiento',0,1.000,10,0.400,166,0.000,0.500,-0.500,4,Alto
+'Limpieza de playas',25,0.600,4,0.750,98,0.400,0.500,-0.100,6,Alto
+'Agua y saneamiento',0,0.625,3,1.000,165,0.375,0.497,-0.122,6,Medio
+'Limpieza de playas',6,1.000,5,0.200,48,0.000,0.500,-0.500,1,Alto
+'Energía limpia',0,0.333,3,0.667,171,0.667,0.497,0.170,4,Medio
+'Huertas comunitarias',7,0.800,7,0.286,72,0.200,0.500,-0.300,3,Alto
+'Huertas comunitarias',0,0.333,10,0.400,65,0.667,0.492,0.174,5,Medio
+'Canales y caños',0,0.200,8,0.750,116,0.800,0.500,0.300,13,Bajo
+'Educación ambiental',0,0.000,3,0.667,159,1.000,0.497,0.503,7,Medio
+'Reciclaje y residuos',0,0.600,3,1.000,104,0.400,0.500,-0.100,7,Alto
+'Calidad del aire',42,0.500,7,0.714,178,0.500,0.500,0.000,9,Alto
+'Limpieza de playas',6,0.750,3,0.333,174,0.250,0.500,-0.250,2,Alto

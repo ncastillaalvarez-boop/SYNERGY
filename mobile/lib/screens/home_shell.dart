@@ -4,7 +4,9 @@ import '../models/auth_session.dart';
 import '../providers/locale_provider.dart';
 import '../providers/theme_provider.dart';
 import '../services/auth_service.dart';
+import '../utils/app_config.dart';
 import '../utils/app_localizations.dart';
+import '../widgets/server_dialog.dart';
 import 'admin_users_screen.dart';
 import 'profile_screen.dart';
 import 'projects_screen.dart';
@@ -32,8 +34,11 @@ class _HomeShellState extends State<HomeShell> {
   var _index = 0;
 
   Future<void> _logout() async {
-    await AuthService().logout();
-    widget.onLogout();
+    try {
+      await AuthService().logout();
+    } finally {
+      widget.onLogout(); // vuelve al login aunque no haya conexión
+    }
   }
 
   void _showSettingsMenu(BuildContext context, AppLocalizations loc) {
@@ -52,6 +57,22 @@ class _HomeShellState extends State<HomeShell> {
               ),
             ),
             const Divider(),
+            // Servidor (para cambiar la IP sin cerrar sesión)
+            ListTile(
+              leading: const Icon(Icons.dns_outlined),
+              title: const Text('Servidor'),
+              subtitle: Text(AppConfig.apiBaseUrl),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+              onTap: () async {
+                Navigator.pop(context);
+                final url = await mostrarDialogoServidor(this.context);
+                if (url != null && mounted) {
+                  ScaffoldMessenger.of(this.context).showSnackBar(
+                    SnackBar(content: Text('Servidor: $url. Desliza hacia abajo o toca Reintentar para recargar.')),
+                  );
+                }
+              },
+            ),
             // Tema
             ListTile(
               leading: const Icon(Icons.brightness_4_outlined),

@@ -13,14 +13,21 @@ import 'utils/app_localizations.dart';
 import 'utils/app_theme.dart';
 import 'widgets/app_loading.dart';
 
+/// true solo si Firebase quedó configurado (requiere android/app/google-services.json).
+/// Sin ese archivo la app funciona igual, solo que sin notificaciones push.
+bool firebaseDisponible = false;
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Inicializar Firebase
+
+  // Dirección del servidor guardada desde la pantalla de login
+  await AppConfig.load();
+
   try {
     await Firebase.initializeApp();
-  } catch (e) {
-    // Firebase ya está inicializado
+    firebaseDisponible = true;
+  } catch (_) {
+    firebaseDisponible = false;
   }
 
   runApp(const SynergyApp());
@@ -54,11 +61,13 @@ class _SynergyAppState extends State<SynergyApp> {
       _localeProvider.loadLocale(),
     ]);
 
-    // Inicializar notificaciones
-    try {
-      await NotificationService().initialize();
-    } catch (e) {
-      // Firebase Messaging no disponible
+    // Notificaciones push solo si Firebase está configurado
+    if (firebaseDisponible) {
+      try {
+        await NotificationService().initialize();
+      } catch (_) {
+        // Sin permisos o sin servicios de Google: la app sigue funcionando
+      }
     }
   }
 

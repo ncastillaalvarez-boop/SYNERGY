@@ -15,6 +15,7 @@ public class FiltroProyectos {
     private String categoria;
     private String organizacion;
     private String ubicacion;
+    private String riesgo; // Alto, Medio, Bajo (solo administrador)
     private String orden = "recientes";
     private int page = 1;
 
@@ -27,7 +28,7 @@ public class FiltroProyectos {
 
     /** Hay filtros de texto o de clasificación (el estado se muestra aparte). */
     public boolean isActivo() {
-        return tiene(q) || tiene(categoria) || tiene(organizacion) || tiene(ubicacion);
+        return tiene(q) || tiene(categoria) || tiene(organizacion) || tiene(ubicacion) || tiene(riesgo);
     }
 
     /** Parámetros actuales (sin la página) para construir los enlaces de paginación. */
@@ -38,6 +39,7 @@ public class FiltroProyectos {
         agregar(m, "categoria", categoria);
         agregar(m, "organizacion", organizacion);
         agregar(m, "ubicacion", ubicacion);
+        agregar(m, "riesgo", riesgo);
         if (tiene(orden) && !"recientes".equals(orden)) {
             m.add("orden", orden);
         }
@@ -64,6 +66,8 @@ public class FiltroProyectos {
     public void setOrganizacion(String organizacion) { this.organizacion = organizacion; }
     public String getUbicacion() { return ubicacion; }
     public void setUbicacion(String ubicacion) { this.ubicacion = ubicacion; }
+    public String getRiesgo() { return riesgo; }
+    public void setRiesgo(String riesgo) { this.riesgo = riesgo; }
     public String getOrden() { return orden; }
     public void setOrden(String orden) { this.orden = orden; }
     public int getPage() { return page; }

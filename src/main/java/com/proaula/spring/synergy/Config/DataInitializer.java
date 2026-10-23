@@ -103,6 +103,10 @@ public class DataInitializer implements ApplicationRunner {
     @Value("${synergy.datos.comentarios:1500}")
     private int cantidadComentarios;
 
+    /** Proyectos terminados con historial completo para entrenar el modelo predictivo (0 = no generar). */
+    @Value("${synergy.datos.historial-riesgo:600}")
+    private int cantidadHistorial;
+
     /** true = en el próximo arranque respalda, borra y regenera TODO (volver a false después). */
     @Value("${synergy.datos.regenerar-todo:false}")
     private boolean regenerarTodo;
@@ -179,6 +183,13 @@ public class DataInitializer implements ApplicationRunner {
         // 6. Códigos de proyecto
         asignarCodigosFaltantes();
 
+        // 7. Historial de proyectos terminados para el modelo predictivo (se agrega una sola vez,
+        //    sin tocar los datos existentes)
+        if (generarDatos && cantidadHistorial > 0 && !mongoTemplate.exists(
+                Query.query(Criteria.where("_id").is(GeneradorDatos.MARCA_HISTORIAL)), CodigoProyectoService.COLECCION)) {
+            generador.generarHistorial(idsPorRol("LIDER"), idsPorRol("PARTICIPANTE"), cantidadHistorial);
+        }
+
         log.info("""
 
             ✔ Synergy listo: {} usuarios, {} proyectos.
@@ -208,6 +219,14 @@ public class DataInitializer implements ApplicationRunner {
     }
 
     /** Guarda cada colección en respaldos/AAAAMMDD_HHmmss/coleccion.json y luego la borra. */
+    /** Ids de los usuarios activos con un rol (solo el campo _id). */
+    private List<String> idsPorRol(String rol) {
+        Query q = Query.query(Criteria.where("rol").is(rol).and("activo").is(true));
+        q.fields().include("_id");
+        return mongoTemplate.find(q, org.bson.Document.class, "usuarios").stream()
+                .map(d -> String.valueOf(d.get("_id"))).toList();
+    }
+
     private void respaldarYLimpiar() {
         String marca = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
         Path carpeta = Paths.get(carpetaRespaldos, marca).toAbsolutePath();

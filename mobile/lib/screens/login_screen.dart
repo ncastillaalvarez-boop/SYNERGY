@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import '../models/auth_session.dart';
 import '../services/auth_service.dart';
 import '../utils/api_exception.dart';
+import '../utils/app_config.dart';
 import '../widgets/gradient_button.dart';
+import '../widgets/server_dialog.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -36,10 +38,25 @@ class _LoginScreenState extends State<LoginScreen> {
       final session = await _service.login(_email.text, _password.text);
       widget.onAuthenticated(session);
     } on ApiException catch (error) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+      _mostrar(error.message);
+    } catch (_) {
+      _mostrar('Ocurrió un error inesperado. Intenta de nuevo.');
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
+  }
+
+  void _mostrar(String mensaje) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(mensaje), duration: const Duration(seconds: 6)));
+  }
+
+  /// Permite cambiar la dirección del servidor (IP del PC) sin recompilar la app.
+  Future<void> _configurarServidor() async {
+    final url = await mostrarDialogoServidor(context);
+    if (url == null) return;
+    if (mounted) setState(() {});
+    _mostrar('Servidor: $url');
   }
 
   Future<void> _openRegister() async {
@@ -63,15 +80,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Container(
-                            width: 70,
-                            height: 70,
-                            decoration: const BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: LinearGradient(colors: [Color(0xFF0B6E5C), Color(0xFF1677A8)]),
-                            ),
-                            child: const Icon(Icons.hub_outlined, color: Colors.white, size: 38),
-                          ),
+                          Center(child: Image.asset('assets/logo-mark.png', width: 92, height: 92)),
                           const SizedBox(height: 22),
                           Text('Bienvenido a Synergy', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800)),
                           const SizedBox(height: 8),
@@ -108,6 +117,12 @@ class _LoginScreenState extends State<LoginScreen> {
                               const Text('¿Aún no tienes cuenta?'),
                               TextButton(onPressed: _submitting ? null : _openRegister, child: const Text('Regístrate')),
                             ],
+                          ),
+                          const Divider(height: 28),
+                          TextButton.icon(
+                            onPressed: _submitting ? null : _configurarServidor,
+                            icon: const Icon(Icons.dns_outlined, size: 18),
+                            label: Text('Servidor: ${AppConfig.apiBaseUrl}', overflow: TextOverflow.ellipsis),
                           ),
                         ],
                       ),

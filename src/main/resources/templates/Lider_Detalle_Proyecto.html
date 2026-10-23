@@ -47,6 +47,8 @@
         </div>
       </header>
 
+      <div th:replace="~{fragments/riesgo :: panel(${proyecto})}"></div>
+
       <div th:if="${mensaje}" class="alert alert-success" data-autohide>
         <i class="fa-solid fa-circle-check"></i>
         <span th:text="${mensaje}"></span>

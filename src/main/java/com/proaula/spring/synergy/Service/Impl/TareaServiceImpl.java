@@ -16,11 +16,30 @@ public class TareaServiceImpl implements TareaService{
     @Autowired
     private TareaRepository tareaRepository;
 
+    /** Recalcula el riesgo del proyecto cuando cambian sus tareas (@Lazy evita dependencias circulares). */
+    @Autowired
+    @org.springframework.context.annotation.Lazy
+    private com.proaula.spring.synergy.Service.RiesgoProyectoService riesgoService;
+
+    /** Marca la fecha de cambio (el modelo de riesgo la usa como fecha de cumplimiento) y guarda. */
+    private Tarea guardarYRecalcular(Tarea tarea) {
+        java.time.LocalDateTime ahora = java.time.LocalDateTime.now();
+        if (tarea.getFechaCreacion() == null) {
+            tarea.setFechaCreacion(ahora);
+        }
+        tarea.setFechaActualizacion(ahora);
+        Tarea guardada = tareaRepository.save(tarea);
+        if (riesgoService != null) {
+            riesgoService.recalcularProyecto(guardada.getIdProyecto());
+        }
+        return guardada;
+    }
+
     public Tarea guardarTarea(Tarea tarea, List<String> usuariosIds) {
         if (usuariosIds != null && !usuariosIds.isEmpty()) {
             tarea.setUsuariosAsignados(usuariosIds);
         }
-        return tareaRepository.save(tarea);
+        return guardarYRecalcular(tarea);
     }
 
     public List<Tarea> obtenerTareasPorUsuario(String usuarioId) {
@@ -40,7 +59,7 @@ public class TareaServiceImpl implements TareaService{
         if (tareaOpt.isPresent()) {
             Tarea tarea = tareaOpt.get();
             tarea.setEstado(nuevoEstado);
-            tareaRepository.save(tarea);
+            guardarYRecalcular(tarea);
         }
     }
 
@@ -49,7 +68,7 @@ public class TareaServiceImpl implements TareaService{
         if (tareaOpt.isPresent()) {
             Tarea tarea = tareaOpt.get();
             tarea.setEstado("COMPLETADA");
-            tareaRepository.save(tarea);
+            guardarYRecalcular(tarea);
         }
     }
 
@@ -58,10 +77,14 @@ public class TareaServiceImpl implements TareaService{
     }
 
     public Tarea guardar(Tarea tarea) {
-        return tareaRepository.save(tarea);
+        return guardarYRecalcular(tarea);
     }
 
     public void eliminar(String id) {
+        String idProyecto = tareaRepository.findById(id).map(Tarea::getIdProyecto).orElse(null);
         tareaRepository.deleteById(id);
+        if (riesgoService != null) {
+            riesgoService.recalcularProyecto(idProyecto);
+        }
     }
 }

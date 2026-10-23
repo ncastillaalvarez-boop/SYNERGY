@@ -23,6 +23,10 @@ class ProjectService {
 
   Future<void> delete(String id) => _client.delete('/proyectos/$id');
 
+  /// Riesgo calculado por el modelo predictivo: nivel (Bajo/Medio/Alto), probabilidad, motivos y sugerencia.
+  Future<Map<String, dynamic>> getRisk(String id) async =>
+      Map<String, dynamic>.from(await _client.get('/proyectos/$id/riesgo') as Map);
+
   List<Proyecto> _projects(dynamic json) => (json as List)
       .map((item) => Proyecto.fromJson(Map<String, dynamic>.from(item as Map)))
       .toList();

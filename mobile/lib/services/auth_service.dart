@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import '../models/auth_session.dart';
 import '../models/usuario.dart';
 import 'api_client.dart';
@@ -42,11 +44,14 @@ class AuthService {
     });
   }
 
+  /// Cierra la sesión en el teléfono SIEMPRE. Avisar al servidor es opcional:
+  /// si no hay conexión, antes la excepción impedía salir de la app.
   Future<void> logout() async {
+    await _sessionStore.clear();
     try {
-      await _client.post('/auth/logout');
-    } finally {
-      await _sessionStore.clear();
+      await _client.post('/auth/logout').timeout(const Duration(seconds: 3));
+    } catch (_) {
+      // sin conexión: el token JWT simplemente deja de usarse
     }
   }
 }

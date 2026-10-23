@@ -67,6 +67,9 @@ public class BusquedaService {
         if (tiene(f.getUbicacion())) {
             condiciones.add(Criteria.where("ubicacion").is(f.getUbicacion()));
         }
+        if (tiene(f.getRiesgo()) && RiesgoCalculadora.NIVELES.contains(f.getRiesgo())) {
+            condiciones.add(Criteria.where("nivelRiesgo").is(f.getRiesgo()));
+        }
         if (tiene(f.getQ())) {
             Pattern p = patron(f.getQ());
             condiciones.add(new Criteria().orOperator(
@@ -116,11 +119,32 @@ public class BusquedaService {
         return conteo;
     }
 
+    /** Proyectos activos por nivel de riesgo (Alto, Medio, Bajo y "Sin datos"). */
+    public Map<String, Long> activosPorRiesgo() {
+        Map<String, Long> conteo = new java.util.LinkedHashMap<>();
+        for (String nivel : List.of("Alto", "Medio", "Bajo")) {
+            conteo.put(nivel, mongoTemplate.count(Query.query(Criteria.where("estado").is("ACTIVO").and("nivelRiesgo").is(nivel)), Proyecto.class));
+        }
+        conteo.put("Sin datos", mongoTemplate.count(Query.query(Criteria.where("estado").is("ACTIVO").and("nivelRiesgo").exists(false)), Proyecto.class));
+        return conteo;
+    }
+
+    /** Número de proyectos por categoría (todas las categorías del catálogo, en orden). */
+    public Map<String, Long> proyectosPorCategoria() {
+        Map<String, Long> conteo = new java.util.LinkedHashMap<>();
+        for (String c : Catalogos.CATEGORIAS) {
+            conteo.put(c, mongoTemplate.count(Query.query(Criteria.where("categoria").is(c)), Proyecto.class));
+        }
+        return conteo;
+    }
+
     private static Sort ordenProyectos(String orden) {
         if (orden == null) {
             orden = "recientes";
         }
         return switch (orden) {
+            // Prioridad del modelo predictivo: primero los de mayor riesgo
+            case "riesgo" -> Sort.by(Sort.Order.desc("puntajeRiesgo"), Sort.Order.asc("fechaFin"));
             case "nombre" -> Sort.by(Sort.Direction.ASC, "nombre");
             case "inicio" -> Sort.by(Sort.Direction.ASC, "fechaInicio");
             case "fin" -> Sort.by(Sort.Direction.ASC, "fechaFin");

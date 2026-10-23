@@ -84,10 +84,10 @@ Opciones en `application.properties` (sección *DATOS DE PRUEBA*):
 
 | Rol | Puede |
 |---|---|
-| **Administrador** | Buscar y filtrar proyectos y usuarios (paginado), aprobar o rechazar propuestas, eliminar proyectos (con sus tareas, entregas y comentarios), cambiar roles, activar/desactivar cuentas, ver historial y el árbol de proyectos (categoría → barrio → proyecto). |
-| **Líder** | Crear/editar/completar/eliminar sus proyectos, asignar tareas a los inscritos, ver avance con gráficas, revisar y descargar entregas, comentar. |
+| **Administrador** | Buscar y filtrar proyectos y usuarios (paginado), aprobar o rechazar propuestas, eliminar proyectos (con sus tareas, entregas y comentarios), cambiar roles, activar/desactivar cuentas, ver historial y el árbol de proyectos (categoría → barrio → proyecto). Ve gráficas por estado, categoría y riesgo, el **semáforo de riesgo** de cada proyecto activo, la alerta de proyectos en riesgo alto y descarga el dataset del modelo. |
+| **Líder** | Crear/editar/completar/eliminar sus proyectos, asignar tareas a los inscritos, ver avance con gráficas, tareas vencidas y por vencer, el riesgo de cada proyecto con motivos y sugerencia, revisar y descargar entregas, comentar. Lista de voluntarios con buscador, filtro por proyecto y páginas de 20. |
 | **Voluntario** | Explorar proyectos con buscador y filtros (estado, categoría, barrio, organización), inscribirse o salir, ver sus tareas, entregar archivos (máx. 10 MB), comentar, proponer proyectos (quedan *pendientes*; al aprobarse pasa a ser líder). |
-| **Invitado** | Ver los proyectos activos y completados con los mismos filtros; al pulsar *Participar* se le pide crear cuenta. |
+| **Invitado** | Ver los proyectos activos y completados con los mismos filtros; al pulsar *Participar* se le pide crear cuenta. *Volver* (en elegir rol y en el registro) regresa a la lista que estaba viendo, y al registrarse vuelve allí con su cuenta para inscribirse. |
 
 Búsqueda: no distingue mayúsculas ni tildes (`reforestacion` encuentra *Reforestación*) y busca en nombre, descripción, código, barrio y categoría. Las listas se paginan en el servidor (12 proyectos o 20 usuarios por página), así funcionan igual con 30 que con 30.000 registros.
 
@@ -110,7 +110,9 @@ Sesión web: 13 minutos de inactividad, máximo 2 sesiones por usuario.
 ```
 Synergy/
 ├── pom.xml
-├── setup_synergy_db.js            Script de MongoDB con datos de prueba
+├── setup_synergy_db.js            Borra las colecciones (los datos se regeneran solos)
+├── docs/diagramas/                Diagramas del modelo 4+1 (PNG y PDF)
+├── docs/modelo-predictivo/        Notebook de Colab, dataset (CSV/ARFF) y prueba del modelo
 ├── mobile/                        App Flutter (cliente de /api/**)
 └── src/main/
     ├── java/com/proaula/spring/synergy/
@@ -118,6 +120,7 @@ Synergy/
     │   ├── Controller/            Web (Thymeleaf) y REST para la app (Api*, AuthController, JWT)
     │   ├── Dto/                   Objetos de vista (EntregaVista, ComentarioVista…)
     │   ├── Model/                 Documentos de MongoDB
+    │   ├── Service/ModeloRiesgo.java      Modelo exportado desde Colab (m2cgen)
     │   ├── Repository/            Repositorios Spring Data
     │   ├── Security/              SesionUtil, GoogleLoginSuccessHandler, JWT
     │   └── Service/               Lógica de negocio
@@ -137,7 +140,23 @@ Synergy/
 - Iconos propios en `static/img/icons/` (minúsculas): `inicio, proyectos, comunidad, perfil, notificaciones, ajustes, buscar, agregar, reforestacion, logro, tareas, meta-semanal, progreso, reporte-fotografico`.
 - Todas las rutas de imágenes usan `/img/...` en **minúsculas** (la carpeta debe llamarse `img`, no `IMG`; en Linux/servidores importa).
 
-## 8. App móvil (Flutter)
+## 8. Modelo predictivo de riesgo
+
+Clasifica cada proyecto **activo** en riesgo **Bajo, Medio o Alto** de no cumplir sus objetivos (propuesta del proyecto de aula).
+
+| Paso | Dónde |
+|---|---|
+| 1. Datos | Al primer arranque se agregan **600 proyectos terminados** con historial completo (tareas con vencimiento y fecha de cumplimiento, entregas y comentarios). `synergy.datos.historial-riesgo=600` (se agregan una sola vez, sin tocar lo existente). |
+| 2. Dataset | Panel del administrador → *Dataset CSV* / *ARFF (Weka)*. Cada fila es un proyecto terminado: variables medidas **a la mitad del proyecto** y `nivel_riesgo` según **cómo terminó** (así el modelo anticipa y no copia la regla). |
+| 3. Colab | `docs/modelo-predictivo/Synergy_modelo_predictivo.ipynb`: pandas, numpy y matplotlib para explorar y preparar; compara árbol de decisión, random forest y regresión logística (exactitud, matriz de confusión, precisión y recall por clase). |
+| 4. Exportar | El notebook usa **m2cgen** para convertir el modelo elegido en `Service/ModeloRiesgo.java` (sin Python dentro de Synergy). `prueba_modelo.csv` comprueba que Java y Python dan el mismo resultado. |
+| 5. Uso | `RiesgoProyectoService` calcula las variables con `RiesgoCalculadora` (las mismas fórmulas del dataset), predice con `ModeloRiesgo` y guarda nivel, probabilidad, motivos y sugerencia en cada proyecto. Se recalcula al arrancar, cada noche (`synergy.riesgo.cron`), al cambiar tareas y con el botón *Recalcular*. App: `GET /api/proyectos/{id}/riesgo` (líder o administrador). |
+
+Variables: días de retraso, % de tareas pendientes, participantes, tasa de participación (voluntarios con al menos una entrega o comentario), duración, avance real, avance esperado, brecha de avance, número de actividades y categoría.
+
+Para volver a entrenar con datos nuevos: descargar el CSV, abrir el notebook en Google Colab, ejecutar todo y reemplazar `ModeloRiesgo.java` por el que descarga el notebook.
+
+## 9. App móvil (Flutter)
 
 ```bash
 cd mobile
@@ -145,11 +164,15 @@ flutter pub get
 flutter run
 ```
 
-La URL del backend está en `mobile/lib/utils/app_config.dart` (`http://10.0.2.2:8080/api` para el emulador de Android; en un teléfono real usa la IP de tu PC). Las cuentas de prueba sirven también en la app.
+**Dirección del servidor:** en la pantalla de inicio de sesión, botón *Servidor* (abajo).
+- Emulador de Android: `10.0.2.2:8080` (valor por defecto).
+- Teléfono real: la IP de tu PC (en Windows: `ipconfig` → *Dirección IPv4*, p. ej. `192.168.1.10:8080`), con el teléfono **en la misma red Wi-Fi**. Si no conecta, permite Java en el Firewall de Windows (o abre el puerto 8080 para redes privadas).
+
+Si no hay conexión, la app ahora muestra el motivo (antes no mostraba nada y parecía que el botón no funcionaba). Firebase es opcional: sin `android/app/google-services.json` la app funciona igual, solo sin notificaciones push. Las cuentas de prueba sirven también en la app.
 
 Endpoints principales: `POST /api/auth/login`, `POST /api/auth/registrar`, `/api/proyectos/**`, `/api/tareas/**`, `/api/entregas/**`, `/api/comentarios/**`, `/api/admin/**` (solo administrador). Sin token válido responden `401` en JSON.
 
-## 9. Problemas comunes
+## 10. Problemas comunes
 
 | Síntoma | Solución |
 |---|---|
@@ -159,3 +182,5 @@ Endpoints principales: `POST /api/auth/login`, `POST /api/auth/registrar`, `/api
 | Google dice `invalid_client` | Revisar client-id / secret en `application-secrets.properties`. |
 | No entra con las cuentas de prueba | Poner `synergy.demo.reset-passwords=true` una vez, o ejecutar `setup_synergy_db.js`. |
 | `Connection refused` a MongoDB | Iniciar el servicio de MongoDB. |
+| La app del teléfono dice "No se pudo conectar con el servidor" | Poner la IP del PC en *Servidor* (login), misma red Wi-Fi y permitir el puerto 8080 en el firewall. |
+| El semáforo dice "Sin datos" | El proyecto apenas empieza y no tiene tareas, o falta recalcular: botón *Recalcular* en el panel del administrador. |

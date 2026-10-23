@@ -5,6 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 
 @SpringBootApplication
+@org.springframework.scheduling.annotation.EnableScheduling // recálculo nocturno del riesgo de los proyectos
 @EntityScan("com.proaula.spring.synergy.Model")  
 public class SynergyApplication {
 

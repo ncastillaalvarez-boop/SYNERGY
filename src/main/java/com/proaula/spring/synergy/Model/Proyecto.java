@@ -56,6 +56,14 @@ public class Proyecto {
     private LocalDateTime fechaCreacion;
     private LocalDateTime fechaActualizacion;
 
+    // Resultado del modelo predictivo de riesgo (lo calcula RiesgoProyectoService)
+    private String nivelRiesgo;          // Bajo, Medio, Alto (null = sin datos suficientes)
+    private Double probabilidadRiesgo;   // probabilidad del nivel predicho (0-1)
+    private Double puntajeRiesgo;        // P(Alto) + 0,5·P(Medio): sirve para ordenar por prioridad
+    private List<String> riesgoMotivos = new ArrayList<>();
+    private String riesgoSugerencia;
+    private LocalDateTime riesgoActualizado;
+
     public Proyecto() {
         this.fechaCreacion = LocalDateTime.now();
         this.fechaActualizacion = LocalDateTime.now();
@@ -243,5 +251,23 @@ public class Proyecto {
 
     public String getEstadoEtiqueta() {
         return Catalogos.etiquetaEstado(estado);
+    }
+
+    public String getNivelRiesgo() { return nivelRiesgo; }
+    public void setNivelRiesgo(String nivelRiesgo) { this.nivelRiesgo = nivelRiesgo; }
+    public Double getProbabilidadRiesgo() { return probabilidadRiesgo; }
+    public void setProbabilidadRiesgo(Double probabilidadRiesgo) { this.probabilidadRiesgo = probabilidadRiesgo; }
+    public Double getPuntajeRiesgo() { return puntajeRiesgo; }
+    public void setPuntajeRiesgo(Double puntajeRiesgo) { this.puntajeRiesgo = puntajeRiesgo; }
+    public List<String> getRiesgoMotivos() { return riesgoMotivos; }
+    public void setRiesgoMotivos(List<String> riesgoMotivos) { this.riesgoMotivos = riesgoMotivos; }
+    public String getRiesgoSugerencia() { return riesgoSugerencia; }
+    public void setRiesgoSugerencia(String riesgoSugerencia) { this.riesgoSugerencia = riesgoSugerencia; }
+    public LocalDateTime getRiesgoActualizado() { return riesgoActualizado; }
+    public void setRiesgoActualizado(LocalDateTime riesgoActualizado) { this.riesgoActualizado = riesgoActualizado; }
+
+    /** Clase CSS del semáforo: riesgo-bajo / riesgo-medio / riesgo-alto / riesgo-ninguno. */
+    public String getRiesgoClase() {
+        return nivelRiesgo == null ? "riesgo-ninguno" : "riesgo-" + nivelRiesgo.toLowerCase();
     }
 }

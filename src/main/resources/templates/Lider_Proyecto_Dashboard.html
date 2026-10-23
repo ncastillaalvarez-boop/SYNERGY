@@ -85,6 +85,21 @@
         </div>
       </div>
 
+      <!-- TAREAS POR VENCER -->
+      <h2 class="section-heading"><i class="fa-regular fa-clock"></i> Tareas vencidas y por vencer (7 días)
+        <span class="count" th:text="${#lists.size(tareasPorVencer)}">0</span></h2>
+      <ul class="deadline-list" th:if="${!#lists.isEmpty(tareasPorVencer)}">
+        <li th:each="t : ${tareasPorVencer}">
+          <div class="deadline-info">
+            <strong th:text="${t.titulo}">Tarea</strong>
+            <span th:text="${nombresProyecto[t.idProyecto]}">Proyecto</span>
+          </div>
+          <span class="badge" th:classappend="${t.fechaEntrega.isBefore(hoy)} ? 'badge-danger' : 'badge-warning'"
+                th:text="${t.fechaEntrega.isBefore(hoy)} ? 'Vencida el ' + ${#temporals.format(t.fechaEntrega, 'dd/MM')} : 'Vence el ' + ${#temporals.format(t.fechaEntrega, 'dd/MM')}">Vence</span>
+        </li>
+      </ul>
+      <p th:if="${#lists.isEmpty(tareasPorVencer)}" class="cell-muted" style="margin:0 0 24px">No hay tareas vencidas ni por vencer esta semana.</p>
+
       <!-- ACCESOS -->
       <h2 class="section-heading"><i class="fa-solid fa-bolt"></i> Accesos rápidos</h2>
       <div class="tile-grid">
@@ -133,13 +148,18 @@
             <span class="item-card-icon"><i class="fa-solid fa-seedling"></i></span>
             <div style="min-width:0">
               <h3 th:text="${proyecto.nombre}">Nombre del proyecto</h3>
-              <span class="badge" th:classappend="${proyecto.estado == 'ACTIVO'} ? 'badge-success is-live' : (${proyecto.estado == 'PENDIENTE'} ? 'badge-warning' : (${proyecto.estado == 'COMPLETADO'} ? 'badge-info' : 'badge-danger'))" th:text="${proyecto.estado}">ACTIVO</span>
+              <span class="badge" th:classappend="${proyecto.estado == 'ACTIVO'} ? 'badge-success is-live' : (${proyecto.estado == 'PENDIENTE'} ? 'badge-warning' : (${proyecto.estado == 'COMPLETADO'} ? 'badge-info' : 'badge-danger'))" th:text="${proyecto.estadoEtiqueta}">ACTIVO</span>
+              <span th:if="${proyecto.estado == 'ACTIVO'}" class="riesgo-chip" th:classappend="${proyecto.riesgoClase}"
+                    th:text="'Riesgo ' + ${proyecto.nivelRiesgo != null ? #strings.toLowerCase(proyecto.nivelRiesgo) : 'sin datos'}">Riesgo bajo</span>
             </div>
           </div>
           <p th:text="${proyecto.descripcion}">Descripción</p>
+          <p th:if="${proyecto.estado == 'ACTIVO' and proyecto.nivelRiesgo != null and proyecto.nivelRiesgo != 'Bajo' and !#lists.isEmpty(proyecto.riesgoMotivos)}" class="riesgo-mini">
+            <i class="fa-solid fa-triangle-exclamation"></i> <span th:text="${proyecto.riesgoMotivos[0]}">Motivo</span>
+            · <span th:text="${proyecto.riesgoSugerencia}">Sugerencia</span></p>
           <div class="progress-track"><div class="progress-fill" th:style="'--w:' + ${progresos[proyecto.id]} + '%'"></div></div>
           <div class="meta">
-            <span><i class="fa-solid fa-users"></i> <strong th:text="${#lists.size(proyecto.participantes) - 1}">0</strong> voluntarios</span>
+            <span><i class="fa-solid fa-users"></i> <strong th:text="${proyecto.totalVoluntarios}">0</strong> voluntarios</span>
             <span><i class="fa-regular fa-calendar"></i> <span th:text="${proyecto.fechaFin != null ? #temporals.format(proyecto.fechaFin, 'dd/MM/yyyy') : 'Sin fecha'}">-</span></span>
           </div>
           <div class="item-card-actions">

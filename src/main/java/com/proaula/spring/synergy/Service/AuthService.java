@@ -31,43 +31,43 @@ public class AuthService {
     private PasswordEncoder passwordEncoder;
 
     public AuthResponse login(LoginRequest loginRequest) {
-        try {
-            Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                    loginRequest.getCorreo(),
-                    loginRequest.getContrasena()
-                )
-            );
-
-            Usuarios usuario = (Usuarios) authentication.getPrincipal();
-            
-            // Actualizar último acceso
-            usuario.setUltimoAcceso(LocalDateTime.now());
-            usuarioRepository.save(usuario);
-
-            // Generar token JWT
-            String token = jwtTokenProvider.generateToken(usuario.getCorreo(), usuario.getRol());
-
-            return new AuthResponse(
-                token,
-                usuario.getId(),
-                usuario.getNombre(),
-                usuario.getCorreo(),
-                usuario.getRol(),
-                usuario.getPrivilegios(),
-                jwtTokenProvider.getExpirationTime()
-            );
-
-        } catch (Exception e) {
-            throw new RuntimeException("Error en autenticación: " + e.getMessage());
+        String correo = loginRequest.getCorreo() == null ? "" : loginRequest.getCorreo().trim().toLowerCase();
+        if (correo.isEmpty() || loginRequest.getContrasena() == null || loginRequest.getContrasena().isEmpty()) {
+            throw new IllegalArgumentException("Escribe tu correo y tu contraseña.");
         }
+        // Lanza BadCredentialsException / DisabledException; el controlador las traduce a un mensaje claro
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(correo, loginRequest.getContrasena()));
+
+        Usuarios usuario = (Usuarios) authentication.getPrincipal();
+        usuario.setUltimoAcceso(LocalDateTime.now());
+        usuarioRepository.save(usuario);
+
+        String token = jwtTokenProvider.generateToken(usuario.getCorreo(), usuario.getRol());
+        return new AuthResponse(token, usuario.getId(), usuario.getNombre(), usuario.getCorreo(),
+                usuario.getRol(), usuario.getPrivilegios(), jwtTokenProvider.getExpirationTime());
     }
 
     public AuthResponse registrar(Usuarios usuario) {
-        // Verificar si el usuario ya existe
-        if (usuarioRepository.findByCorreo(usuario.getCorreo()) != null) {
-            throw new RuntimeException("El correo ya está registrado");
+        // Mismas reglas que el registro web
+        String nombre = usuario.getNombre() == null ? "" : usuario.getNombre().trim();
+        String correo = usuario.getCorreo() == null ? "" : usuario.getCorreo().trim().toLowerCase();
+        String contrasena = usuario.getContrasena() == null ? "" : usuario.getContrasena();
+        if (nombre.isEmpty() || !correo.contains("@")) {
+            throw new IllegalArgumentException("Escribe tu nombre y un correo válido.");
         }
+        if (contrasena.length() < 6) {
+            throw new IllegalArgumentException("La contraseña debe tener al menos 6 caracteres.");
+        }
+        if (usuarioRepository.findByCorreo(correo) != null) {
+            throw new IllegalArgumentException("Ya existe una cuenta con ese correo. Inicia sesión.");
+        }
+        usuario.setId(null);
+        usuario.setNombre(nombre);
+        usuario.setCorreo(correo);
+        usuario.setProveedor("LOCAL");
+        usuario.setProyectos(new java.util.ArrayList<>());
+        usuario.setTareasAsignadas(new java.util.ArrayList<>());
 
         // Un registro público nunca puede autootorgarse privilegios de administrador.
         // Se conserva la posibilidad de registrar líderes, usada por las vistas web.

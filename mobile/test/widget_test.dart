@@ -1,30 +1,19 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:synergy_mobile/main.dart';
+import 'package:synergy_mobile/utils/app_config.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const SynergyApp());
+  group('AppConfig.normalizar', () {
+    test('completa http, puerto y /api a partir de una IP', () {
+      expect(AppConfig.normalizar('192.168.1.10'), 'http://192.168.1.10:8080/api');
+    });
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    test('respeta el puerto y la ruta que ya vienen', () {
+      expect(AppConfig.normalizar('http://192.168.1.10:9090/api/'), 'http://192.168.1.10:9090/api');
+    });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    test('un valor vacío vuelve a la dirección por defecto', () {
+      expect(AppConfig.normalizar('  '), AppConfig.defaultApiBaseUrl);
+    });
   });
 }

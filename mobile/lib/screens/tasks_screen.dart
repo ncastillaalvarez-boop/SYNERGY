@@ -33,8 +33,15 @@ class _TasksScreenState extends State<TasksScreen> {
   Future<List<Tarea>> _loadTasks() => _canManage ? _service.getManaged() : _service.getMine();
 
   Future<void> _reload() async {
-    setState(() => _future = _loadTasks());
-    await _future;
+    // setState no puede recibir una función que devuelva un Future
+    setState(() {
+      _future = _loadTasks();
+    });
+    try {
+      await _future;
+    } catch (_) {
+      // el FutureBuilder ya muestra el error ("Sin conexión" + Reintentar)
+    }
   }
 
   Future<void> _openTask(Tarea task) async {

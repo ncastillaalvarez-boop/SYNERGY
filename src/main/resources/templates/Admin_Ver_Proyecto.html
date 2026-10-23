@@ -39,6 +39,8 @@
         </div>
       </header>
 
+      <div th:replace="~{fragments/riesgo :: panel(${proyecto})}"></div>
+
       <div class="detail-panel">
         <h2 class="detail-panel-title" th:text="${proyecto.nombre}">Nombre del proyecto</h2>
         <div class="detail-row">

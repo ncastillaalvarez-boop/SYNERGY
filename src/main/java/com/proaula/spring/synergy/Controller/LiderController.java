@@ -112,6 +112,9 @@ public class LiderController {
         List<Proyecto> proyectos = proyectoService.obtenerProyectosDeLider(lider.getId());
 
         Map<String, Integer> progresos = new HashMap<>();
+        Map<String, String> nombresProyecto = new HashMap<>();
+        List<Tarea> porVencer = new ArrayList<>();
+        java.time.LocalDate hoy = java.time.LocalDate.now();
         int totalTareas = 0;
         int tareasCompletadas = 0;
         int entregas = 0;
@@ -121,6 +124,15 @@ public class LiderController {
             totalTareas += tareas.size();
             tareasCompletadas += hechas;
             progresos.put(p.getId(), tareas.isEmpty() ? 0 : Math.round(hechas * 100f / tareas.size()));
+            nombresProyecto.put(p.getId(), p.getNombre());
+            if ("ACTIVO".equals(p.getEstado())) {
+                for (Tarea t : tareas) {
+                    boolean abierta = !completada(t) && !"CANCELADA".equalsIgnoreCase(t.getEstado());
+                    if (abierta && t.getFechaEntrega() != null && !t.getFechaEntrega().isAfter(hoy.plusDays(7))) {
+                        porVencer.add(t);
+                    }
+                }
+            }
             for (Tarea t : tareas) {
                 entregas += entregaTareaRepository.findByIdTarea(t.getId()).size();
             }
@@ -141,6 +153,10 @@ public class LiderController {
         model.addAttribute("tareasPendientes", totalTareas - tareasCompletadas);
         model.addAttribute("porcentajeGlobal", totalTareas == 0 ? 0 : Math.round(tareasCompletadas * 100f / totalTareas));
         model.addAttribute("entregasRecibidas", entregas);
+        porVencer.sort(java.util.Comparator.comparing(Tarea::getFechaEntrega));
+        model.addAttribute("tareasPorVencer", porVencer.size() > 10 ? porVencer.subList(0, 10) : porVencer);
+        model.addAttribute("nombresProyecto", nombresProyecto);
+        model.addAttribute("hoy", hoy);
         return "Lider_Proyecto_Dashboard";
     }
 
@@ -350,29 +366,77 @@ public class LiderController {
     // USUARIOS INSCRITOS EN LOS PROYECTOS DEL LÍDER
     // =======================================================
     @GetMapping("/usuarios")
-    public String usuariosInscritos(HttpSession session, Model model) {
+    public String usuariosInscritos(@RequestParam(required = false) String q,
+                                    @RequestParam(required = false) String proyecto,
+                                    @RequestParam(defaultValue = "1") int page,
+                                    HttpSession session, Model model) {
         Usuarios lider = validarLider(session);
         if (lider == null) {
             return "redirect:/login";
         }
 
-        Map<String, Usuarios> usuarios = new LinkedHashMap<>();
-        Map<String, List<String>> proyectosPorUsuario = new HashMap<>();
-        for (Proyecto p : proyectoService.obtenerProyectosDeLider(lider.getId())) {
+        List<Proyecto> proyectosLider = proyectoService.obtenerProyectosDeLider(lider.getId());
+        String filtroProyecto = proyectosLider.stream().anyMatch(p -> p.getId().equals(proyecto)) ? proyecto : null;
+
+        // id del voluntario -> nombres de los proyectos del líder en los que participa
+        Map<String, List<String>> proyectosPorUsuario = new LinkedHashMap<>();
+        for (Proyecto p : proyectosLider) {
+            if (filtroProyecto != null && !p.getId().equals(filtroProyecto)) {
+                continue;
+            }
             for (String uid : p.getParticipantes()) {
-                if (uid.equals(lider.getId())) {
-                    continue;
-                }
-                usuarioRepository.findById(uid).ifPresent(u -> {
-                    usuarios.putIfAbsent(uid, u);
+                if (uid != null && !uid.equals(lider.getId())) {
                     proyectosPorUsuario.computeIfAbsent(uid, k -> new ArrayList<>()).add(p.getNombre());
-                });
+                }
             }
         }
 
-        model.addAttribute("usuarios", new ArrayList<>(usuarios.values()));
+        // Una sola consulta para todos los voluntarios (antes era una por persona)
+        String texto = normalizar(q);
+        List<Usuarios> voluntarios = new ArrayList<>();
+        usuarioRepository.findAllById(proyectosPorUsuario.keySet()).forEach(u -> {
+            if (texto.isEmpty() || normalizar(u.getNombre()).contains(texto) || normalizar(u.getCorreo()).contains(texto)) {
+                voluntarios.add(u);
+            }
+        });
+        voluntarios.sort(java.util.Comparator.comparing(u -> normalizar(u.getNombre())));
+
+        int total = voluntarios.size();
+        int totalPaginas = Math.max(1, (int) Math.ceil(total / (double) VOLUNTARIOS_POR_PAGINA));
+        int pagina = Math.min(Math.max(page, 1), totalPaginas) - 1;
+        int desde = pagina * VOLUNTARIOS_POR_PAGINA;
+        List<Usuarios> visibles = voluntarios.subList(Math.min(desde, total), Math.min(desde + VOLUNTARIOS_POR_PAGINA, total));
+        org.springframework.data.domain.Page<Usuarios> pageData = new org.springframework.data.domain.PageImpl<>(
+                visibles, org.springframework.data.domain.PageRequest.of(pagina, VOLUNTARIOS_POR_PAGINA), total);
+
+        org.springframework.util.LinkedMultiValueMap<String, String> parametros = new org.springframework.util.LinkedMultiValueMap<>();
+        if (q != null && !q.isBlank()) {
+            parametros.add("q", q.trim());
+        }
+        if (filtroProyecto != null) {
+            parametros.add("proyecto", filtroProyecto);
+        }
+
+        model.addAttribute("usuarios", visibles);
         model.addAttribute("proyectosPorUsuario", proyectosPorUsuario);
+        model.addAttribute("proyectosLider", proyectosLider);
+        model.addAttribute("q", q == null ? "" : q.trim());
+        model.addAttribute("proyectoFiltro", filtroProyecto);
+        model.addAttribute("hayFiltros", !parametros.isEmpty());
+        model.addAttribute("totalVoluntarios", total);
+        model.addAttribute("paginacion", new com.proaula.spring.synergy.Dto.Paginacion(pageData, "/lider/usuarios", parametros));
         return "Lider_Usuarios_Proyecto";
+    }
+
+    private static final int VOLUNTARIOS_POR_PAGINA = 20;
+
+    /** Minúsculas y sin tildes, para buscar "maria" y encontrar "María". */
+    private static String normalizar(String texto) {
+        if (texto == null) {
+            return "";
+        }
+        return java.text.Normalizer.normalize(texto.trim().toLowerCase(java.util.Locale.ROOT), java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "");
     }
 
     // =======================================================

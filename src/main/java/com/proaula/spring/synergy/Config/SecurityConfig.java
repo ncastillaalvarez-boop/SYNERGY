@@ -17,6 +17,12 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.config.Customizer;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 import com.proaula.spring.synergy.Security.GoogleLoginSuccessHandler;
 import com.proaula.spring.synergy.Security.JwtAuthenticationFilter;
@@ -61,6 +67,8 @@ public class SecurityConfig {
                                            GoogleLoginSuccessHandler googleLoginSuccessHandler) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
+            // Permite que la app Flutter en el navegador (flutter run -d edge/chrome) llame a /api/**
+            .cors(Customizer.withDefaults())
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                 .maximumSessions(2)
@@ -118,6 +126,24 @@ public class SecurityConfig {
             );
       
         return http.build();
+    }
+
+    /**
+     * CORS solo para la API REST. Flutter web corre en otro puerto (http://localhost:XXXXX),
+     * y sin esto el navegador bloquea las peticiones y la app dice "No se pudo conectar".
+     * Se usa token JWT (no cookies), por eso no hace falta allowCredentials.
+     */
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration api = new CorsConfiguration();
+        api.setAllowedOriginPatterns(List.of("http://localhost:*", "http://127.0.0.1:*",
+                "http://10.*:*", "http://192.168.*:*"));
+        api.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        api.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
+        api.setMaxAge(3600L);
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/api/**", api);
+        return source;
     }
    
 }

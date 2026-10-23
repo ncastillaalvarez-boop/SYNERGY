@@ -59,6 +59,49 @@
           <span class="stat-value" th:text="${#numbers.formatInteger(totalUsuarios, 1, 'POINT')}">0</span><span class="stat-label">Usuarios</span></div>
       </div>
 
+      <!-- MODELO PREDICTIVO: alerta temprana -->
+      <div th:if="${riesgoAlto > 0}" class="alert alert-warning">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <span><strong th:text="${riesgoAlto}">0</strong> proyectos activos tienen <strong>riesgo alto</strong> de no cumplir sus objetivos según el modelo predictivo.
+          <a th:href="@{/admin/proyectos(estado='ACTIVO',riesgo='Alto',orden='riesgo')}" class="link">Ver la lista priorizada</a></span>
+      </div>
+
+      <div class="admin-charts">
+        <div class="progress-list">
+          <h2 class="section-heading" style="margin:0 0 4px"><i class="fa-solid fa-chart-pie"></i> Proyectos por estado</h2>
+          <div class="progress-item" th:each="e : ${porEstado}">
+            <div class="progress-head"><strong th:text="${estadosProyecto[e.key]}">Estado</strong><span th:text="${e.value}">0</span></div>
+            <div class="progress-track"><div class="progress-fill" th:classappend="'fill-' + ${#strings.toLowerCase(e.key)}"
+                 th:style="'--w:' + ${totalProyectos == 0 ? 0 : e.value * 100 / totalProyectos} + '%'"></div></div>
+          </div>
+        </div>
+        <div class="progress-list">
+          <h2 class="section-heading" style="margin:0 0 4px"><i class="fa-solid fa-traffic-light"></i> Riesgo de los proyectos activos</h2>
+          <div class="progress-item" th:each="r : ${porRiesgo}">
+            <div class="progress-head">
+              <strong><a th:if="${r.key != 'Sin datos'}" th:href="@{/admin/proyectos(estado='ACTIVO',riesgo=${r.key},orden='riesgo')}" class="link" th:text="${r.key}">Alto</a>
+                <span th:if="${r.key == 'Sin datos'}">Sin datos</span></strong>
+              <span th:text="${r.value}">0</span></div>
+            <div class="progress-track"><div class="progress-fill" th:classappend="${r.key == 'Sin datos'} ? 'fill-ninguno' : 'fill-' + ${#strings.toLowerCase(r.key)}"
+                 th:style="'--w:' + ${activos == 0 ? 0 : r.value * 100 / activos} + '%'"></div></div>
+          </div>
+          <div class="model-actions">
+            <a th:href="@{/admin/modelo/dataset.csv}" class="btn btn-secondary btn-sm"><i class="fa-solid fa-file-csv"></i> Dataset CSV</a>
+            <a th:href="@{/admin/modelo/dataset.arff}" class="btn btn-secondary btn-sm"><i class="fa-solid fa-file-lines"></i> ARFF (Weka)</a>
+            <form th:action="@{/admin/modelo/recalcular}" method="post" class="inline-form">
+              <button type="submit" class="btn btn-secondary btn-sm"><i class="fa-solid fa-rotate"></i> Recalcular</button>
+            </form>
+          </div>
+        </div>
+        <div class="progress-list">
+          <h2 class="section-heading" style="margin:0 0 4px"><i class="fa-solid fa-leaf"></i> Proyectos por categoría</h2>
+          <div class="progress-item" th:each="c : ${porCategoria}">
+            <div class="progress-head"><strong><a th:href="@{/admin/proyectos(categoria=${c.key})}" class="link" th:text="${c.key}">Categoría</a></strong><span th:text="${c.value}">0</span></div>
+            <div class="progress-track"><div class="progress-fill" th:style="'--w:' + ${c.value * 100 / maxCategoria} + '%'"></div></div>
+          </div>
+        </div>
+      </div>
+
       <h2 class="section-heading"><i class="fa-solid fa-folder-open"></i> Proyectos
         <span class="count" th:text="${#numbers.formatInteger(paginacion.totalElementos, 1, 'POINT')}">0</span></h2>
 
@@ -86,9 +129,16 @@
           </select>
         </div>
         <div class="field">
+          <label for="riesgo">Riesgo</label>
+          <select id="riesgo" name="riesgo">
+            <option value="">Todos</option>
+            <option th:each="n : ${nivelesRiesgo}" th:value="${n}" th:text="${n}" th:selected="${filtro.riesgo == n}">Alto</option>
+          </select>
+        </div>
+        <div class="field">
           <label for="orden">Ordenar por</label>
           <select id="orden" name="orden">
-            <option th:each="o : ${ordenesProyecto}" th:value="${o.key}" th:text="${o.value}" th:selected="${filtro.orden == o.key}">Orden</option>
+            <option th:each="o : ${ordenesAdmin}" th:value="${o.key}" th:text="${o.value}" th:selected="${filtro.orden == o.key}">Orden</option>
           </select>
         </div>
         <div class="filter-actions">
@@ -99,7 +149,7 @@
 
       <div class="table-wrap">
         <table class="table">
-          <thead><tr><th>Proyecto</th><th>Líder</th><th>Estado</th><th>Fechas</th><th>Acciones</th></tr></thead>
+          <thead><tr><th>Proyecto</th><th>Líder</th><th>Estado</th><th>Riesgo</th><th>Fechas</th><th>Acciones</th></tr></thead>
           <tbody>
             <tr th:each="proyecto : ${proyectos}">
               <td>
@@ -110,6 +160,12 @@
               </td>
               <td th:text="${lideres[proyecto.idLider] ?: 'Sin líder'}">Líder</td>
               <td><span class="badge" th:classappend="${proyecto.estado == 'ACTIVO'} ? 'badge-success is-live' : (${proyecto.estado == 'PENDIENTE'} ? 'badge-warning' : (${proyecto.estado == 'COMPLETADO'} ? 'badge-info' : 'badge-danger'))" th:text="${proyecto.estadoEtiqueta}">Estado</span></td>
+              <td>
+                <span th:if="${proyecto.estado == 'ACTIVO'}" class="riesgo-chip" th:classappend="${proyecto.riesgoClase}"
+                      th:title="${proyecto.riesgoMotivos != null ? #strings.listJoin(proyecto.riesgoMotivos, ' · ') : ''}"
+                      th:text="${proyecto.nivelRiesgo ?: 'Sin datos'}">Bajo</span>
+                <span th:unless="${proyecto.estado == 'ACTIVO'}" class="cell-muted">–</span>
+              </td>
               <td><span class="meta" style="margin:0"><span><i class="fa-regular fa-calendar"></i>
                 <span th:text="${proyecto.fechaInicio != null ? #temporals.format(proyecto.fechaInicio, 'dd/MM/yy') : '-'}">-</span>
                 → <span th:text="${proyecto.fechaFin != null ? #temporals.format(proyecto.fechaFin, 'dd/MM/yy') : '-'}">-</span></span></span></td>
@@ -134,7 +190,7 @@
               </td>
             </tr>
             <tr th:if="${#lists.isEmpty(proyectos)}">
-              <td colspan="5" class="cell-empty"><i class="fa-regular fa-folder-open"></i>
+              <td colspan="6" class="cell-empty"><i class="fa-regular fa-folder-open"></i>
                 <span th:text="${filtro.activo} ? 'Ningún proyecto coincide con la búsqueda.' : 'No hay proyectos en este estado.'">No hay proyectos.</span></td>
             </tr>
           </tbody>

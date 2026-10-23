@@ -26,23 +26,29 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
         try {
-            AuthResponse response = authService.login(loginRequest);
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body("Error de autenticación: " + e.getMessage());
+            return ResponseEntity.ok(authService.login(loginRequest));
+        } catch (org.springframework.security.authentication.DisabledException
+                 | org.springframework.security.authentication.LockedException e) {
+            return error(HttpStatus.FORBIDDEN, "Tu cuenta está inactiva. Contacta al administrador.");
+        } catch (org.springframework.security.core.AuthenticationException e) {
+            return error(HttpStatus.UNAUTHORIZED, "Correo o contraseña incorrectos.");
+        } catch (IllegalArgumentException e) {
+            return error(HttpStatus.BAD_REQUEST, e.getMessage());
         }
     }
 
     @PostMapping("/registrar")
     public ResponseEntity<?> registrar(@RequestBody Usuarios usuario) {
         try {
-            AuthResponse response = authService.registrar(usuario);
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body("Error al registrar: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.CREATED).body(authService.registrar(usuario));
+        } catch (IllegalArgumentException e) {
+            return error(HttpStatus.BAD_REQUEST, e.getMessage());
         }
+    }
+
+    /** Respuesta de error en JSON: {"message": "..."} (la app Flutter muestra "message"). */
+    private static ResponseEntity<Map<String, String>> error(HttpStatus status, String mensaje) {
+        return ResponseEntity.status(status).body(Map.of("message", mensaje));
     }
 
     @PostMapping("/cambiar-contrasena")

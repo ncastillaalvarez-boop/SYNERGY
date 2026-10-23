@@ -73,6 +73,7 @@ public class Usuarios implements UserDetails {
 
     // UserDetails implementation
     @Override
+    @JsonIgnore
     public Collection<? extends GrantedAuthority> getAuthorities() {
         List<GrantedAuthority> authorities = new ArrayList<>();
         authorities.add(new SimpleGrantedAuthority("ROLE_" + this.rol));
@@ -80,26 +81,31 @@ public class Usuarios implements UserDetails {
     }
 
     @Override
+    @JsonIgnore // no debe salir en las respuestas de la API (antes se veía el hash de la contraseña)
     public String getPassword() {
         return this.contrasena;
     }
 
     @Override
+    @JsonIgnore
     public String getUsername() {
         return this.correo;
     }
 
     @Override
+    @JsonIgnore
     public boolean isAccountNonExpired() {
         return true;
     }
 
     @Override
+    @JsonIgnore
     public boolean isAccountNonLocked() {
         return Boolean.TRUE.equals(this.activo);
     }
 
     @Override
+    @JsonIgnore
     public boolean isCredentialsNonExpired() {
         return true;
     }

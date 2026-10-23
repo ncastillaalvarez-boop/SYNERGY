@@ -163,7 +163,7 @@
               <span th:if="${p.estado != 'ACTIVO' and p.idLider != usuario.id and !#sets.contains(inscritos, p.id)}" class="badge no-dot">Finalizado</span>
             </th:block>
             <th:block th:if="${usuario == null}">
-              <a th:if="${p.estado == 'ACTIVO'}" th:href="@{/seleccionar-rol}" class="btn btn-primary btn-sm"><i class="fa-solid fa-hand-point-up"></i> Participar</a>
+              <a th:if="${p.estado == 'ACTIVO'}" th:href="@{/seleccionar-rol(volver=${volver})}" class="btn btn-primary btn-sm"><i class="fa-solid fa-hand-point-up"></i> Participar</a>
               <span th:unless="${p.estado == 'ACTIVO'}" class="badge no-dot">Finalizado</span>
             </th:block>
           </div>

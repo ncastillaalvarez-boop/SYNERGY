@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<!--
+  Resultado del modelo predictivo de riesgo de un proyecto activo.
+  Uso: <div th:replace="~{fragments/riesgo :: panel(${proyecto})}"></div>
+-->
+<body>
+<section th:fragment="panel(p)" th:if="${p != null and p.estado == 'ACTIVO'}" class="riesgo-panel" aria-label="Riesgo del proyecto">
+  <h3><i class="fa-solid fa-traffic-light"></i> Riesgo de no cumplir los objetivos
+    <span class="riesgo-chip" th:classappend="${p.riesgoClase}" th:text="${p.nivelRiesgo ?: 'Sin datos'}">Medio</span>
+    <small th:if="${p.probabilidadRiesgo != null}" class="cell-muted"
+           th:text="'(' + ${#numbers.formatDecimal(p.probabilidadRiesgo * 100, 1, 0)} + ' % de probabilidad)'">(70 %)</small>
+  </h3>
+  <ul th:if="${p.riesgoMotivos != null and !#lists.isEmpty(p.riesgoMotivos)}">
+    <li th:each="m : ${p.riesgoMotivos}" th:text="${m}">Motivo</li>
+  </ul>
+  <p th:if="${p.riesgoSugerencia != null}" class="riesgo-sugerencia"><i class="fa-solid fa-lightbulb"></i><span th:text="${p.riesgoSugerencia}">Sugerencia</span></p>
+  <p th:if="${p.riesgoActualizado == null}" class="cell-muted">Se calculará en el próximo recálculo del modelo.</p>
+  <p th:if="${p.riesgoActualizado != null}" class="cell-muted"
+     th:text="'Calculado por el modelo predictivo el ' + ${#temporals.format(p.riesgoActualizado, 'dd/MM/yyyy HH:mm')}">Calculado...</p>
+</section>
+</body>
+</html>

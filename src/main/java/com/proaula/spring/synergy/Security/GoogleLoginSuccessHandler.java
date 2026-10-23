@@ -95,6 +95,6 @@ public class GoogleLoginSuccessHandler implements AuthenticationSuccessHandler {
         usuario = usuarioRepository.save(usuario);
 
         SesionUtil.iniciar(session, usuario);
-        response.sendRedirect(request.getContextPath() + SesionUtil.panelPorRol(usuario));
+        response.sendRedirect(request.getContextPath() + SesionUtil.destinoTrasEntrar(session, usuario, null));
     }
 }

@@ -32,10 +32,13 @@ public class ApiProyectoController {
 
     private final ProyectoService proyectoService;
     private final ParticipacionService participacionService;
+    private final com.proaula.spring.synergy.Service.RiesgoProyectoService riesgoService;
 
-    public ApiProyectoController(ProyectoService proyectoService, ParticipacionService participacionService) {
+    public ApiProyectoController(ProyectoService proyectoService, ParticipacionService participacionService,
+                                 com.proaula.spring.synergy.Service.RiesgoProyectoService riesgoService) {
         this.proyectoService = proyectoService;
         this.participacionService = participacionService;
+        this.riesgoService = riesgoService;
     }
 
     @GetMapping
@@ -46,6 +49,32 @@ public class ApiProyectoController {
     @GetMapping("/{id}")
     public Proyecto obtener(@PathVariable String id) {
         return buscar(id);
+    }
+
+    /** Riesgo del proyecto según el modelo predictivo (para la app Flutter). */
+    @GetMapping("/{id}/riesgo")
+    public java.util.Map<String, Object> riesgo(@PathVariable String id) {
+        Proyecto p = buscar(id);
+        Usuarios usuario = usuarioActual();
+        if (!"ADMINISTRADOR".equals(usuario.getRol()) && !usuario.getId().equals(p.getIdLider())) {
+            throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.FORBIDDEN,
+                    "Solo el líder del proyecto o el administrador pueden ver el riesgo");
+        }
+        java.util.Map<String, Object> r = new java.util.LinkedHashMap<>();
+        r.put("idProyecto", p.getId());
+        r.put("estado", p.getEstado());
+        if (!"ACTIVO".equals(p.getEstado())) {
+            r.put("nivel", null);
+            r.put("motivos", List.of("El riesgo solo se calcula para proyectos activos"));
+            return r;
+        }
+        var e = riesgoService.evaluar(p);
+        r.put("nivel", e.nivel());
+        r.put("probabilidad", Math.round(e.probabilidad() * 1000) / 1000.0);
+        r.put("probabilidades", java.util.Map.of("Bajo", e.probabilidades()[0], "Medio", e.probabilidades()[1], "Alto", e.probabilidades()[2]));
+        r.put("motivos", e.motivos());
+        r.put("sugerencia", e.sugerencia());
+        return r;
     }
 
     @GetMapping("/mis-proyectos")

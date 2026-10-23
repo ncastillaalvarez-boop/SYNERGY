@@ -1,2 +1,15 @@
-/mvnw text eol=lf
-*.cmd text eol=crlf
+# Archivos binarios: git no debe cambiar sus saltos de linea
+*.pdf   binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.jar   binary
+*.apk   binary
+
+# Scripts de Windows con CRLF y de Linux con LF
+*.cmd   text eol=crlf
+*.bat   text eol=crlf
+mvnw    text eol=lf
+*.sh    text eol=lf

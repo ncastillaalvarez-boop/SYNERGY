@@ -30,8 +30,15 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   }
 
   Future<void> _reload() async {
-    setState(() => _future = _service.getAll());
-    await _future;
+    // setState no puede recibir una función que devuelva un Future
+    setState(() {
+      _future = _service.getAll();
+    });
+    try {
+      await _future;
+    } catch (_) {
+      // el FutureBuilder ya muestra el error ("Sin conexión" + Reintentar)
+    }
   }
 
   Future<void> _openForm([Proyecto? project]) async {

@@ -28,6 +28,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   final _commentService = CommentService();
   final _comment = TextEditingController();
   Proyecto? _project;
+  Map<String, dynamic>? _risk;
   List<Comentario> _comments = const [];
   bool _enrolled = false;
   bool _loading = true;
@@ -59,10 +60,21 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         _comments = values[1] as List<Comentario>;
         _enrolled = values[2] as bool;
       });
+      if (_canManage) _loadRisk();
     } on ApiException catch (error) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
     } finally {
       if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  /// El riesgo solo lo ven el líder del proyecto y el administrador; si falla no se muestra.
+  Future<void> _loadRisk() async {
+    try {
+      final risk = await _projectService.getRisk(widget.projectId);
+      if (mounted) setState(() => _risk = risk);
+    } catch (_) {
+      if (mounted) setState(() => _risk = null);
     }
   }
 
@@ -158,6 +170,10 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                       ]),
                     ),
                   ),
+                  if (_risk != null && project.estado == 'ACTIVO') ...[
+                    const SizedBox(height: 12),
+                    _RiskCard(risk: _risk!),
+                  ],
                   const SizedBox(height: 16),
                   if (project.idLider != widget.session.id)
                     GradientButton(label: _enrolled ? 'Salir del proyecto' : 'Participar ahora', icon: _enrolled ? Icons.exit_to_app : Icons.handshake_outlined, onPressed: _toggleParticipation),
@@ -218,4 +234,42 @@ class _CommentTile extends StatelessWidget {
           trailing: canDelete ? IconButton(tooltip: 'Eliminar comentario', icon: const Icon(Icons.delete_outline), onPressed: () => onDelete()) : null,
         ),
       );
+}
+
+class _RiskCard extends StatelessWidget {
+  const _RiskCard({required this.risk});
+  final Map<String, dynamic> risk;
+
+  Color _color(String? nivel) => switch (nivel) {
+        'Alto' => const Color(0xFFDC2626),
+        'Medio' => const Color(0xFFD97706),
+        'Bajo' => const Color(0xFF059669),
+        _ => Colors.blueGrey,
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    final nivel = risk['nivel']?.toString();
+    final motivos = (risk['motivos'] as List? ?? const []).map((m) => m.toString()).toList();
+    final probabilidad = risk['probabilidad'] is num ? ((risk['probabilidad'] as num) * 100).round() : null;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Icon(Icons.traffic_outlined, color: _color(nivel)),
+            const SizedBox(width: 8),
+            Expanded(child: Text('Riesgo: ${nivel ?? 'sin datos'}${probabilidad != null ? ' ($probabilidad %)' : ''}',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800, color: _color(nivel)))),
+          ]),
+          const SizedBox(height: 8),
+          ...motivos.map((m) => Padding(padding: const EdgeInsets.only(bottom: 4), child: Text('• $m'))),
+          if (risk['sugerencia'] != null) ...[
+            const SizedBox(height: 6),
+            Text('Sugerencia: ${risk['sugerencia']}', style: const TextStyle(fontStyle: FontStyle.italic)),
+          ],
+        ]),
+      ),
+    );
+  }
 }

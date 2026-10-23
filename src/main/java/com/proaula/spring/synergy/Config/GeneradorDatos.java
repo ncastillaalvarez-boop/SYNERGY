@@ -290,6 +290,225 @@ public class GeneradorDatos {
     }
 
     // =====================================================================
+    // HISTORIAL PARA EL MODELO PREDICTIVO
+    // =====================================================================
+
+    /** Marca en la colección "contadores" que indica que el historial ya se generó. */
+    public static final String MARCA_HISTORIAL = "historial_riesgo_v1";
+
+    /** Documentos de un historial generado (se insertan juntos). */
+    public record Historial(List<Proyecto> proyectos, List<Participacion> participaciones, List<Tarea> tareas,
+                            List<EntregaTarea> entregas, List<Comentario> comentarios) {
+    }
+
+    /**
+     * Proyectos YA TERMINADOS con un historial completo (tareas con fechas de vencimiento y de
+     * cumplimiento, entregas y comentarios con fecha). Son los datos con los que se entrena el
+     * modelo de riesgo: se miden las variables a la mitad del proyecto y se etiqueta con cómo terminó.
+     *
+     * Cada proyecto tiene un "compromiso" oculto (0 a 1) que influye, con ruido, en cuántas tareas
+     * se cumplen, con cuánto retraso y cuántos voluntarios participan; así hay proyectos cumplidos
+     * a tiempo, con retrasos moderados y con retrasos graves, como pide la propuesta.
+     */
+    public Historial construirHistorial(List<String> idsLideres, List<String> idsVoluntarios, int cantidad, long semilla) {
+        Random r = new Random(semilla);
+        LocalDate hoyLocal = LocalDate.now();
+        List<Proyecto> proyectos = new ArrayList<>();
+        List<Participacion> participaciones = new ArrayList<>();
+        List<Tarea> tareas = new ArrayList<>();
+        List<EntregaTarea> entregas = new ArrayList<>();
+        List<Comentario> comentarios = new ArrayList<>();
+        if (idsLideres.isEmpty() || idsVoluntarios.size() < 12) {
+            return new Historial(proyectos, participaciones, tareas, entregas, comentarios);
+        }
+
+        for (int k = 0; k < cantidad; k++) {
+            double compromiso = r.nextDouble();
+            String categoria = Catalogos.CATEGORIAS.get(r.nextInt(Catalogos.CATEGORIAS.size()));
+            String barrio = Catalogos.BARRIOS.get(r.nextInt(Catalogos.BARRIOS.size()));
+            int duracion = 45 + r.nextInt(136);
+            LocalDate fin = hoyLocal.minusDays(2 + r.nextInt(700));
+            LocalDate inicio = fin.minusDays(duracion);
+            boolean cancelado = compromiso < 0.3 && r.nextInt(100) < 45;
+            String idLider = idsLideres.get(r.nextInt(idsLideres.size()));
+
+            Proyecto p = new Proyecto(categoria + " en " + barrio + " (" + inicio.getYear() + ")",
+                    "Iniciativa comunitaria de " + categoria.toLowerCase() + " en " + barrio
+                            + ", Cartagena de Indias. Proyecto finalizado con historial de seguimiento.",
+                    inicio, fin, idLider);
+            p.setId(nuevoId());
+            p.setEstado(cancelado ? "CANCELADO" : "COMPLETADO");
+            p.setCategoria(categoria);
+            p.setUbicacion(barrio);
+            p.setTipoOrganizacion(Catalogos.ORGANIZACIONES.get(r.nextInt(Catalogos.ORGANIZACIONES.size() - 1)));
+            p.setAudiencia(Catalogos.AUDIENCIAS.get(r.nextInt(Catalogos.AUDIENCIAS.size())));
+            LocalDateTime creado = inicio.minusDays(3 + r.nextInt(27)).atTime(8 + r.nextInt(10), r.nextInt(60));
+            p.setFechaCreacion(creado);
+            p.setFechaActualizacion(fin.atTime(17, 0));
+            p.addParticipante(idLider);
+
+            // Equipo y quiénes participan de verdad (más compromiso -> más voluntarios activos)
+            int tamano = 3 + r.nextInt(8);
+            List<String> equipo = new ArrayList<>(new LinkedHashSet<>(muestra(idsVoluntarios, tamano, r)));
+            equipo.remove(idLider);
+            List<String> activos = new ArrayList<>();
+            double probActivo = clamp(0.25 + 0.75 * compromiso + (r.nextDouble() - 0.5) * 0.25);
+            for (String v : equipo) {
+                Participacion part = new Participacion(v, p.getId(), "PARTICIPANTE");
+                part.setId(nuevoId());
+                part.setFechaUnion(inicio.minusDays(r.nextInt(10)).atTime(10, 0));
+                participaciones.add(part);
+                p.addParticipante(v);
+                if (r.nextDouble() < probActivo) {
+                    activos.add(v);
+                }
+            }
+
+            // Tareas
+            int nTareas = 5 + r.nextInt(10);
+            double probCumplir = clamp(0.45 + 0.6 * compromiso + (r.nextDouble() - 0.5) * 0.2);
+            for (int j = 0; j < nTareas; j++) {
+                LocalDate creada = inicio.plusDays(r.nextInt(Math.max(1, (int) (duracion * 0.7))));
+                LocalDate vence = creada.plusDays(7 + r.nextInt(Math.max(4, duracion / 3)));
+                if (vence.isAfter(fin)) {
+                    vence = fin;
+                }
+                String estado;
+                LocalDate completada = null;
+                if (r.nextInt(100) < 4) {
+                    estado = "CANCELADA";
+                } else if (r.nextDouble() < probCumplir) {
+                    long retraso = Math.round(r.nextGaussian() * 4 + (1 - compromiso) * 22 - 7);
+                    completada = vence.plusDays(retraso);
+                    if (completada.isBefore(creada.plusDays(1))) {
+                        completada = creada.plusDays(1);
+                    }
+                    if (completada.isAfter(fin)) { // no alcanzó a terminarse
+                        completada = null;
+                    }
+                    estado = completada != null ? "COMPLETADA" : (r.nextBoolean() ? "EN_PROGRESO" : "PENDIENTE");
+                } else {
+                    estado = r.nextInt(100) < 45 ? "EN_PROGRESO" : "PENDIENTE";
+                }
+
+                // En proyectos comprometidos lo que queda sin terminar suele ser lo programado al final
+                if (completada == null && !"CANCELADA".equals(estado) && r.nextDouble() < 0.2 + compromiso) {
+                    vence = fin.minusDays(r.nextInt(8));
+                    if (vence.isBefore(creada)) {
+                        vence = creada;
+                    }
+                }
+                String prefijo = PREFIJOS_TAREA[r.nextInt(PREFIJOS_TAREA.length)];
+                Tarea t = new Tarea(prefijo + " " + categoria.toLowerCase(),
+                        prefijo + " " + categoria.toLowerCase() + " en " + barrio + ".", estado, vence, p.getId());
+                t.setId(nuevoId());
+                t.setFechaCreacion(creada.atTime(9, 0));
+                t.setFechaActualizacion(completada != null ? completada.atTime(16, 0) : fin.atTime(18, 0));
+                List<String> responsables = activos.isEmpty() || r.nextInt(100) < 20 ? equipo : activos;
+                if (!responsables.isEmpty()) {
+                    t.addUsuarioAsignado(responsables.get(r.nextInt(responsables.size())));
+                }
+                p.addTarea(t.getId());
+                tareas.add(t);
+
+                // Evidencia: las tareas cumplidas tienen entrega del responsable (que cuenta como activo)
+                if (completada != null && !t.getUsuariosAsignados().isEmpty()) {
+                    String autor = t.getUsuariosAsignados().get(0);
+                    if (!activos.contains(autor)) {
+                        activos.add(autor);
+                    }
+                    EntregaTarea e = new EntregaTarea(t.getId(), autor, "evidencia-" + t.getId().substring(18) + ".txt",
+                            "text/plain", ("Evidencia de: " + t.getTitulo()).getBytes(StandardCharsets.UTF_8));
+                    e.setId(nuevoId());
+                    e.setFechaEntrega(completada.atTime(15, 0));
+                    e.setEstado(r.nextInt(100) < 90 ? "REVISADO" : "RECHAZADO");
+                    entregas.add(e);
+                    t.addEntrega(e.getId());
+                }
+            }
+
+            // Comentarios de los voluntarios activos, repartidos durante el proyecto
+            for (String v : activos) {
+                int n = 1 + r.nextInt(3);
+                for (int c = 0; c < n; c++) {
+                    LocalDate fecha = inicio.plusDays(r.nextInt(duracion + 1));
+                    Comentario com = new Comentario(String.format(COMENTARIOS[r.nextInt(COMENTARIOS.length)], barrio), p.getId(), v);
+                    com.setId(nuevoId());
+                    com.setFecha(fecha.atTime(11, 0));
+                    comentarios.add(com);
+                    p.addComentario(com.getId());
+                }
+            }
+            proyectos.add(p);
+        }
+        return new Historial(proyectos, participaciones, tareas, entregas, comentarios);
+    }
+
+    /** Inserta el historial y actualiza las listas de proyectos y tareas de cada usuario. */
+    public int generarHistorial(List<String> idsLideres, List<String> idsVoluntarios, int cantidad) {
+        Historial h = construirHistorial(idsLideres, idsVoluntarios, cantidad, 7L);
+        if (h.proyectos().isEmpty()) {
+            return 0;
+        }
+        for (Proyecto p : h.proyectos()) {
+            p.setCodigo(codigoService.siguienteCodigo());
+        }
+        insertar(h.proyectos(), Proyecto.class);
+        insertar(h.participaciones(), Participacion.class);
+        insertar(h.tareas(), Tarea.class);
+        insertar(h.entregas(), EntregaTarea.class);
+        insertar(h.comentarios(), Comentario.class);
+
+        java.util.Map<String, Set<String>> proyectosPorUsuario = new java.util.HashMap<>();
+        java.util.Map<String, Set<String>> tareasPorUsuario = new java.util.HashMap<>();
+        for (Proyecto p : h.proyectos()) {
+            for (String id : p.getParticipantes()) {
+                proyectosPorUsuario.computeIfAbsent(id, x -> new HashSet<>()).add(p.getId());
+            }
+        }
+        for (Tarea t : h.tareas()) {
+            for (String id : t.getUsuariosAsignados()) {
+                tareasPorUsuario.computeIfAbsent(id, x -> new HashSet<>()).add(t.getId());
+            }
+        }
+        org.springframework.data.mongodb.core.BulkOperations bulk = mongoTemplate.bulkOps(
+                org.springframework.data.mongodb.core.BulkOperations.BulkMode.UNORDERED, Usuarios.class);
+        Set<String> ids = new HashSet<>(proyectosPorUsuario.keySet());
+        ids.addAll(tareasPorUsuario.keySet());
+        for (String id : ids) {
+            org.springframework.data.mongodb.core.query.Update u = new org.springframework.data.mongodb.core.query.Update();
+            if (proyectosPorUsuario.containsKey(id)) {
+                u.addToSet("proyectos").each(proyectosPorUsuario.get(id).toArray());
+            }
+            if (tareasPorUsuario.containsKey(id)) {
+                u.addToSet("tareasAsignadas").each(tareasPorUsuario.get(id).toArray());
+            }
+            bulk.updateOne(org.springframework.data.mongodb.core.query.Query.query(
+                    org.springframework.data.mongodb.core.query.Criteria.where("_id").is(id)), u);
+        }
+        if (!ids.isEmpty()) {
+            bulk.execute();
+        }
+        mongoTemplate.getCollection(CodigoProyectoService.COLECCION).insertOne(
+                new org.bson.Document("_id", MARCA_HISTORIAL).append("proyectos", h.proyectos().size()));
+        log.info("Historial para el modelo predictivo: {} proyectos terminados, {} tareas, {} entregas, {} comentarios",
+                h.proyectos().size(), h.tareas().size(), h.entregas().size(), h.comentarios().size());
+        return h.proyectos().size();
+    }
+
+    private static <T> List<T> muestra(List<T> lista, int n, Random r) {
+        Set<T> elegidos = new LinkedHashSet<>();
+        while (elegidos.size() < Math.min(n, lista.size())) {
+            elegidos.add(lista.get(r.nextInt(lista.size())));
+        }
+        return new ArrayList<>(elegidos);
+    }
+
+    private static double clamp(double v) {
+        return Math.max(0.02, Math.min(0.98, v));
+    }
+
+    // =====================================================================
     // FÁBRICAS
     // =====================================================================
 

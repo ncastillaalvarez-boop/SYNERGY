@@ -62,26 +62,34 @@ public class UsuarioWebController {
     // ============================================
     // REGISTRO
     // ============================================
+    /*
+     * "volver" = lista de proyectos (con filtros) desde donde el invitado pulsó Participar.
+     * Se pasa de pantalla en pantalla para que Volver y el registro regresen allí.
+     */
     @GetMapping("/seleccionar-rol")
-    public String seleccionarRol() {
+    public String seleccionarRol(@RequestParam(required = false) String volver, Model model) {
+        model.addAttribute("volver", SesionUtil.rutaVolverSegura(volver));
         return "seleccionar-rol";
     }
 
     @GetMapping({"/registrarse", "/registro/voluntario"})
-    public String registroVoluntario(Model model) {
+    public String registroVoluntario(@RequestParam(required = false) String volver, Model model) {
         model.addAttribute("usuario", new Usuarios());
+        model.addAttribute("volver", SesionUtil.rutaVolverSegura(volver));
         return "Registro";
     }
 
     @GetMapping("/registro/lider")
-    public String registroLider(Model model) {
+    public String registroLider(@RequestParam(required = false) String volver, Model model) {
         model.addAttribute("usuario", new Usuarios());
+        model.addAttribute("volver", SesionUtil.rutaVolverSegura(volver));
         return "registro-lider";
     }
 
     @PostMapping("/registrarse")
     public String registrar(@ModelAttribute("usuario") Usuarios usuario,
                             @RequestParam(required = false) String confirmarContrasena,
+                            @RequestParam(required = false) String volver,
                             HttpSession session,
                             Model model) {
 
@@ -107,6 +115,7 @@ public class UsuarioWebController {
         if (error != null) {
             usuario.setContrasena(null);
             model.addAttribute("error", error);
+            model.addAttribute("volver", SesionUtil.rutaVolverSegura(volver));
             return vista;
         }
 
@@ -124,17 +133,22 @@ public class UsuarioWebController {
         historialService.registrarAccion("CREAR", "USUARIO", "Nuevo registro: " + correo + " (" + rol + ")", correo);
 
         SesionUtil.iniciar(session, nuevo);
-        return "redirect:" + SesionUtil.panelPorRol(nuevo);
+        // Si venía de la lista de proyectos, vuelve allí (ya con sesión puede inscribirse)
+        return "redirect:" + SesionUtil.destinoTrasEntrar(session, nuevo, volver);
     }
 
     // ============================================
     // LOGIN
     // ============================================
     @GetMapping("/login")
-    public String mostrarLogin(HttpSession session) {
+    public String mostrarLogin(@RequestParam(required = false) String volver, HttpSession session) {
         Usuarios actual = SesionUtil.usuario(session);
         if (actual != null) {
             return "redirect:" + SesionUtil.panelPorRol(actual);
+        }
+        String destino = SesionUtil.rutaVolverSegura(volver);
+        if (destino != null) {
+            session.setAttribute(SesionUtil.ATTR_VOLVER, destino);
         }
         return "Login";
     }
@@ -171,14 +185,20 @@ public class UsuarioWebController {
         usuario.setUltimoAcceso(LocalDateTime.now());
         usuario = usuarioService.guardarUsuario(usuario);
         SesionUtil.iniciar(session, usuario);
-        return "redirect:" + panel;
+        return "redirect:" + SesionUtil.destinoTrasEntrar(session, usuario, null);
     }
 
     /**
      * Botón "Continuar con Google". Si viene ?rol=LIDER, la cuenta nueva se crea como líder.
      */
     @GetMapping("/login/google")
-    public String loginGoogle(@RequestParam(required = false) String rol, HttpSession session) {
+    public String loginGoogle(@RequestParam(required = false) String rol,
+                              @RequestParam(required = false) String volver,
+                              HttpSession session) {
+        String destino = SesionUtil.rutaVolverSegura(volver);
+        if (destino != null) {
+            session.setAttribute(SesionUtil.ATTR_VOLVER, destino);
+        }
         if ("LIDER".equalsIgnoreCase(rol)) {
             session.setAttribute(GoogleLoginSuccessHandler.ATTR_ROL_GOOGLE, "LIDER");
         } else {

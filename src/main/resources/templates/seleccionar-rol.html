@@ -18,8 +18,8 @@
   <div class="bg-ambient" aria-hidden="true"></div>
   <div class="bg-grid" aria-hidden="true"></div>
 
-  <a th:href="@{/}" class="btn btn-secondary btn-sm back-btn">
-    <i class="fa-solid fa-arrow-left"></i> Volver
+  <a th:href="${volver != null} ? @{${volver}} : @{/}" class="btn btn-secondary btn-sm back-btn">
+    <i class="fa-solid fa-arrow-left"></i> <span th:text="${volver != null} ? 'Volver a los proyectos' : 'Volver'">Volver</span>
   </a>
 
   <button type="button" class="btn btn-secondary btn-icon theme-float" data-theme-toggle aria-label="Cambiar tema claro u oscuro">
@@ -47,7 +47,7 @@
 
       <div class="roles-grid">
 
-        <a th:href="@{/registro/voluntario}" class="rol-card"
+        <a th:href="@{/registro/voluntario(volver=${volver})}" class="rol-card"
            onmouseenter="showInfo('voluntario')" onfocus="showInfo('voluntario')"
            onmouseleave="clearInfo()" onblur="clearInfo()">
           <div class="rol-icono icono-voluntario"><i class="fa-solid fa-hand-holding-heart"></i></div>
@@ -56,7 +56,7 @@
           <span class="rol-go">Continuar <i class="fa-solid fa-arrow-right"></i></span>
         </a>
 
-        <a th:href="@{/registro/lider}" class="rol-card recomendado"
+        <a th:href="@{/registro/lider(volver=${volver})}" class="rol-card recomendado"
            onmouseenter="showInfo('lider')" onfocus="showInfo('lider')"
            onmouseleave="clearInfo()" onblur="clearInfo()">
           <div class="badge-rec"><i class="fa-solid fa-star"></i> Recomendado</div>
@@ -76,7 +76,7 @@
       <th:block th:if="${usuarioActual == null}">
         <div class="divider">o continúa sin registrarte</div>
 
-        <a th:href="@{/publico/proyectos}" class="btn btn-secondary btn-block">
+        <a th:href="${volver != null} ? @{${volver}} : @{/publico/proyectos}" class="btn btn-secondary btn-block">
           <i class="fa-regular fa-eye"></i> Ver proyectos como invitado
         </a>
       </th:block>
@@ -88,7 +88,7 @@
       </div>
 
       <p class="auth-footer">
-        ¿Ya tienes cuenta? <a th:href="@{/login}">Inicia sesión</a>
+        ¿Ya tienes cuenta? <a th:href="@{/login(volver=${volver})}">Inicia sesión</a>
       </p>
 
     </div>

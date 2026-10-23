@@ -28,26 +28,58 @@
           <span class="page-icon has-img"><img src="../static/img/icons/comunidad.png" th:src="@{/img/icons/comunidad.png}" alt=""></span>
           <div>
             <h1 class="page-title">Voluntarios inscritos</h1>
-            <p class="page-subtitle">Personas que participan en tus proyectos.</p>
+            <p class="page-subtitle"><span th:text="${totalVoluntarios}">0</span> personas participan en tus proyectos.</p>
           </div>
         </div>
       </header>
+
+      <form class="filter-bar" th:action="@{/lider/usuarios}" method="get" role="search" data-autosubmit>
+        <div class="field field-search">
+          <label for="q">Buscar</label>
+          <div class="search-input">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="search" id="q" name="q" th:value="${q}" maxlength="60" placeholder="Nombre o correo">
+          </div>
+        </div>
+        <div class="field">
+          <label for="proyecto">Proyecto</label>
+          <select id="proyecto" name="proyecto">
+            <option value="">Todos mis proyectos</option>
+            <option th:each="p : ${proyectosLider}" th:value="${p.id}" th:text="${p.nombre}"
+                    th:selected="${p.id == proyectoFiltro}">Proyecto</option>
+          </select>
+        </div>
+        <div class="filter-actions">
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-filter"></i> Filtrar</button>
+          <a th:if="${hayFiltros}" th:href="@{/lider/usuarios}" class="btn btn-secondary" title="Quitar filtros"><i class="fa-solid fa-xmark"></i></a>
+        </div>
+      </form>
 
       <div class="table-wrap">
         <table class="table">
           <thead><tr><th>Voluntario</th><th>Correo</th><th>Proyectos</th></tr></thead>
           <tbody>
-            <tr th:each="u : ${usuarios}">
+            <tr th:each="u : ${usuarios}" th:with="nombres=${proyectosPorUsuario[u.id]}">
               <td><div class="cluster"><span class="avatar avatar-sm" th:text="${u.iniciales}">AB</span><span class="cell-strong" th:text="${u.nombre}">Nombre</span></div></td>
               <td class="cell-muted"><a th:href="'mailto:' + ${u.correo}" th:text="${u.correo}" class="link">correo</a></td>
-              <td><div class="cluster"><span class="badge no-dot" th:each="n : ${proyectosPorUsuario[u.id]}" th:text="${n}">Proyecto</span></div></td>
+              <td>
+                <div class="cluster">
+                  <span class="badge no-dot" th:each="n, st : ${nombres}" th:if="${st.index < 2}" th:text="${n}">Proyecto</span>
+                  <span class="badge badge-info" th:if="${#lists.size(nombres) > 2}"
+                        th:title="${#strings.listJoin(nombres.subList(2, #lists.size(nombres)), ', ')}"
+                        th:text="'+' + ${#lists.size(nombres) - 2}">+3</span>
+                </div>
+              </td>
             </tr>
             <tr th:if="${#lists.isEmpty(usuarios)}">
-              <td colspan="3" class="cell-empty"><i class="fa-regular fa-user"></i>Todavía no hay voluntarios inscritos en tus proyectos.</td>
+              <td colspan="3" class="cell-empty"><i class="fa-regular fa-user"></i>
+                <span th:text="${hayFiltros} ? 'Ningún voluntario coincide con la búsqueda.' : 'Todavía no hay voluntarios inscritos en tus proyectos.'">Sin voluntarios.</span></td>
             </tr>
           </tbody>
         </table>
       </div>
+
+      <div th:replace="~{fragments/paginacion :: paginacion(${paginacion}, 'voluntarios')}"></div>
 
     </section>
   </main>
