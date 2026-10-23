@@ -6,7 +6,7 @@ Synergy conecta a **administradores**, **líderes de proyecto** y **voluntarios*
 - **API móvil:** REST con JWT en `/api/**`, usada por la app Flutter de la carpeta `mobile/`.
 - **Base de datos:** MongoDB (base `synergy`).
 
-Este README es la única documentación del proyecto.
+Documentación: este README, `docs/MANUAL_USUARIO.md` (por rol), `docs/MODELO_PREDICTIVO.md` (documento del modelo), `docs/GUION_DEMO.md` (sustentación) y la API en `/swagger-ui.html`.
 
 ---
 
@@ -156,6 +156,15 @@ Variables: días de retraso, % de tareas pendientes, participantes, tasa de part
 
 Para volver a entrenar con datos nuevos: descargar el CSV, abrir el notebook en Google Colab, ejecutar todo y reemplazar `ModeloRiesgo.java` por el que descarga el notebook.
 
+### Funciones del modelo en la plataforma
+
+- **Explicación:** cada proyecto muestra *lo que más influye* (se "arregla" una variable a la vez y se mide cuánto baja el riesgo con el mismo modelo).
+- **Historial:** se guarda el nivel cada día (colección `historial_riesgo`) y se dibuja una mini gráfica: "Subió de Medio a Alto hace 3 días".
+- **Avisos:** cuando un proyecto pasa a riesgo Alto se notifica al líder y a los administradores (campana de notificaciones).
+- **Simulador "¿qué pasa si…?":** en el detalle del proyecto el líder prueba completar tareas o sumar voluntarios y ve cómo cambia el riesgo.
+- **Fecha estimada de fin** al ritmo actual de tareas completadas.
+- **Ficha del modelo** (*Administración → Modelo de riesgo*): versión, métricas, matriz de confusión y comparación con random forest y regresión logística. Al reentrenar, actualizar también `Service/ModeloInfo.java`.
+
 ## 9. App móvil (Flutter)
 
 ```bash
@@ -168,11 +177,51 @@ flutter run
 - Emulador de Android: `10.0.2.2:8080` (valor por defecto).
 - Teléfono real: la IP de tu PC (en Windows: `ipconfig` → *Dirección IPv4*, p. ej. `192.168.1.10:8080`), con el teléfono **en la misma red Wi-Fi**. Si no conecta, permite Java en el Firewall de Windows (o abre el puerto 8080 para redes privadas).
 
+Novedades: riesgo de cada proyecto en la lista (líder y administrador, los de riesgo alto primero), campana de notificaciones, deslizar hacia abajo para recargar, copia sin conexión de la lista de proyectos, sesión que se renueva sola (*refresh token*) y las mismas reglas de contraseña que la web. El identificador de la app es `co.synergy.app`.
+
 Si no hay conexión, la app ahora muestra el motivo (antes no mostraba nada y parecía que el botón no funcionaba). Firebase es opcional: sin `android/app/google-services.json` la app funciona igual, solo sin notificaciones push. Las cuentas de prueba sirven también en la app.
 
 Endpoints principales: `POST /api/auth/login`, `POST /api/auth/registrar`, `/api/proyectos/**`, `/api/tareas/**`, `/api/entregas/**`, `/api/comentarios/**`, `/api/admin/**` (solo administrador). Sin token válido responden `401` en JSON.
 
-## 10. Problemas comunes
+## 10. Docker, pruebas, API y respaldos
+
+**Levantar con Docker** (necesita Docker Desktop abierto). Desde la carpeta del proyecto:
+
+```bash
+docker compose up --build        # 1ª vez: compila y arranca app + MongoDB (tarda varios minutos)
+docker compose up -d             # siguientes veces, en segundo plano
+docker compose logs -f app       # ver los logs de la app
+docker compose down              # apagar (los datos se conservan)
+docker compose down -v           # apagar y borrar la base del contenedor
+```
+
+- App: <http://localhost:8080> (`admin@synergy.com` / `Admin123*` y las demás cuentas de prueba). La app móvil en el emulador sigue usando `http://10.0.2.2:8080`.
+- MongoDB del contenedor: `mongodb://localhost:27018` (Compass). Es una base **nueva**, distinta de la de tu PC; la primera vez se generan los datos de prueba.
+- Para usar tu MongoDB local con tus datos: copiar `.env.example` como `.env` y descomentar `MONGODB_URI=mongodb://host.docker.internal:27017/synergy`.
+- El login con Google necesita `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET` en `.env` (no se copian las claves de `application-secrets.properties` a la imagen).
+- Si después de cambiar código no ves los cambios: `docker compose up --build` otra vez.
+
+**Pruebas automáticas** (JUnit, sin base de datos): `mvnw test`. Cubren el modelo de riesgo (variables, reglas, predicción, historial, simulador), validaciones de proyectos/tareas/archivos, contraseñas, bloqueo por intentos, redirecciones seguras y exportación a CSV. GitHub Actions (`.github/workflows/ci.yml`) las corre en cada *push* junto con `flutter analyze`, `flutter test` y el APK de depuración.
+
+**Documentación de la API:** <http://localhost:8080/swagger-ui.html> (springdoc).
+
+**Perfiles:** por defecto se generan datos de prueba. Con `--spring.profiles.active=prod` (o `SPRING_PROFILES_ACTIVE=prod`) no se generan datos, `JWT_SECRET` es obligatorio, cookies solo por HTTPS y logs reducidos (`application-prod.properties`).
+
+**Respaldo de MongoDB:** `scripts/respaldo_mongo.ps1` (Windows) o `scripts/respaldo_mongo.sh` (Linux/macOS). Guarda los últimos 7 en `respaldos/`; se puede programar cada noche.
+
+## 11. Seguridad
+
+- Contraseñas nuevas: mínimo 8 caracteres con mayúscula, minúscula y número (web, API y app).
+- 5 contraseñas incorrectas seguidas bloquean ese correo 5 minutos (web y app).
+- CSRF activo en los formularios web (la API usa JWT y queda excluida); cabeceras de seguridad (CSP, *frame*, *referrer*).
+- JWT de 13 minutos + *refresh token* de 7 días para la app (`POST /api/auth/refresh`). La clave va en `JWT_SECRET` o `application-secrets.properties`.
+- Las entregas solo aceptan PDF, imágenes, Office, TXT, CSV y ZIP de hasta 10 MB, y se revisa que el contenido corresponda a la extensión.
+- Cada endpoint revisa que el usuario sea dueño del recurso (un voluntario no puede ver tareas de proyectos ajenos cambiando el id).
+- Auditoría persistente (colección `auditoria`): aprobaciones, rechazos, eliminaciones, cambios de rol y de estado de cuentas. Panel *Auditoría*.
+- Recuperar contraseña: el administrador genera una contraseña temporal en *Usuarios* (no hay correo configurado).
+- **Pendiente del equipo:** generar un secreto nuevo de Google OAuth en Google Cloud (el anterior se compartió) y guardarlo solo en `application-secrets.properties`.
+
+## 12. Problemas comunes
 
 | Síntoma | Solución |
 |---|---|
@@ -184,3 +233,7 @@ Endpoints principales: `POST /api/auth/login`, `POST /api/auth/registrar`, `/api
 | `Connection refused` a MongoDB | Iniciar el servicio de MongoDB. |
 | La app del teléfono dice "No se pudo conectar con el servidor" | Poner la IP del PC en *Servidor* (login), misma red Wi-Fi y permitir el puerto 8080 en el firewall. |
 | El semáforo dice "Sin datos" | El proyecto apenas empieza y no tiene tareas, o falta recalcular: botón *Recalcular* en el panel del administrador. |
+| Docker: `port is already allocated` (8080) | Ya tienes Synergy corriendo con `mvnw spring-boot:run`: detenlo (Ctrl + C) o cambia el puerto en `docker-compose.yml` (`"8081:8080"`). |
+| Docker: `Cannot connect to the Docker daemon` / `pipe/dockerDesktopLinuxEngine` | Abrir Docker Desktop y esperar a que diga *Engine running*. |
+| Docker: login no entra (vuelve al formulario) | Dejar `COOKIE_SOLO_HTTPS=false` mientras uses `http://localhost`. |
+| Docker: no veo mis proyectos de siempre | El contenedor usa su propia base. Usa `MONGODB_URI=mongodb://host.docker.internal:27017/synergy` en `.env`. |

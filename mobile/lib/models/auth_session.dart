@@ -10,6 +10,7 @@ class AuthSession {
     this.tipo = 'Bearer',
     this.privilegios = const [],
     this.expiresIn,
+    this.refreshToken,
   });
 
   final String token;
@@ -20,6 +21,9 @@ class AuthSession {
   final String tipo;
   final List<String> privilegios;
   final int? expiresIn;
+
+  /// Sirve para pedir un token nuevo en /api/auth/refresh cuando el de acceso vence (13 min).
+  final String? refreshToken;
 
   bool get isAdmin => rol.toUpperCase() == 'ADMINISTRADOR';
   bool get isLeader => rol.toUpperCase() == 'LIDER';
@@ -33,6 +37,7 @@ class AuthSession {
         tipo: json['tipo']?.toString() ?? 'Bearer',
         privilegios: JsonUtils.strings(json['privilegios']),
         expiresIn: json['expiresIn'] is num ? (json['expiresIn'] as num).toInt() : null,
+        refreshToken: json['refreshToken']?.toString(),
       );
 
   Map<String, dynamic> toJson() => {
@@ -44,5 +49,6 @@ class AuthSession {
         'tipo': tipo,
         'privilegios': privilegios,
         'expiresIn': expiresIn,
+        'refreshToken': refreshToken,
       };
 }

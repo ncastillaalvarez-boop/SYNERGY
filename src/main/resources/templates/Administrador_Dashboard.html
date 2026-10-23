@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
   <link rel="stylesheet" href="../static/css/core.css" th:href="@{/css/core.css}">
   <link rel="stylesheet" href="../static/css/dashboard.css" th:href="@{/css/dashboard.css}">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
 </head>
 <body>
   <div class="bg-ambient" aria-hidden="true"></div>
@@ -28,6 +29,10 @@
           <div class="toolbar-group">
             
             <a th:href="@{/admin/usuarios}" class="btn btn-info btn-sm"><i class="fa-solid fa-users"></i> Usuarios</a>
+            <a th:href="@{/admin/modelo}" class="btn btn-secondary btn-sm"><i class="fa-solid fa-brain"></i> Modelo de riesgo</a>
+            <a th:href="@{/admin/exportar/proyectos.csv(q=${filtro.q},estado=${filtro.estado},categoria=${filtro.categoria},riesgo=${filtro.riesgo},orden=${filtro.orden},desde=${filtro.desde},hasta=${filtro.hasta})}"
+               class="btn btn-secondary btn-sm" title="Descarga los proyectos con los filtros actuales (se abre en Excel)">
+              <i class="fa-solid fa-file-excel"></i> Exportar a Excel</a>
           </div>
         </nav>
         <div class="page-heading">
@@ -66,13 +71,35 @@
           <a th:href="@{/admin/proyectos(estado='ACTIVO',riesgo='Alto',orden='riesgo')}" class="link">Ver la lista priorizada</a></span>
       </div>
 
+      <!-- Propuestas que llevan mucho esperando -->
+      <div th:if="${totalPendientesAntiguos > 0}" class="alert alert-info alert-list">
+        <i class="fa-regular fa-hourglass-half"></i>
+        <div>
+          <span><strong th:text="${totalPendientesAntiguos}">0</strong> propuestas llevan más de <span th:text="${diasPendiente}">3</span> días esperando aprobación
+            <th:block th:if="${diasPromedioAprobacion != null}">(hoy se aprueban en <strong th:text="${#numbers.formatDecimal(diasPromedioAprobacion, 1, 1)}">2,5</strong> días en promedio)</th:block>.
+            <a th:href="@{/admin/proyectos(estado='PENDIENTE',orden='antiguos')}" class="link">Ver todas</a></span>
+          <ul>
+            <li th:each="p : ${pendientesAntiguos}">
+              <a th:href="@{/admin/proyecto/{id}(id=${p.id})}" class="link" th:text="${p.nombre}">Proyecto</a>
+              <small class="cell-muted" th:text="'· propuesta el ' + ${#temporals.format(p.fechaCreacion, 'dd/MM/yyyy')}">fecha</small>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <p th:if="${filtro.desde != null or filtro.hasta != null}" class="cell-muted charts-rango">
+        <i class="fa-regular fa-calendar"></i> Gráficas de estado y categoría con proyectos creados
+        <th:block th:if="${filtro.desde != null}">desde el <strong th:text="${#temporals.format(filtro.desde, 'dd/MM/yyyy')}">fecha</strong></th:block>
+        <th:block th:if="${filtro.hasta != null}">hasta el <strong th:text="${#temporals.format(filtro.hasta, 'dd/MM/yyyy')}">fecha</strong></th:block>.
+      </p>
+
       <div class="admin-charts">
         <div class="progress-list">
           <h2 class="section-heading" style="margin:0 0 4px"><i class="fa-solid fa-chart-pie"></i> Proyectos por estado</h2>
           <div class="progress-item" th:each="e : ${porEstado}">
             <div class="progress-head"><strong th:text="${estadosProyecto[e.key]}">Estado</strong><span th:text="${e.value}">0</span></div>
             <div class="progress-track"><div class="progress-fill" th:classappend="'fill-' + ${#strings.toLowerCase(e.key)}"
-                 th:style="'--w:' + ${totalProyectos == 0 ? 0 : e.value * 100 / totalProyectos} + '%'"></div></div>
+                 th:style="'--w:' + ${e.value * 100 / totalPorEstado} + '%'"></div></div>
           </div>
         </div>
         <div class="progress-list">
@@ -91,6 +118,7 @@
             <form th:action="@{/admin/modelo/recalcular}" method="post" class="inline-form">
               <button type="submit" class="btn btn-secondary btn-sm"><i class="fa-solid fa-rotate"></i> Recalcular</button>
             </form>
+            <a th:href="@{/admin/modelo}" class="btn btn-secondary btn-sm"><i class="fa-solid fa-circle-info"></i> Ficha <span th:text="'v' + ${modeloVersion}">v1.0</span></a>
           </div>
         </div>
         <div class="progress-list">
@@ -99,6 +127,52 @@
             <div class="progress-head"><strong><a th:href="@{/admin/proyectos(categoria=${c.key})}" class="link" th:text="${c.key}">Categoría</a></strong><span th:text="${c.value}">0</span></div>
             <div class="progress-track"><div class="progress-fill" th:style="'--w:' + ${c.value * 100 / maxCategoria} + '%'"></div></div>
           </div>
+        </div>
+      </div>
+
+      <div class="admin-charts admin-charts-2">
+        <!-- Tendencia mensual -->
+        <div class="progress-list tendencia">
+          <h2 class="section-heading" style="margin:0 0 4px"><i class="fa-solid fa-chart-column"></i> Últimos 12 meses</h2>
+          <div class="tendencia-leyenda">
+            <span><i class="dot" style="background:#10B981"></i> Creados</span>
+            <span><i class="dot" style="background:#60A5FA"></i> Completados</span>
+            <span><i class="dot" style="background:#F87171"></i> Cancelados</span>
+          </div>
+          <div class="tendencia-barras" role="img" aria-label="Proyectos creados, completados y cancelados por mes">
+            <div class="tendencia-mes" th:each="m : ${tendencia}"
+                 th:title="${m.etiqueta} + ': ' + ${m.creados} + ' creados, ' + ${m.completados} + ' completados, ' + ${m.cancelados} + ' cancelados'">
+              <div class="tendencia-grupo">
+                <span class="barra b-creados" th:style="'--h:' + ${m.creados * 100 / maxTendencia} + '%'"></span>
+                <span class="barra b-completados" th:style="'--h:' + ${m.completados * 100 / maxTendencia} + '%'"></span>
+                <span class="barra b-cancelados" th:style="'--h:' + ${m.cancelados * 100 / maxTendencia} + '%'"></span>
+              </div>
+              <small th:text="${m.etiqueta}">ene 26</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ranking -->
+        <div class="progress-list">
+          <h2 class="section-heading" style="margin:0 0 4px"><i class="fa-solid fa-ranking-star"></i> Ranking</h2>
+          <h3 class="ranking-titulo">Voluntarios con más entregas</h3>
+          <ol class="ranking">
+            <li th:each="r : ${topVoluntarios}"><span th:text="${nombresRanking[r.idUsuario] ?: 'Usuario eliminado'}">Nombre</span><strong th:text="${r.cantidad}">0</strong></li>
+            <li th:if="${#lists.isEmpty(topVoluntarios)}" class="cell-muted">Aún no hay entregas.</li>
+          </ol>
+          <h3 class="ranking-titulo">Líderes con más proyectos completados</h3>
+          <ol class="ranking">
+            <li th:each="r : ${topLideres}"><span th:text="${nombresRanking[r.idUsuario] ?: 'Usuario eliminado'}">Nombre</span><strong th:text="${r.cantidad}">0</strong></li>
+            <li th:if="${#lists.isEmpty(topLideres)}" class="cell-muted">Aún no hay proyectos completados.</li>
+          </ol>
+        </div>
+
+        <!-- Mapa -->
+        <div class="progress-list mapa-card">
+          <h2 class="section-heading" style="margin:0 0 4px"><i class="fa-solid fa-map-location-dot"></i> Proyectos activos por barrio</h2>
+          <div id="mapa-proyectos" class="mapa" th:attr="data-puntos=${puntosMapaJson}"
+               aria-label="Mapa de Cartagena con los proyectos activos por barrio"></div>
+          <small class="cell-muted">Ubicación aproximada (centro del barrio). Los círculos más grandes tienen más proyectos.</small>
         </div>
       </div>
 
@@ -140,6 +214,14 @@
           <select id="orden" name="orden">
             <option th:each="o : ${ordenesAdmin}" th:value="${o.key}" th:text="${o.value}" th:selected="${filtro.orden == o.key}">Orden</option>
           </select>
+        </div>
+        <div class="field">
+          <label for="desde">Creados desde</label>
+          <input type="date" id="desde" name="desde" th:value="${filtro.desde}">
+        </div>
+        <div class="field">
+          <label for="hasta">Hasta</label>
+          <input type="date" id="hasta" name="hasta" th:value="${filtro.hasta}">
         </div>
         <div class="filter-actions">
           <button type="submit" class="btn btn-primary"><i class="fa-solid fa-filter"></i> Filtrar</button>
@@ -204,6 +286,7 @@
   </div>
 </div>
 
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script src="../static/js/script.js" th:src="@{/js/script.js}"></script>
 </body>
 </html>

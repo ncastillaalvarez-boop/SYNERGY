@@ -51,9 +51,25 @@ public class UsuarioService {
     }
 
     public Usuarios crearUsuario(Usuarios usuario) {
-        if (usuarioRepository.findByCorreo(usuario.getCorreo()) != null) {
-            throw new RuntimeException("El correo ya está registrado");
+        String correo = usuario.getCorreo() == null ? "" : usuario.getCorreo().trim().toLowerCase();
+        if (correo.isEmpty() || !correo.contains("@")) {
+            throw new IllegalArgumentException("Escribe un correo válido");
         }
+        if (usuario.getNombre() == null || usuario.getNombre().isBlank()) {
+            throw new IllegalArgumentException("Escribe el nombre del usuario");
+        }
+        String problema = com.proaula.spring.synergy.Security.PoliticaContrasena.validar(usuario.getContrasena());
+        if (problema != null) {
+            throw new IllegalArgumentException(problema);
+        }
+        if (usuarioRepository.findByCorreo(correo) != null) {
+            throw new IllegalArgumentException("El correo ya está registrado");
+        }
+        usuario.setId(null);
+        usuario.setCorreo(correo);
+        usuario.setNombre(usuario.getNombre().trim());
+        String rol = usuario.getRol() == null ? "" : usuario.getRol().trim().toUpperCase();
+        usuario.setRol(java.util.Set.of("ADMINISTRADOR", "LIDER", "PARTICIPANTE").contains(rol) ? rol : "PARTICIPANTE");
 
         usuario.setContrasena(passwordEncoder.encode(usuario.getContrasena()));
         usuario.setActivo(true);
@@ -67,14 +83,19 @@ public class UsuarioService {
     public Usuarios actualizarUsuario(String id, Usuarios usuarioActualizado) {
         Usuarios usuario = obtenerUsuarioPorId(id);
         usuario.setNombre(usuarioActualizado.getNombre());
-        if (!usuario.getCorreo().equals(usuarioActualizado.getCorreo())) {
-            if (usuarioRepository.findByCorreo(usuarioActualizado.getCorreo()) != null) {
-                throw new RuntimeException("El correo ya está registrado");
+        if (usuarioActualizado.getCorreo() != null && !usuario.getCorreo().equalsIgnoreCase(usuarioActualizado.getCorreo().trim())) {
+            String nuevo = usuarioActualizado.getCorreo().trim().toLowerCase();
+            if (usuarioRepository.findByCorreo(nuevo) != null) {
+                throw new IllegalArgumentException("El correo ya está registrado");
             }
-            usuario.setCorreo(usuarioActualizado.getCorreo());
+            usuario.setCorreo(nuevo);
         }
-        usuario.setEstado(usuarioActualizado.getEstado());
-        usuario.setActivo(usuarioActualizado.getActivo());
+        if (usuarioActualizado.getEstado() != null) {
+            usuario.setEstado(usuarioActualizado.getEstado());
+        }
+        if (usuarioActualizado.getActivo() != null) {
+            usuario.setActivo(usuarioActualizado.getActivo());
+        }
         return usuarioRepository.save(usuario);
     }
 

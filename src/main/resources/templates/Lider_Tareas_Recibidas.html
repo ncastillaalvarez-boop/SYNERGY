@@ -42,10 +42,18 @@
         <span th:text="${error}"></span>
       </div>
 
+      <nav class="segmented segmented-wide" aria-label="Filtrar entregas" th:if="${totalEntregas > 0}">
+        <a th:href="@{/lider/tareas/recibidas}" th:classappend="${estadoFiltro == null} ? 'is-active'">Todas <span class="count" th:text="${totalEntregas}">0</span></a>
+        <a th:href="@{/lider/tareas/recibidas(estado='ENTREGADO')}" th:classappend="${estadoFiltro == 'ENTREGADO'} ? 'is-active'">Por revisar <span class="count" th:text="${conteoEstados['ENTREGADO']}">0</span></a>
+        <a th:href="@{/lider/tareas/recibidas(estado='REVISADO')}" th:classappend="${estadoFiltro == 'REVISADO'} ? 'is-active'">Aprobadas <span class="count" th:text="${conteoEstados['REVISADO']}">0</span></a>
+        <a th:href="@{/lider/tareas/recibidas(estado='RECHAZADO')}" th:classappend="${estadoFiltro == 'RECHAZADO'} ? 'is-active'">Rechazadas <span class="count" th:text="${conteoEstados['RECHAZADO']}">0</span></a>
+      </nav>
+
       <div th:if="${#lists.isEmpty(entregas)}" class="empty-state">
         <div class="empty-state-icon has-img"><img src="../static/img/icons/notificaciones.png" th:src="@{/img/icons/notificaciones.png}" alt="" class=""></div>
-        <h3>Sin entregas todavía</h3>
-        <p>Cuando un voluntario entregue una tarea, aparecerá aquí.</p>
+        <h3 th:text="${estadoFiltro == 'ENTREGADO'} ? '¡Todo revisado!' : 'Sin entregas todavía'">Sin entregas todavía</h3>
+        <p th:text="${estadoFiltro == 'ENTREGADO'} ? 'No tienes entregas esperando revisión.' : 'Cuando un voluntario entregue una tarea, aparecerá aquí.'">Cuando un voluntario entregue una tarea, aparecerá aquí.</p>
+        <a th:if="${totalEntregas == 0}" th:href="@{/lider/tareas/asignar}" class="btn btn-primary mt-2"><i class="fa-solid fa-plus"></i> Asignar tareas</a>
       </div>
       <div class="list">
         <div class="list-row" th:each="e, st : ${entregas}" th:style="'--i:' + ${st.index}">

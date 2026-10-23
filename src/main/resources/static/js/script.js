@@ -391,3 +391,202 @@
     });
   });
 })();
+
+/* =====================================================================
+   Synergy v6: simulador de riesgo, tablero kanban, fechas relativas,
+   impresión de reportes y mapa del administrador
+   ===================================================================== */
+(function () {
+  'use strict';
+
+  function ready(fn) {
+    if (document.readyState !== 'loading') fn();
+    else document.addEventListener('DOMContentLoaded', fn);
+  }
+
+  /* Token CSRF de la página (Thymeleaf lo pone en cada formulario POST) */
+  function csrf() {
+    var input = document.querySelector('input[name="_csrf"]');
+    return input ? input.value : null;
+  }
+
+  /* ---------- Simulador "¿qué pasa si...?" ---------- */
+  function pct(v) { return Math.round((v || 0) * 100) + ' %'; }
+
+  ready(function () {
+    document.querySelectorAll('[data-simulador]').forEach(function (box) {
+      var url = box.getAttribute('data-simulador');
+      var out = box.querySelector('.simulador-resultado');
+      var btn = box.querySelector('[data-simular]');
+      if (!btn || !out) return;
+      btn.addEventListener('click', function () {
+        var params = new URLSearchParams();
+        ['completar', 'activar', 'nuevos'].forEach(function (n) {
+          var el = box.querySelector('input[name="' + n + '"]');
+          params.set(n, Math.max(0, parseInt(el && el.value, 10) || 0));
+        });
+        btn.disabled = true;
+        out.textContent = 'Calculando…';
+        fetch(url + '?' + params.toString(), { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+          .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+          .then(function (res) {
+            if (!res.ok) { out.textContent = res.j.message || 'No se pudo simular.'; return; }
+            var a = res.j.antes, d = res.j.despues;
+            out.innerHTML = '';
+            var p = document.createElement('p');
+            var mejora = d.puntaje < a.puntaje - 0.01, empeora = d.puntaje > a.puntaje + 0.01;
+            p.className = 'simulador-veredicto ' + (mejora ? 'is-good' : (empeora ? 'is-bad' : ''));
+            p.textContent = (a.nivel || 'Sin datos') + ' (' + pct(a.probabilidades[a.nivel] || 0) + ') → '
+              + (d.nivel || 'Sin datos') + ' (' + pct(d.probabilidades[d.nivel] || 0) + ')'
+              + (mejora ? ': el riesgo baja.' : (empeora ? ': el riesgo sube.' : ': casi no cambia.'));
+            out.appendChild(p);
+            var info = document.createElement('small');
+            info.className = 'cell-muted';
+            info.textContent = 'Hay ' + res.j.maxCompletar + ' tareas pendientes y ' + res.j.maxActivar
+              + ' voluntarios que aún no participan.' + (d.factor ? ' Después seguiría influyendo: ' + d.factor + '.' : '');
+            out.appendChild(info);
+          })
+          .catch(function () { out.textContent = 'No se pudo conectar con el servidor.'; })
+          .finally(function () { btn.disabled = false; });
+      });
+    });
+  });
+
+  /* ---------- Tablero kanban: arrastrar una tarea a otra columna ---------- */
+  ready(function () {
+    var board = document.querySelector('[data-kanban]');
+    if (!board) return;
+    // En el celular (sin arrastrar): cambiar el selector guarda el estado
+    board.querySelectorAll('.kanban-form select').forEach(function (sel) {
+      sel.addEventListener('change', function () {
+        if (sel.form.requestSubmit) sel.form.requestSubmit(); else sel.form.submit();
+      });
+    });
+    var arrastrada = null;
+    board.querySelectorAll('.kanban-card[draggable="true"]').forEach(function (card) {
+      card.addEventListener('dragstart', function (e) {
+        arrastrada = card;
+        card.classList.add('is-dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', card.getAttribute('data-id'));
+      });
+      card.addEventListener('dragend', function () { card.classList.remove('is-dragging'); });
+    });
+    board.querySelectorAll('.kanban-col').forEach(function (col) {
+      col.addEventListener('dragover', function (e) { e.preventDefault(); col.classList.add('is-over'); });
+      col.addEventListener('dragleave', function () { col.classList.remove('is-over'); });
+      col.addEventListener('drop', function (e) {
+        e.preventDefault();
+        col.classList.remove('is-over');
+        if (!arrastrada) return;
+        var estado = col.getAttribute('data-estado');
+        var anterior = arrastrada.parentElement;
+        if (anterior === col.querySelector('.kanban-items')) return;
+        var card = arrastrada;
+        col.querySelector('.kanban-items').appendChild(card);
+        var body = new URLSearchParams({ estado: estado });
+        var token = csrf();
+        if (token) body.set('_csrf', token);
+        fetch(card.getAttribute('data-url'), {
+          method: 'POST', credentials: 'same-origin',
+          headers: { 'X-Requested-With': 'fetch', 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: body.toString()
+        }).then(function (r) {
+          if (!r.ok) throw new Error();
+          var sel = card.querySelector('select[name="estado"]');
+          if (sel) sel.value = estado;
+          contar();
+        }).catch(function () {
+          anterior.appendChild(card); // se devuelve si el servidor no aceptó el cambio
+          alertaKanban('No se pudo mover la tarea. Recarga la página e inténtalo de nuevo.');
+        });
+      });
+    });
+    function contar() {
+      board.querySelectorAll('.kanban-col').forEach(function (col) {
+        var c = col.querySelector('.count');
+        if (c) c.textContent = col.querySelectorAll('.kanban-card').length;
+      });
+    }
+    function alertaKanban(msg) {
+      var a = board.querySelector('.kanban-alerta');
+      if (a) { a.textContent = msg; a.hidden = false; }
+    }
+  });
+
+  /* ---------- Fechas relativas: <time data-relative datetime="2026-10-20T10:00"> ---------- */
+  ready(function () {
+    var ahora = Date.now();
+    document.querySelectorAll('time[data-relative]').forEach(function (el) {
+      var t = Date.parse(el.getAttribute('datetime'));
+      if (isNaN(t)) return;
+      var s = Math.round((ahora - t) / 1000), txt;
+      if (s < 60) txt = 'hace un momento';
+      else if (s < 3600) txt = 'hace ' + Math.round(s / 60) + ' min';
+      else if (s < 86400) txt = 'hace ' + Math.round(s / 3600) + ' h';
+      else if (s < 172800) txt = 'ayer';
+      else if (s < 2592000) txt = 'hace ' + Math.round(s / 86400) + ' días';
+      else return; // fechas viejas: se deja la fecha exacta
+      if (!el.title) el.title = el.textContent.trim();
+      el.textContent = txt;
+    });
+  });
+
+  /* ---------- Botones de imprimir / guardar como PDF ---------- */
+  ready(function () {
+    document.querySelectorAll('[data-print]').forEach(function (b) {
+      b.addEventListener('click', function () { window.print(); });
+    });
+  });
+
+  /* ---------- Mapa de proyectos por barrio (Leaflet + OpenStreetMap) ---------- */
+  ready(function () {
+    var el = document.getElementById('mapa-proyectos');
+    if (!el || !window.L) return;
+    var puntos = [];
+    try { puntos = JSON.parse(el.getAttribute('data-puntos') || '[]'); } catch (e) { return; }
+    var mapa = L.map(el, { scrollWheelZoom: false }).setView([10.41, -75.51], 12);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 18, attribution: '&copy; OpenStreetMap'
+    }).addTo(mapa);
+    var max = Math.max.apply(null, puntos.map(function (p) { return p.n; }).concat([1]));
+    puntos.forEach(function (p) {
+      L.circleMarker([p.lat, p.lng], {
+        radius: 6 + 18 * Math.sqrt(p.n / max), color: '#059669', weight: 1.5, fillColor: '#10B981', fillOpacity: 0.55
+      }).addTo(mapa).bindPopup('<strong>' + p.barrio.replace(/</g, '&lt;') + '</strong><br>' + p.n + ' proyectos activos');
+    });
+  });
+})();
+
+/* ---------- Indicador de fortaleza de contraseña (mismas reglas que PoliticaContrasena.java) ---------- */
+(function () {
+  'use strict';
+  function ready(fn) { if (document.readyState !== 'loading') fn(); else document.addEventListener('DOMContentLoaded', fn); }
+  ready(function () {
+    document.querySelectorAll('input[data-fortaleza]').forEach(function (input) {
+      var caja = document.createElement('div');
+      caja.className = 'fortaleza';
+      caja.setAttribute('aria-live', 'polite');
+      caja.innerHTML = '<div class="fortaleza-barra"><span></span></div><ul>' +
+        '<li data-r="largo">8 caracteres o más</li><li data-r="mayus">Una mayúscula</li>' +
+        '<li data-r="minus">Una minúscula</li><li data-r="num">Un número</li></ul>';
+      var ancla = input.closest('.float-field, .field, .input-group, .form-group, label') || input;
+      ancla.insertAdjacentElement('afterend', caja);
+      function revisar() {
+        var v = input.value || '';
+        var r = { largo: v.length >= 8 && v.length <= 72, mayus: /[A-ZÁÉÍÓÚÑ]/.test(v), minus: /[a-záéíóúñ]/.test(v), num: /\d/.test(v) };
+        var n = 0;
+        Object.keys(r).forEach(function (k) {
+          var li = caja.querySelector('[data-r="' + k + '"]');
+          li.classList.toggle('ok', r[k]);
+          if (r[k]) n++;
+        });
+        caja.querySelector('.fortaleza-barra span').style.width = (n * 25) + '%';
+        caja.setAttribute('data-nivel', n);
+        input.setCustomValidity(n === 4 || v.length === 0 ? '' : 'La contraseña debe tener 8 caracteres, una mayúscula, una minúscula y un número.');
+      }
+      input.addEventListener('input', revisar);
+      revisar();
+    });
+  });
+})();

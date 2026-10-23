@@ -25,7 +25,21 @@ public class CustomErrorController implements ErrorController {
         }
 
         model.addAttribute("status", statusCode);
-        model.addAttribute("message", message != null ? message : "Error inesperado");
+        // Mensajes pensados para el usuario: no se muestran detalles internos del servidor
+        model.addAttribute("message", switch (statusCode) {
+            case 400 -> "La solicitud no es válida. Revisa los datos e intenta de nuevo.";
+            case 401 -> "Necesitas iniciar sesión para ver esta página.";
+            case 403 -> "No tienes permiso para ver esta página.";
+            case 404 -> "La página que buscas no existe o fue movida.";
+            case 413 -> "El archivo es demasiado grande (máximo 10 MB).";
+            default -> "Ocurrió un error inesperado. Intenta de nuevo en unos minutos.";
+        });
+        if (statusCode >= 500) {
+            Object excepcion = request.getAttribute(RequestDispatcher.ERROR_EXCEPTION);
+            org.slf4j.LoggerFactory.getLogger(CustomErrorController.class)
+                    .error("Error {} en {}: {}", statusCode, request.getAttribute(RequestDispatcher.ERROR_REQUEST_URI),
+                            excepcion != null ? excepcion : message);
+        }
 
         // Redirigir según el tipo de error
         if (statusCode == HttpStatus.NOT_FOUND.value()) {

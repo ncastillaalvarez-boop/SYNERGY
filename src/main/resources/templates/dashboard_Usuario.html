@@ -45,12 +45,120 @@
       <div class="stats-grid">
         <div class="stat-card" style="--i:0"><img src="../static/img/icons/proyectos.png" th:src="@{/img/icons/proyectos.png}" alt="" class="stat-icon">
           <span class="stat-value" th:text="${totalProyectos}">0</span><span class="stat-label">Proyectos en los que participas</span></div>
-        <div class="stat-card" style="--i:1"><img src="../static/img/icons/meta-semanal.png" th:src="@{/img/icons/meta-semanal.png}" alt="" class="stat-icon">
-          <span class="stat-value" th:text="${tareasPendientes}">0</span><span class="stat-label">Tareas pendientes</span></div>
+        <a class="stat-card stat-link" style="--i:1" th:href="@{/tareas/buzon}"><img src="../static/img/icons/meta-semanal.png" th:src="@{/img/icons/meta-semanal.png}" alt="" class="stat-icon">
+          <span class="stat-value" th:text="${tareasPendientes}">0</span><span class="stat-label">Tareas pendientes</span></a>
         <div class="stat-card" style="--i:2"><img src="../static/img/icons/logro.png" th:src="@{/img/icons/logro.png}" alt="" class="stat-icon">
           <span class="stat-value" th:text="${tareasCompletadas}">0</span><span class="stat-label">Tareas completadas</span></div>
+        <div class="stat-card" style="--i:3" title="Proyectos activos en los que ya entregaste algo o comentaste">
+          <img src="../static/img/icons/progreso.png" th:src="@{/img/icons/progreso.png}" alt="" class="stat-icon">
+          <span class="stat-value" th:text="${panel.participacion} + '%'">0%</span>
+          <span class="stat-label">Participación <small th:text="'(' + ${panel.entregas} + ' entregas, ' + ${panel.puntualidad} + '% a tiempo)'">(0 entregas)</small></span></div>
       </div>
 
+      <!-- Próximas tareas + calendario -->
+      <div class="overview overview-v2">
+        <div class="side-card">
+          <h3><i class="fa-regular fa-clock"></i> Mis próximas tareas</h3>
+          <ul class="mini-list" th:if="${!#lists.isEmpty(panel.vencidas) or !#lists.isEmpty(panel.proximas)}">
+            <li th:each="t : ${panel.vencidas}" class="is-late">
+              <div><strong th:text="${t.titulo}">Tarea</strong><span th:text="${panel.nombresProyecto[t.idProyecto] ?: ''}">Proyecto</span></div>
+              <span class="badge badge-danger" th:text="'Venció ' + ${#temporals.format(t.fechaEntrega, 'dd/MM')}">Vencida</span>
+            </li>
+            <li th:each="t : ${panel.proximas}">
+              <div><strong th:text="${t.titulo}">Tarea</strong><span th:text="${panel.nombresProyecto[t.idProyecto] ?: ''}">Proyecto</span></div>
+              <span class="badge" th:classappend="${t.fechaEntrega != null and !t.fechaEntrega.isAfter(hoy.plusDays(3))} ? 'badge-warning' : 'badge-info'"
+                    th:text="${t.fechaEntrega != null ? (t.fechaEntrega.equals(hoy) ? 'Hoy' : #temporals.format(t.fechaEntrega, 'dd/MM')) : 'Sin fecha'}">dd/MM</span>
+            </li>
+          </ul>
+          <div th:if="${#lists.isEmpty(panel.vencidas) and #lists.isEmpty(panel.proximas)}" class="empty-mini">
+            <i class="fa-regular fa-face-smile"></i>
+            <span>No tienes tareas pendientes. <a th:href="@{/proyectos/participar}" class="link">Busca un proyecto</a> para sumarte.</span>
+          </div>
+          <a th:if="${!#lists.isEmpty(panel.todasAbiertas)}" th:href="@{/tareas/buzon}" class="btn btn-primary btn-sm"><i class="fa-solid fa-upload"></i> Ir a entregar</a>
+        </div>
+
+        <div class="calendario calendario-compacto">
+          <div class="calendario-head">
+            <a class="btn btn-secondary btn-icon btn-sm" th:href="@{/dashboard(mes=${calendario.anterior})}" aria-label="Mes anterior"><i class="fa-solid fa-chevron-left"></i></a>
+            <strong th:text="${calendario.titulo}">Octubre 2026</strong>
+            <a class="btn btn-secondary btn-icon btn-sm" th:href="@{/dashboard(mes=${calendario.siguiente})}" aria-label="Mes siguiente"><i class="fa-solid fa-chevron-right"></i></a>
+          </div>
+          <div class="calendario-grid">
+            <span class="calendario-dow" th:each="d : ${diasSemana}" th:text="${d}">Lun</span>
+            <th:block th:each="semana : ${calendario.semanas}">
+              <div th:each="dia : ${semana}" class="calendario-dia"
+                   th:classappend="${(dia.delMes ? '' : 'is-otro ') + (dia.hoy ? 'is-hoy ' : '') + (#lists.isEmpty(dia.eventos) ? '' : 'has-eventos')}"
+                   th:title="${#lists.isEmpty(dia.eventos)} ? '' : ${#strings.listJoin(dia.eventos.![titulo], ', ')}">
+                <span class="calendario-num" th:text="${dia.numero}">1</span>
+                <span th:if="${!#lists.isEmpty(dia.eventos)}" class="calendario-punto" th:text="${#lists.size(dia.eventos)}">1</span>
+              </div>
+            </th:block>
+          </div>
+        </div>
+      </div>
+
+      <!-- Insignias -->
+      <h2 class="section-heading"><i class="fa-solid fa-medal"></i> Tus insignias
+        <span class="count" th:text="${panel.insigniasObtenidas} + '/' + ${#lists.size(panel.insignias)}">0/6</span></h2>
+      <div class="insignias">
+        <div th:each="i : ${panel.insignias}" class="insignia" th:classappend="${i.obtenida} ? 'is-obtenida' : ''"
+             th:title="${i.obtenida} ? ${i.descripcion} : ${i.descripcion} + ' · ' + ${i.progreso}">
+          <span class="insignia-icono"><i class="fa-solid" th:classappend="${i.icono}"></i></span>
+          <strong th:text="${i.nombre}">Insignia</strong>
+          <small th:text="${i.obtenida} ? ${i.descripcion} : ${i.progreso}">progreso</small>
+        </div>
+      </div>
+
+      <!-- Historial de entregas con la retroalimentación del líder -->
+      <h2 class="section-heading"><i class="fa-solid fa-clock-rotate-left"></i> Tus últimas entregas</h2>
+      <div th:if="${#lists.isEmpty(panel.historial)}" class="empty-mini">
+        <i class="fa-regular fa-folder-open"></i> <span>Aún no has entregado tareas.</span></div>
+      <ul class="mini-list historial-entregas" th:unless="${#lists.isEmpty(panel.historial)}">
+        <li th:each="h : ${panel.historial}">
+          <div>
+            <strong th:text="${h.tarea}">Tarea</strong>
+            <span>
+              <th:block th:if="${!#strings.isEmpty(h.proyecto)}"><span th:text="${h.proyecto}">Proyecto</span> · </th:block>
+              <time th:if="${h.entrega.fechaEntrega != null}" data-relative th:attr="datetime=${h.entrega.fechaEntrega}" th:text="${#temporals.format(h.entrega.fechaEntrega, 'dd/MM/yyyy')}">fecha</time>
+              <th:block th:if="${!h.aTiempo and h.entrega.fechaEntrega != null}"> · <em>entregada tarde</em></th:block>
+            </span>
+            <span th:if="${h.entrega.comentariosRevisor != null and !#strings.isEmpty(h.entrega.comentariosRevisor)}" class="feedback">
+              <i class="fa-regular fa-comment"></i> <span th:text="${h.entrega.comentariosRevisor}">Comentario del líder</span></span>
+          </div>
+          <span class="badge" th:classappend="${h.entrega.estado == 'REVISADO'} ? 'badge-success' : (${h.entrega.estado == 'RECHAZADO'} ? 'badge-danger' : 'badge-warning')"
+                th:text="${h.entrega.estado == 'REVISADO'} ? 'Aprobada' : (${h.entrega.estado == 'RECHAZADO'} ? 'Rechazada' : 'En revisión')">Estado</span>
+        </li>
+      </ul>
+
+      <!-- Certificados -->
+      <th:block th:if="${!#lists.isEmpty(panel.completados)}">
+        <h2 class="section-heading"><i class="fa-solid fa-award"></i> Certificados de participación</h2>
+        <ul class="mini-list">
+          <li th:each="p : ${panel.completados}">
+            <div><strong th:text="${p.nombre}">Proyecto</strong><span th:text="'Terminó el ' + ${p.fechaFin != null ? #temporals.format(p.fechaFin, 'dd/MM/yyyy') : '-'}">fecha</span></div>
+            <a th:href="@{/certificado/{id}(id=${p.id})}" class="btn btn-secondary btn-xs"><i class="fa-regular fa-file-pdf"></i> Descargar</a>
+          </li>
+        </ul>
+      </th:block>
+
+      <!-- Recomendados -->
+      <th:block th:if="${!#lists.isEmpty(panel.recomendados)}">
+        <h2 class="section-heading"><i class="fa-solid fa-wand-magic-sparkles"></i> Proyectos para ti</h2>
+        <div class="card-grid">
+          <div th:each="p, st : ${panel.recomendados}" class="item-card" th:style="'--i:' + ${st.index}">
+            <div class="item-card-head">
+              <span class="item-card-icon"><i class="fa-solid fa-seedling"></i></span>
+              <div style="min-width:0"><h3 th:text="${p.nombre}">Proyecto</h3>
+                <span class="cell-muted" th:text="${(p.categoria ?: '') + (p.ubicacion != null ? ' · ' + p.ubicacion : '')}">Categoría · barrio</span></div>
+            </div>
+            <div class="item-card-actions">
+              <a th:href="@{/proyectos/participar(q=${p.codigo != null ? p.codigo : p.nombre})}" class="btn btn-primary btn-sm"><i class="fa-solid fa-hand"></i> Ver y participar</a>
+            </div>
+          </div>
+        </div>
+      </th:block>
+
+      <h2 class="section-heading"><i class="fa-solid fa-bolt"></i> Accesos rápidos</h2>
       <div class="tile-grid">
         <a th:href="@{/proyectos/participar}" class="tile" style="--i:0">
           <span class="tile-icon has-img"><img src="../static/img/icons/buscar.png" th:src="@{/img/icons/buscar.png}" alt="" class=""></span>

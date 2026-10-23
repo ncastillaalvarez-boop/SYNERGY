@@ -14,6 +14,11 @@ class Proyecto {
     this.tareas = const [],
     this.fechaCreacion,
     this.fechaActualizacion,
+    this.codigo,
+    this.categoria,
+    this.nivelRiesgo,
+    this.probabilidadRiesgo,
+    this.riesgoFactor,
   });
 
   final String? id;
@@ -28,6 +33,13 @@ class Proyecto {
   final List<String> tareas;
   final DateTime? fechaCreacion;
   final DateTime? fechaActualizacion;
+  final String? codigo;
+  final String? categoria;
+
+  /// Bajo, Medio o Alto según el modelo predictivo (null = sin datos o no activo).
+  final String? nivelRiesgo;
+  final double? probabilidadRiesgo;
+  final String? riesgoFactor;
 
   factory Proyecto.fromJson(Map<String, dynamic> json) => Proyecto(
         id: JsonUtils.string(json['id']),
@@ -42,6 +54,11 @@ class Proyecto {
         tareas: JsonUtils.strings(json['tareas']),
         fechaCreacion: JsonUtils.dateTime(json['fechaCreacion']),
         fechaActualizacion: JsonUtils.dateTime(json['fechaActualizacion']),
+        codigo: JsonUtils.string(json['codigo']),
+        categoria: JsonUtils.string(json['categoria']),
+        nivelRiesgo: JsonUtils.string(json['nivelRiesgo']),
+        probabilidadRiesgo: json['probabilidadRiesgo'] is num ? (json['probabilidadRiesgo'] as num).toDouble() : null,
+        riesgoFactor: JsonUtils.string(json['riesgoFactor']),
       );
 
   Map<String, dynamic> toJson() => JsonUtils.withoutNulls({
@@ -79,5 +96,10 @@ class Proyecto {
         tareas: tareas,
         fechaCreacion: fechaCreacion,
         fechaActualizacion: fechaActualizacion,
+        codigo: codigo,
+        categoria: categoria,
+        nivelRiesgo: nivelRiesgo,
+        probabilidadRiesgo: probabilidadRiesgo,
+        riesgoFactor: riesgoFactor,
       );
 }

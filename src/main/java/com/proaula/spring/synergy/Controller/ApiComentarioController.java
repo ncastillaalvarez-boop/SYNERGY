@@ -35,8 +35,12 @@ public class ApiComentarioController {
         this.proyectoService = proyectoService;
     }
 
+    /** Comentarios de un proyecto público o de uno en el que participas. */
     @GetMapping("/proyecto/{proyectoId}")
     public List<Comentario> listarPorProyecto(@PathVariable String proyectoId) {
+        Proyecto proyecto = proyectoService.buscarPorId(proyectoId);
+        if (proyecto == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Proyecto no encontrado");
+        com.proaula.spring.synergy.Security.ApiAcceso.exigirVer(proyecto);
         return comentarioService.listarPorProyecto(proyectoId);
     }
 
@@ -44,10 +48,16 @@ public class ApiComentarioController {
     public ResponseEntity<Comentario> crear(@PathVariable String proyectoId, @RequestBody Comentario comentario) {
         Proyecto proyecto = proyectoService.buscarPorId(proyectoId);
         if (proyecto == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Proyecto no encontrado");
+        com.proaula.spring.synergy.Security.ApiAcceso.exigirIntegrante(proyecto, "Inscríbete en el proyecto para comentar.");
         if (comentario.getContenido() == null || comentario.getContenido().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El comentario no puede estar vacío");
         }
+        if (comentario.getContenido().length() > 2000) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El comentario no puede pasar de 2000 caracteres");
+        }
         comentario.setId(null);
+        comentario.setContenido(comentario.getContenido().trim());
+        comentario.setFecha(java.time.LocalDateTime.now());
         comentario.setIdProyecto(proyectoId);
         comentario.setIdUsuario(usuarioActual().getId());
         Comentario creado = comentarioService.guardarComentario(comentario);
@@ -61,7 +71,9 @@ public class ApiComentarioController {
         Comentario comentario = comentarioService.obtenerPorId(id);
         if (comentario == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Comentario no encontrado");
         Usuarios usuario = usuarioActual();
-        if (!usuario.getId().equals(comentario.getIdUsuario()) && !"ADMINISTRADOR".equals(usuario.getRol())) {
+        Proyecto delComentario = proyectoService.buscarPorId(comentario.getIdProyecto());
+        if (!usuario.getId().equals(comentario.getIdUsuario())
+                && !com.proaula.spring.synergy.Security.ApiAcceso.gestiona(delComentario, usuario)) {
             throw new AccessDeniedException("Solo el autor puede eliminar este comentario");
         }
         comentarioService.eliminarComentario(id);

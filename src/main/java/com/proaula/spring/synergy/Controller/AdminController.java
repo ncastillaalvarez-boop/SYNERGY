@@ -60,6 +60,12 @@ public class AdminController {
     @Autowired
     private RiesgoProyectoService riesgoService;
 
+    @Autowired
+    private com.proaula.spring.synergy.Service.NotificacionService notificaciones;
+
+    @Autowired
+    private com.proaula.spring.synergy.Service.EstadisticasService estadisticas;
+
     private Usuarios validarAdmin(HttpSession session) {
         Usuarios usuario = SesionUtil.usuario(session);
         return SesionUtil.esAdmin(usuario) ? usuario : null;
@@ -68,6 +74,7 @@ public class AdminController {
     // ---------------------------------------------------------
     // PROYECTOS
     // ---------------------------------------------------------
+    @SuppressWarnings("unchecked")
     @GetMapping({"", "/", "/proyectos"})
     public String verProyectos(@ModelAttribute("filtro") FiltroProyectos filtro,
                                HttpSession session, Model model) {
@@ -76,6 +83,7 @@ public class AdminController {
             return "redirect:/login";
         }
 
+        filtro.ordenarFechas();
         // null = el administrador ve todos los estados, incluidos PENDIENTE y CANCELADO
         Page<Proyecto> pagina = busquedaService.buscarProyectos(filtro, null, POR_PAGINA);
         Set<String> idsLideres = pagina.getContent().stream()
@@ -85,28 +93,90 @@ public class AdminController {
         model.addAttribute("proyectos", pagina.getContent());
         model.addAttribute("paginacion", new Paginacion(pagina, "/admin/proyectos", filtro.comoParametros()));
         model.addAttribute("lideres", busquedaService.nombresDe(idsLideres));
-        model.addAttribute("porEstado", busquedaService.proyectosPorEstado());
+        // Gráficas: una agregación de MongoDB por gráfica (antes 16 consultas), con el rango de fechas del filtro
+        model.addAttribute("porEstado", estadisticas.proyectosPorEstado(filtro.getDesde(), filtro.getHasta()));
         model.addAttribute("volverProyectos", volverActual("/admin/proyectos", filtro.comoParametros(), filtro.getPage()));
         model.addAttribute("totalProyectos", busquedaService.contarProyectos(null));
         model.addAttribute("pendientes", busquedaService.contarProyectos("PENDIENTE"));
         model.addAttribute("activos", busquedaService.contarProyectos("ACTIVO"));
         model.addAttribute("totalUsuarios", busquedaService.contarUsuarios(null));
         // Modelo predictivo y gráficas
-        java.util.Map<String, Long> porRiesgo = busquedaService.activosPorRiesgo();
+        java.util.Map<String, Long> porRiesgo = estadisticas.activosPorRiesgo();
+        // Si ningún proyecto activo tiene nivel (base recién creada o el cálculo al arrancar falló),
+        // se calcula ahora mismo, como máximo una vez cada 10 minutos.
+        long conNivel = porRiesgo.getOrDefault("Alto", 0L) + porRiesgo.getOrDefault("Medio", 0L) + porRiesgo.getOrDefault("Bajo", 0L);
+        if (conNivel == 0 && porRiesgo.getOrDefault("Sin datos", 0L) > 0
+                && (riesgoService.getUltimoCalculo() == null
+                    || riesgoService.getUltimoCalculo().isBefore(LocalDateTime.now().minusMinutes(10)))) {
+            try {
+                riesgoService.recalcularTodos();
+                estadisticas.invalidar();
+                porRiesgo = estadisticas.activosPorRiesgo();
+            } catch (RuntimeException e) {
+                // el mensaje se muestra abajo con riesgoError
+            }
+        }
+        if (riesgoService.getUltimoError() != null && !model.containsAttribute("error")) {
+            model.addAttribute("error", "Modelo de riesgo: " + riesgoService.getUltimoError());
+        }
         model.addAttribute("porRiesgo", porRiesgo);
         model.addAttribute("riesgoAlto", porRiesgo.getOrDefault("Alto", 0L));
-        java.util.Map<String, Long> porCategoria = busquedaService.proyectosPorCategoria();
+        java.util.Map<String, Long> porCategoria = estadisticas.proyectosPorCategoria(filtro.getDesde(), filtro.getHasta());
         model.addAttribute("porCategoria", porCategoria);
         model.addAttribute("maxCategoria", Math.max(1L, porCategoria.values().stream().mapToLong(Long::longValue).max().orElse(1L)));
         model.addAttribute("ordenesAdmin", ordenesAdmin());
         model.addAttribute("nivelesRiesgo", com.proaula.spring.synergy.Service.RiesgoCalculadora.NIVELES);
+
+        // Tendencia de los últimos 12 meses
+        java.util.List<com.proaula.spring.synergy.Service.EstadisticasService.Mes> tendencia = estadisticas.tendenciaMensual();
+        model.addAttribute("tendencia", tendencia);
+        model.addAttribute("maxTendencia", Math.max(1L, tendencia.stream()
+                .mapToLong(m -> Math.max(m.creados(), Math.max(m.completados(), m.cancelados()))).max().orElse(1L)));
+
+        // Propuestas esperando aprobación hace más de 3 días y tiempo promedio de aprobación
+        model.addAttribute("pendientesAntiguos", estadisticas.pendientesAntiguos(DIAS_PENDIENTE, 5));
+        model.addAttribute("totalPendientesAntiguos", estadisticas.contarPendientesAntiguos(DIAS_PENDIENTE));
+        model.addAttribute("diasPendiente", DIAS_PENDIENTE);
+        model.addAttribute("diasPromedioAprobacion", estadisticas.diasPromedioAprobacion());
+
+        // Ranking: voluntarios con más entregas y líderes con más proyectos completados
+        java.util.List<com.proaula.spring.synergy.Service.EstadisticasService.Puesto> topVol = estadisticas.topVoluntarios(5);
+        java.util.List<com.proaula.spring.synergy.Service.EstadisticasService.Puesto> topLid = estadisticas.topLideres(5);
+        java.util.Set<String> idsRanking = new java.util.HashSet<>();
+        topVol.forEach(x -> idsRanking.add(x.idUsuario()));
+        topLid.forEach(x -> idsRanking.add(x.idUsuario()));
+        model.addAttribute("topVoluntarios", topVol);
+        model.addAttribute("topLideres", topLid);
+        model.addAttribute("nombresRanking", busquedaService.nombresDe(idsRanking));
+
+        // Mapa: proyectos activos por barrio con coordenadas aproximadas
+        java.util.List<java.util.Map<String, Object>> puntos = new java.util.ArrayList<>();
+        estadisticas.activosPorBarrio().forEach((barrio, n) -> {
+            double[] c = com.proaula.spring.synergy.Model.Catalogos.COORDENADAS_BARRIOS.get(barrio);
+            if (c != null) {
+                puntos.add(java.util.Map.of("barrio", barrio, "n", n, "lat", c[0], "lng", c[1]));
+            }
+        });
+        model.addAttribute("puntosMapa", puntos);
+        try {
+            model.addAttribute("puntosMapaJson", new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(puntos));
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            model.addAttribute("puntosMapaJson", "[]");
+        }
+        model.addAttribute("totalPorEstado", Math.max(1L, ((java.util.Map<String, Long>) model.getAttribute("porEstado"))
+                .values().stream().mapToLong(Long::longValue).sum()));
+        model.addAttribute("modeloVersion", com.proaula.spring.synergy.Service.ModeloInfo.VERSION);
         return "Administrador_Dashboard";
     }
+
+    /** Una propuesta lleva "mucho" esperando si pasan más de estos días sin aprobarse. */
+    private static final int DIAS_PENDIENTE = 3;
 
     /** Órdenes del administrador: los del catálogo + prioridad por riesgo. */
     private static java.util.Map<String, String> ordenesAdmin() {
         java.util.Map<String, String> m = new java.util.LinkedHashMap<>(com.proaula.spring.synergy.Model.Catalogos.ORDENES_PROYECTO);
         m.put("riesgo", "Mayor riesgo primero");
+        m.put("antiguos", "Más antiguos primero");
         return m;
     }
 
@@ -135,9 +205,113 @@ public class AdminController {
         if (validarAdmin(session) == null) {
             return "redirect:/login";
         }
-        int n = riesgoService.recalcularTodos();
-        ra.addFlashAttribute("mensaje", "Riesgo recalculado para " + n + " proyectos activos.");
+        try {
+            int n = riesgoService.recalcularTodos();
+            estadisticas.invalidar();
+            java.util.Map<String, Long> r = estadisticas.activosPorRiesgo();
+            ra.addFlashAttribute("mensaje", "Riesgo recalculado para " + n + " proyectos activos: Alto " + r.get("Alto")
+                    + ", Medio " + r.get("Medio") + ", Bajo " + r.get("Bajo") + ", sin datos " + r.get("Sin datos") + ".");
+        } catch (RuntimeException e) {
+            ra.addFlashAttribute("error", "No se pudo recalcular el riesgo: " + e.getClass().getSimpleName() + " - " + e.getMessage());
+            return "redirect:/admin";
+        }
         return "redirect:/admin/proyectos?estado=ACTIVO&orden=riesgo";
+    }
+
+    /** Ficha del modelo predictivo: versión, métricas, matriz de confusión y comparación de modelos. */
+    @GetMapping("/modelo")
+    public String verModelo(HttpSession session, Model model) {
+        Usuarios admin = validarAdmin(session);
+        if (admin == null) {
+            return "redirect:/login";
+        }
+        model.addAttribute("usuario", admin);
+        model.addAttribute("porRiesgo", estadisticas.activosPorRiesgo());
+        model.addAttribute("ultimoCalculo", riesgoService.getUltimoCalculo());
+        model.addAttribute("ultimoError", riesgoService.getUltimoError());
+        // Ficha del modelo (Service/ModeloInfo): se pasa como mapa porque Thymeleaf no permite T(...) en las vistas
+        java.util.Map<String, Object> ficha = new java.util.LinkedHashMap<>();
+        ficha.put("version", com.proaula.spring.synergy.Service.ModeloInfo.VERSION);
+        ficha.put("algoritmo", com.proaula.spring.synergy.Service.ModeloInfo.ALGORITMO);
+        ficha.put("fecha", com.proaula.spring.synergy.Service.ModeloInfo.FECHA_ENTRENAMIENTO);
+        ficha.put("dataset", com.proaula.spring.synergy.Service.ModeloInfo.DATASET);
+        ficha.put("exportacion", com.proaula.spring.synergy.Service.ModeloInfo.EXPORTACION);
+        ficha.put("f1cv", com.proaula.spring.synergy.Service.ModeloInfo.F1_MACRO_CV);
+        ficha.put("f1cvDesv", com.proaula.spring.synergy.Service.ModeloInfo.F1_MACRO_CV_DESV);
+        ficha.put("exactitud", com.proaula.spring.synergy.Service.ModeloInfo.EXACTITUD_PRUEBA);
+        ficha.put("f1prueba", com.proaula.spring.synergy.Service.ModeloInfo.F1_MACRO_PRUEBA);
+        model.addAttribute("ficha", ficha);
+        java.util.List<String> clases = com.proaula.spring.synergy.Service.ModeloInfo.CLASES;
+        java.util.List<java.util.Map<String, Object>> filas = new java.util.ArrayList<>();
+        for (int i = 0; i < clases.size(); i++) {
+            java.util.List<java.util.Map<String, Object>> celdas = new java.util.ArrayList<>();
+            for (int j = 0; j < clases.size(); j++) {
+                celdas.add(java.util.Map.of("n", com.proaula.spring.synergy.Service.ModeloInfo.MATRIZ_CONFUSION[i][j],
+                        "pct", com.proaula.spring.synergy.Service.ModeloInfo.porcentajeCelda(i, j), "acierto", i == j));
+            }
+            filas.add(java.util.Map.of("clase", clases.get(i), "celdas", celdas,
+                    "precision", Math.round(com.proaula.spring.synergy.Service.ModeloInfo.PRECISION[i] * 100),
+                    "recall", Math.round(com.proaula.spring.synergy.Service.ModeloInfo.RECALL[i] * 100)));
+        }
+        model.addAttribute("clases", clases);
+        model.addAttribute("matriz", filas);
+        model.addAttribute("comparacion", com.proaula.spring.synergy.Service.ModeloInfo.COMPARACION);
+        model.addAttribute("variables", com.proaula.spring.synergy.Service.RiesgoCalculadora.VARIABLES_NUMERICAS);
+        return "Admin_Modelo";
+    }
+
+    // ---------------------------------------------------------
+    // EXPORTAR (Excel abre los CSV directamente)
+    // ---------------------------------------------------------
+    private static final int MAX_EXPORTAR = 10000;
+    private static final java.time.format.DateTimeFormatter FECHA = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+    /** Proyectos con los filtros actuales del panel (por ejemplo, solo los de riesgo alto). */
+    @GetMapping("/exportar/proyectos.csv")
+    public org.springframework.http.ResponseEntity<byte[]> exportarProyectos(@ModelAttribute("filtro") FiltroProyectos filtro,
+                                                                             HttpSession session) {
+        if (validarAdmin(session) == null) {
+            return org.springframework.http.ResponseEntity.status(403).build();
+        }
+        filtro.ordenarFechas();
+        filtro.setPage(1);
+        java.util.List<Proyecto> lista = busquedaService.buscarProyectos(filtro, null, MAX_EXPORTAR).getContent();
+        java.util.Map<String, String> lideres = busquedaService.nombresDe(
+                lista.stream().map(Proyecto::getIdLider).filter(java.util.Objects::nonNull).collect(Collectors.toSet()));
+        java.util.List<Object[]> filas = new java.util.ArrayList<>();
+        for (Proyecto p : lista) {
+            filas.add(new Object[] {p.getCodigo(), p.getNombre(), p.getCategoria(), p.getUbicacion(), p.getEstado(),
+                    lideres.getOrDefault(p.getIdLider(), ""), p.getFechaInicio(), p.getFechaFin(),
+                    p.getParticipantes() == null ? 0 : p.getParticipantes().size(),
+                    p.getNivelRiesgo(), p.getProbabilidadRiesgo() == null ? "" : Math.round(p.getProbabilidadRiesgo() * 100) + " %",
+                    p.getRiesgoFactor(), p.getFechaEstimadaFin(),
+                    p.getFechaCreacion() == null ? "" : p.getFechaCreacion().format(FECHA)});
+        }
+        String csv = com.proaula.spring.synergy.Service.ExportadorCsv.tabla(java.util.List.of("Código", "Nombre", "Categoría",
+                "Barrio", "Estado", "Líder", "Inicio", "Fin", "Participantes", "Riesgo", "Probabilidad", "Lo que más influye",
+                "Fin estimado", "Creado"), filas);
+        return com.proaula.spring.synergy.Service.ExportadorCsv.descarga("proyectos_synergy_" + java.time.LocalDate.now() + ".csv", csv);
+    }
+
+    @GetMapping("/exportar/usuarios.csv")
+    public org.springframework.http.ResponseEntity<byte[]> exportarUsuarios(@RequestParam(required = false) String q,
+                                                                            @RequestParam(required = false) String rol,
+                                                                            @RequestParam(required = false) String estado,
+                                                                            HttpSession session) {
+        if (validarAdmin(session) == null) {
+            return org.springframework.http.ResponseEntity.status(403).build();
+        }
+        java.util.List<Object[]> filas = new java.util.ArrayList<>();
+        for (Usuarios u : busquedaService.buscarUsuarios(q, rol, estado, 1, MAX_EXPORTAR).getContent()) {
+            filas.add(new Object[] {u.getNombre(), u.getCorreo(), u.getRol(), u.isEnabled() ? "Activo" : "Inactivo",
+                    u.getProveedor() == null ? "LOCAL" : u.getProveedor(),
+                    u.getProyectos() == null ? 0 : u.getProyectos().size(),
+                    u.getFechaCreacion() == null ? "" : u.getFechaCreacion().format(FECHA),
+                    u.getUltimoAcceso() == null ? "" : u.getUltimoAcceso().format(FECHA)});
+        }
+        String csv = com.proaula.spring.synergy.Service.ExportadorCsv.tabla(java.util.List.of("Nombre", "Correo", "Rol", "Estado",
+                "Proveedor", "Proyectos", "Registro", "Último acceso"), filas);
+        return com.proaula.spring.synergy.Service.ExportadorCsv.descarga("usuarios_synergy_" + java.time.LocalDate.now() + ".csv", csv);
     }
 
     @GetMapping("/proyecto/{id}")
@@ -164,6 +338,7 @@ public class AdminController {
         model.addAttribute("usuario", admin);
         model.addAttribute("proyecto", proyecto);
         model.addAttribute("nombreLider", nombreLider);
+        model.addAttribute("historialRiesgo", riesgoService.historial(proyecto.getId(), 70));
         return "Admin_Ver_Proyecto";
     }
 
@@ -181,8 +356,10 @@ public class AdminController {
         if (proyecto != null && "PENDIENTE".equalsIgnoreCase(proyecto.getEstado())) {
             proyecto.setEstado("ACTIVO");
             proyecto.setFechaActualizacion(LocalDateTime.now());
+            proyecto.setFechaAprobacion(LocalDateTime.now());
             proyectoRepository.save(proyecto);
             riesgoService.recalcularProyecto(proyecto.getId());
+            estadisticas.invalidar();
 
             // Quien propuso el proyecto pasa a ser LÍDER al aprobarse (no antes)
             try {
@@ -196,6 +373,8 @@ public class AdminController {
             }
 
             historialService.registrarAccion("EDITAR", "PROYECTO", "Proyecto aprobado: " + proyecto.getNombre(), admin.getCorreo());
+            notificaciones.notificar(proyecto.getIdLider(), "PROYECTO", "¡Tu proyecto fue aprobado!",
+                    proyecto.getNombre() + " ya está publicado y puede recibir voluntarios.", "/lider/dashboard");
             ra.addFlashAttribute("mensaje", "Proyecto '" + proyecto.getNombre() + "' aprobado y publicado");
         }
         return "redirect:" + volverA(volver, "/admin/proyectos");
@@ -216,6 +395,8 @@ public class AdminController {
             proyecto.setFechaActualizacion(LocalDateTime.now());
             proyectoRepository.save(proyecto);
             historialService.registrarAccion("EDITAR", "PROYECTO", "Propuesta rechazada: " + proyecto.getNombre(), admin.getCorreo());
+            notificaciones.notificar(proyecto.getIdLider(), "PROYECTO", "Tu propuesta no fue aprobada",
+                    proyecto.getNombre() + ". Puedes ajustarla y proponerla de nuevo.", "/proyectos/registro");
             ra.addFlashAttribute("mensaje", "Propuesta '" + proyecto.getNombre() + "' rechazada");
         }
         return "redirect:" + volverA(volver, "/admin/proyectos");
@@ -370,14 +551,69 @@ public class AdminController {
             Usuarios usuario = usuarioService.obtenerUsuarioPorId(id);
             if (usuario.isEnabled()) {
                 usuarioService.desactivarUsuario(id);
+                historialService.registrarAccion("EDITAR", "USUARIO", "Cuenta desactivada: " + usuario.getCorreo(), admin.getCorreo());
                 ra.addFlashAttribute("mensaje", "Cuenta de '" + usuario.getNombre() + "' desactivada");
             } else {
                 usuarioService.activarUsuario(id);
+                historialService.registrarAccion("EDITAR", "USUARIO", "Cuenta activada: " + usuario.getCorreo(), admin.getCorreo());
                 ra.addFlashAttribute("mensaje", "Cuenta de '" + usuario.getNombre() + "' activada");
             }
         } catch (RuntimeException e) {
             ra.addFlashAttribute("error", "El usuario no existe");
         }
         return "redirect:" + volverA(volver, "/admin/usuarios");
+    }
+
+    /**
+     * Recuperar contraseña sin correo electrónico: el administrador genera una contraseña temporal
+     * y se la entrega al usuario, que luego la cambia en "Mi perfil".
+     */
+    @PostMapping("/usuario/{id}/restablecer-clave")
+    public String restablecerClave(@PathVariable String id, @RequestParam(value = "volver", required = false) String volver,
+                                   HttpSession session, RedirectAttributes ra) {
+        Usuarios admin = validarAdmin(session);
+        if (admin == null) {
+            return "redirect:/login";
+        }
+        try {
+            Usuarios usuario = usuarioService.obtenerUsuarioPorId(id);
+            String temporal = claveTemporal();
+            usuario.setContrasena(passwordEncoder.encode(temporal));
+            usuario.setUltimaCambioContrasena(LocalDateTime.now());
+            usuarioService.guardarUsuario(usuario);
+            historialService.registrarAccion("EDITAR", "USUARIO", "Contraseña restablecida: " + usuario.getCorreo(), admin.getCorreo());
+            ra.addFlashAttribute("mensaje", "Contraseña temporal de " + usuario.getCorreo() + ": " + temporal
+                    + "  (cópiala ahora: no se volverá a mostrar)");
+            ra.addFlashAttribute("claveTemporal", true);
+        } catch (RuntimeException e) {
+            ra.addFlashAttribute("error", "El usuario no existe");
+        }
+        return "redirect:" + volverA(volver, "/admin/usuarios");
+    }
+
+    @Autowired
+    private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+
+    private static final java.security.SecureRandom AZAR = new java.security.SecureRandom();
+
+    /** 12 caracteres que cumplen la política: mayúscula, minúscula, número y símbolo. */
+    static String claveTemporal() {
+        String mayus = "ABCDEFGHJKLMNPQRSTUVWXYZ", minus = "abcdefghijkmnpqrstuvwxyz", nums = "23456789", simb = "*#$%";
+        String todos = mayus + minus + nums;
+        StringBuilder sb = new StringBuilder();
+        sb.append(mayus.charAt(AZAR.nextInt(mayus.length())));
+        sb.append(minus.charAt(AZAR.nextInt(minus.length())));
+        sb.append(nums.charAt(AZAR.nextInt(nums.length())));
+        sb.append(simb.charAt(AZAR.nextInt(simb.length())));
+        while (sb.length() < 12) {
+            sb.append(todos.charAt(AZAR.nextInt(todos.length())));
+        }
+        // mezclar
+        char[] c = sb.toString().toCharArray();
+        for (int i = c.length - 1; i > 0; i--) {
+            int j = AZAR.nextInt(i + 1);
+            char t = c[i]; c[i] = c[j]; c[j] = t;
+        }
+        return new String(c);
     }
 }

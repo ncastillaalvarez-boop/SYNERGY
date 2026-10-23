@@ -27,7 +27,8 @@
         <nav class="page-toolbar">
           <div class="toolbar-group">
             <a th:href="@{/admin/proyectos}" class="btn btn-secondary btn-sm"><i class="fa-solid fa-arrow-left"></i> Proyectos</a>
-            
+            <a th:href="@{/admin/exportar/usuarios.csv(q=${q},rol=${rolFiltro},estado=${estadoFiltro})}" class="btn btn-secondary btn-sm"
+               title="Descarga los usuarios con los filtros actuales (se abre en Excel)"><i class="fa-solid fa-file-excel"></i> Exportar a Excel</a>
           </div>
         </nav>
         <div class="page-heading">
@@ -39,7 +40,7 @@
         </div>
       </header>
 
-      <div th:if="${mensaje}" class="alert alert-success" data-autohide>
+      <div th:if="${mensaje}" class="alert alert-success" th:attr="data-autohide=${claveTemporal != null ? null : ''}">
         <i class="fa-solid fa-circle-check"></i>
         <span th:text="${mensaje}"></span>
       </div>
@@ -134,6 +135,14 @@
                             th:title="${u.enabled} ? 'Desactivar cuenta' : 'Activar cuenta'">
                       <i class="fa-solid" th:classappend="${u.enabled} ? 'fa-user-slash' : 'fa-user-check'"></i>
                       <span th:text="${u.enabled} ? 'Desactivar' : 'Activar'">Desactivar</span>
+                    </button>
+                  </form>
+                  <form th:if="${u.proveedor == null or !#strings.equals(u.proveedor, 'GOOGLE')}"
+                        th:action="@{/admin/usuario/{id}/restablecer-clave(id=${u.id})}" method="post" class="inline-form">
+                    <input type="hidden" name="volver" th:value="${volverUsuarios}">
+                    <button type="submit" class="btn btn-secondary btn-sm btn-icon" title="Restablecer contraseña" aria-label="Restablecer contraseña"
+                            data-confirm="Se generará una contraseña temporal para este usuario. Tendrás que dársela tú." data-confirm-ok="Generar">
+                      <i class="fa-solid fa-key"></i>
                     </button>
                   </form>
                   <form th:action="@{/admin/usuario/{id}/eliminar(id=${u.id})}" method="post" class="inline-form">

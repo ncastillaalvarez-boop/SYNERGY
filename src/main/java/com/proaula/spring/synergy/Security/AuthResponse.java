@@ -12,6 +12,8 @@ public class AuthResponse {
     private String rol;
     private List<String> privilegios;
     private Long expiresIn;
+    /** Token para pedir uno de acceso nuevo en POST /api/auth/refresh (dura días). */
+    private String refreshToken;
 
     public AuthResponse() {}
 
@@ -90,5 +92,19 @@ public class AuthResponse {
 
     public void setExpiresIn(Long expiresIn) {
         this.expiresIn = expiresIn;
+    }
+
+    public String getRefreshToken() {
+        return refreshToken;
+    }
+
+    public void setRefreshToken(String refreshToken) {
+        this.refreshToken = refreshToken;
+    }
+
+    /** Agrega el token de renovación (devuelve this para encadenar). */
+    public AuthResponse conRefreshToken(String refreshToken) {
+        this.refreshToken = refreshToken;
+        return this;
     }
 }

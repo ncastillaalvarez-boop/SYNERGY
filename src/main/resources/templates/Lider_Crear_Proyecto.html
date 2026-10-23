@@ -57,12 +57,12 @@
         <div class="form-grid">
           <div class="field span-2">
             <label th:for="nombre"><i class="fa-solid fa-signature"></i> Nombre del proyecto</label>
-            <input type="text" th:field="*{nombre}" placeholder="Ej: Reforestación Urbana" required />
+            <input type="text" th:field="*{nombre}" minlength="5" maxlength="120" placeholder="Ej: Reforestación Urbana" required />
           </div>
 
           <div class="field span-2">
             <label th:for="descripcion"><i class="fa-solid fa-align-left"></i> Descripción</label>
-            <textarea th:field="*{descripcion}" placeholder="Describe el objetivo del proyecto..." rows="4" required></textarea>
+            <textarea th:field="*{descripcion}" maxlength="2000" placeholder="Describe el objetivo del proyecto..." rows="4" required></textarea>
           </div>
 
           <div class="field">

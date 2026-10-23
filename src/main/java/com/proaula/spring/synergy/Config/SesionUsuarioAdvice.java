@@ -23,6 +23,23 @@ import jakarta.servlet.http.HttpSession;
 @ControllerAdvice(annotations = Controller.class)
 public class SesionUsuarioAdvice {
 
+    private final com.proaula.spring.synergy.Service.NotificacionService notificaciones;
+
+    public SesionUsuarioAdvice(com.proaula.spring.synergy.Service.NotificacionService notificaciones) {
+        this.notificaciones = notificaciones;
+    }
+
+    /** Número de avisos sin leer para la campana del menú lateral. */
+    @ModelAttribute("notificacionesNoLeidas")
+    public long notificacionesNoLeidas(HttpServletRequest request) {
+        if (request.getRequestURI().startsWith(request.getContextPath() + "/api/")) {
+            return 0;
+        }
+        HttpSession session = request.getSession(false);
+        Usuarios u = session == null ? null : SesionUtil.usuario(session);
+        return u == null ? 0 : notificaciones.contarNoLeidas(u.getId());
+    }
+
     @ModelAttribute("usuarioActual")
     public Usuarios usuarioActual(HttpServletRequest request) {
         HttpSession session = request.getSession(false);

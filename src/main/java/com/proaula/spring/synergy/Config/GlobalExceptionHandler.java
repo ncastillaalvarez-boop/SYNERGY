@@ -22,6 +22,8 @@ import org.springframework.web.server.ResponseStatusException;
 @RestControllerAdvice(annotations = RestController.class)
 public class GlobalExceptionHandler {
 
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<Map<String, Object>> handleResponseStatusException(ResponseStatusException ex, WebRequest request) {
         Map<String, Object> response = new HashMap<>();
@@ -66,25 +68,52 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
     }
 
+    /** Datos inválidos que vienen de nuestras propias validaciones: el mensaje es para el usuario. */
+    @ExceptionHandler({IllegalArgumentException.class, IllegalStateException.class})
+    public ResponseEntity<Map<String, Object>> handleDatosInvalidos(RuntimeException ex, WebRequest request) {
+        return respuesta(HttpStatus.BAD_REQUEST, "Error en la solicitud", ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    public ResponseEntity<Map<String, Object>> handleArchivoGrande(Exception ex, WebRequest request) {
+        return respuesta(HttpStatus.PAYLOAD_TOO_LARGE, "Archivo demasiado grande", "El archivo supera el máximo de 10 MB.", request);
+    }
+
+    @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+    public ResponseEntity<Map<String, Object>> handleJsonInvalido(Exception ex, WebRequest request) {
+        return respuesta(HttpStatus.BAD_REQUEST, "Error en la solicitud", "Los datos enviados no tienen el formato esperado.", request);
+    }
+
+    /**
+     * RuntimeException lanzada a propósito por los servicios (p. ej. "Proyecto no existe") se
+     * devuelve con su mensaje. Errores de programación (NullPointerException, etc.) NO muestran
+     * detalles internos: se registran en la consola y el cliente recibe un mensaje genérico.
+     */
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<Map<String, Object>> handleRuntimeException(RuntimeException ex, WebRequest request) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("timestamp", LocalDateTime.now());
-        response.put("status", HttpStatus.BAD_REQUEST.value());
-        response.put("error", "Error en la solicitud");
-        response.put("message", ex.getMessage());
-        response.put("path", request.getDescription(false).replace("uri=", ""));
-        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+        if (ex.getClass() == RuntimeException.class && ex.getMessage() != null) {
+            return respuesta(HttpStatus.BAD_REQUEST, "Error en la solicitud", ex.getMessage(), request);
+        }
+        log.error("Error no controlado en la API: {}", request.getDescription(false), ex);
+        return respuesta(HttpStatus.INTERNAL_SERVER_ERROR, "Error interno del servidor",
+                "Ocurrió un error inesperado. Intenta de nuevo.", request);
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGlobalException(Exception ex, WebRequest request) {
+        log.error("Error no controlado en la API: {}", request.getDescription(false), ex);
+        return respuesta(HttpStatus.INTERNAL_SERVER_ERROR, "Error interno del servidor",
+                "Ocurrió un error inesperado. Intenta de nuevo.", request);
+    }
+
+    /** Formato único de error de la API: {timestamp, status, error, message, path}. */
+    private static ResponseEntity<Map<String, Object>> respuesta(HttpStatus status, String error, String mensaje, WebRequest request) {
         Map<String, Object> response = new HashMap<>();
         response.put("timestamp", LocalDateTime.now());
-        response.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
-        response.put("error", "Error interno del servidor");
-        response.put("message", ex.getMessage());
+        response.put("status", status.value());
+        response.put("error", error);
+        response.put("message", mensaje);
         response.put("path", request.getDescription(false).replace("uri=", ""));
-        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        return new ResponseEntity<>(response, status);
     }
 }

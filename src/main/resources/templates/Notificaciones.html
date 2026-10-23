@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>try{var t=localStorage.getItem('synergy-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
+  <title>Notificaciones – Synergy</title>
+  <link rel="icon" type="image/png" href="../static/img/logo-mark.png" th:href="@{/img/logo-mark.png}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <link rel="stylesheet" href="../static/css/core.css" th:href="@{/css/core.css}">
+  <link rel="stylesheet" href="../static/css/dashboard.css" th:href="@{/css/dashboard.css}">
+</head>
+<body>
+  <div class="bg-ambient" aria-hidden="true"></div>
+
+<div class="app-shell">
+  <div th:replace="~{fragments/sidebar :: sidebar('notificaciones')}"></div>
+  <div class="app-main">
+  <div th:replace="~{fragments/sidebar :: topbar}"></div>
+
+  <main class="app-container">
+    <section class="app-card">
+      <header class="page-header">
+        <nav class="page-toolbar">
+          <div class="toolbar-group">
+            <form th:if="${notificacionesNoLeidas > 0}" th:action="@{/notificaciones/leidas}" method="post" class="inline-form">
+              <button type="submit" class="btn btn-secondary btn-sm"><i class="fa-solid fa-check-double"></i> Marcar todas como leídas</button>
+            </form>
+          </div>
+        </nav>
+        <div class="page-heading">
+          <span class="page-icon has-img"><img src="../static/img/icons/notificaciones.png" th:src="@{/img/icons/notificaciones.png}" alt=""></span>
+          <div>
+            <h1 class="page-title">Notificaciones</h1>
+            <p class="page-subtitle" th:text="${notificacionesNoLeidas > 0} ? 'Tienes ' + ${notificacionesNoLeidas} + ' sin leer.' : 'Estás al día.'">Estás al día.</p>
+          </div>
+        </div>
+      </header>
+      <div th:if="${mensaje}" class="alert alert-success" data-autohide>
+        <i class="fa-solid fa-circle-check"></i>
+        <span th:text="${mensaje}"></span>
+      </div>
+      <div th:if="${error}" class="alert alert-error">
+        <i class="fa-solid fa-circle-exclamation"></i>
+        <span th:text="${error}"></span>
+      </div>
+
+      <div th:if="${#lists.isEmpty(notificaciones)}" class="empty-state">
+        <div class="empty-state-icon"><i class="fa-regular fa-bell"></i></div>
+        <h3>No tienes notificaciones</h3>
+        <p>Aquí verás las tareas que te asignen, las revisiones de tus entregas, los mensajes del líder y los avisos de riesgo.</p>
+      </div>
+
+      <ul class="notif-list" th:unless="${#lists.isEmpty(notificaciones)}">
+        <li th:each="n : ${notificaciones}"
+            th:class="'notif notif-' + ${#strings.toLowerCase(n.tipo ?: 'aviso')} + ${n.leida ? '' : ' is-unread'}">
+          <a th:href="@{/notificaciones/{id}/abrir(id=${n.id})}">
+            <span class="notif-icon"><i class="fa-solid" th:classappend="${n.icono}"></i></span>
+            <span class="notif-body">
+              <strong th:text="${n.titulo}">Título</strong>
+              <span th:if="${n.mensaje != null}" th:text="${n.mensaje}">Mensaje</span>
+              <time data-relative th:attr="datetime=${n.fecha}" th:text="${#temporals.format(n.fecha, 'dd/MM/yyyy HH:mm')}">fecha</time>
+            </span>
+            <span th:unless="${n.leida}" class="notif-dot" aria-label="Sin leer"></span>
+          </a>
+        </li>
+      </ul>
+    </section>
+  </main>
+  </div>
+</div>
+
+  <script src="../static/js/script.js" th:src="@{/js/script.js}"></script>
+</body>
+</html>

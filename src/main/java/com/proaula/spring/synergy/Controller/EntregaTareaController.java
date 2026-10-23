@@ -34,6 +34,12 @@ public class EntregaTareaController {
     @Autowired
     private TareaService tareaService;
 
+    @Autowired
+    private com.proaula.spring.synergy.Service.ProyectoService proyectoService;
+
+    @Autowired
+    private com.proaula.spring.synergy.Service.NotificacionService notificaciones;
+
     /** Devuelve la tarea solo si está asignada al usuario de la sesión. */
     private Tarea tareaAsignada(String id, Usuarios usuario) {
         Tarea tarea = tareaService.obtenerTareaPorId(id);
@@ -84,8 +90,16 @@ public class EntregaTareaController {
         try {
             entregaTareaService.guardarEntrega(id, usuario.getId(), archivo);
             tareaService.marcarComoCompletada(id);
+            com.proaula.spring.synergy.Model.Proyecto proyecto = proyectoService.buscarPorId(tarea.getIdProyecto());
+            if (proyecto != null) {
+                notificaciones.notificar(proyecto.getIdLider(), "ENTREGA", "Nueva entrega: " + tarea.getTitulo(),
+                        usuario.getNombre() + " entregó una evidencia en " + proyecto.getNombre(), "/lider/tareas/recibidas");
+            }
+        } catch (IllegalArgumentException e) {
+            model.addAttribute("error", e.getMessage());
+            return "Formulario_Entrega_Tarea";
         } catch (IOException e) {
-            model.addAttribute("error", "No se pudo guardar el archivo: " + e.getMessage());
+            model.addAttribute("error", "No se pudo guardar el archivo. Intenta de nuevo.");
             return "Formulario_Entrega_Tarea";
         }
 

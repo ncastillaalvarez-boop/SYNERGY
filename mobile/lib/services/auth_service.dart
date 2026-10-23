@@ -3,6 +3,7 @@ import 'dart:async';
 import '../models/auth_session.dart';
 import '../models/usuario.dart';
 import 'api_client.dart';
+import 'offline_cache.dart';
 import 'session_store.dart';
 
 class AuthService {
@@ -48,6 +49,7 @@ class AuthService {
   /// si no hay conexión, antes la excepción impedía salir de la app.
   Future<void> logout() async {
     await _sessionStore.clear();
+    await OfflineCache.limpiar();
     try {
       await _client.post('/auth/logout').timeout(const Duration(seconds: 3));
     } catch (_) {

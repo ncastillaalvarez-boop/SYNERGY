@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:synergy_mobile/utils/app_config.dart';
+import 'package:synergy_mobile/utils/password_policy.dart';
 
 void main() {
   group('AppConfig.normalizar', () {
@@ -14,6 +15,20 @@ void main() {
 
     test('un valor vacío vuelve a la dirección por defecto', () {
       expect(AppConfig.normalizar('  '), AppConfig.defaultApiBaseUrl);
+    });
+  });
+
+  group('PasswordPolicy (mismas reglas que el servidor)', () {
+    test('acepta las contraseñas de las cuentas de prueba', () {
+      expect(PasswordPolicy.validar('Synergy123*'), isNull);
+      expect(PasswordPolicy.validar('Voluntario123*'), isNull);
+    });
+
+    test('rechaza contraseñas cortas o sin mayúscula, minúscula o número', () {
+      expect(PasswordPolicy.validar('Ab1'), isNotNull);
+      expect(PasswordPolicy.validar('sinmayuscula1'), isNotNull);
+      expect(PasswordPolicy.validar('SINMINUSCULA1'), isNotNull);
+      expect(PasswordPolicy.validar('SinNumeros'), isNotNull);
     });
   });
 }

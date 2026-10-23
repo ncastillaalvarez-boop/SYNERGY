@@ -8,7 +8,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -34,11 +33,14 @@ public class ApiTareaController {
     private final TareaService tareaService;
     private final ProyectoService proyectoService;
     private final UsuarioService usuarioService;
+    private final com.proaula.spring.synergy.Service.NotificacionService notificaciones;
 
-    public ApiTareaController(TareaService tareaService, ProyectoService proyectoService, UsuarioService usuarioService) {
+    public ApiTareaController(TareaService tareaService, ProyectoService proyectoService, UsuarioService usuarioService,
+                              com.proaula.spring.synergy.Service.NotificacionService notificaciones) {
         this.tareaService = tareaService;
         this.proyectoService = proyectoService;
         this.usuarioService = usuarioService;
+        this.notificaciones = notificaciones;
     }
 
     @GetMapping("/mias")
@@ -56,14 +58,22 @@ public class ApiTareaController {
         return resultado;
     }
 
+    /** Tareas de un proyecto: solo sus integrantes (antes cualquier usuario las veía). */
     @GetMapping("/proyecto/{proyectoId}")
     public List<Tarea> porProyecto(@PathVariable String proyectoId) {
+        Proyecto proyecto = buscarProyecto(proyectoId);
+        com.proaula.spring.synergy.Security.ApiAcceso.exigirIntegrante(proyecto, "Solo los integrantes del proyecto ven sus tareas");
         return tareaService.obtenerTareasPorProyecto(proyectoId);
     }
 
     @GetMapping("/{id}")
     public Tarea obtener(@PathVariable String id) {
-        return buscar(id);
+        Tarea tarea = buscar(id);
+        Proyecto proyecto = proyectoService.buscarPorId(tarea.getIdProyecto());
+        if (!com.proaula.spring.synergy.Security.ApiAcceso.puedeVerTarea(tarea, proyecto, usuarioActual())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Tarea no encontrada");
+        }
+        return tarea;
     }
 
     @PostMapping
@@ -71,11 +81,20 @@ public class ApiTareaController {
     public ResponseEntity<Tarea> crear(@RequestBody Tarea tarea) {
         Proyecto proyecto = buscarProyecto(tarea.getIdProyecto());
         exigirLiderDelProyecto(proyecto);
+        String error = com.proaula.spring.synergy.Service.ValidacionService.validarTarea(tarea.getTitulo(), tarea.getFechaEntrega(), proyecto, true);
+        if (error != null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, error);
+        }
         tarea.setId(null);
+        tarea.setTitulo(tarea.getTitulo().trim());
+        tarea.setEstado("PENDIENTE");
+        tarea.setUsuariosAsignados(soloIntegrantes(tarea.getUsuariosAsignados(), proyecto));
         Tarea creada = tareaService.guardarTarea(tarea, tarea.getUsuariosAsignados());
         proyecto.addTarea(creada.getId());
         proyectoService.guardar(proyecto, null);
         sincronizarAsignaciones(creada);
+        notificaciones.notificarVarios(creada.getUsuariosAsignados(), "TAREA", "Nueva tarea: " + creada.getTitulo(),
+                proyecto.getNombre() + " · vence el " + creada.getFechaEntrega(), "/tareas/buzon");
         return ResponseEntity.status(HttpStatus.CREATED).body(creada);
     }
 
@@ -85,10 +104,20 @@ public class ApiTareaController {
         Tarea existente = buscar(id);
         Proyecto proyecto = buscarProyecto(existente.getIdProyecto());
         exigirLiderDelProyecto(proyecto);
-        cambios.setId(id);
-        cambios.setIdProyecto(existente.getIdProyecto());
-        cambios.setFechaCreacion(existente.getFechaCreacion());
-        Tarea actualizada = tareaService.guardarTarea(cambios, cambios.getUsuariosAsignados());
+        // Solo se copian los campos enviados (antes un campo ausente borraba el valor guardado)
+        if (cambios.getTitulo() != null) existente.setTitulo(cambios.getTitulo().trim());
+        if (cambios.getDescripcion() != null) existente.setDescripcion(cambios.getDescripcion());
+        if (cambios.getFechaEntrega() != null) existente.setFechaEntrega(cambios.getFechaEntrega());
+        if (cambios.getEstado() != null && ESTADOS.contains(cambios.getEstado().toUpperCase())) {
+            existente.setEstado(cambios.getEstado().toUpperCase());
+        }
+        String error = com.proaula.spring.synergy.Service.ValidacionService.validarTarea(existente.getTitulo(), existente.getFechaEntrega(), proyecto, false);
+        if (error != null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, error);
+        }
+        List<String> asignados = cambios.getUsuariosAsignados() != null
+                ? soloIntegrantes(cambios.getUsuariosAsignados(), proyecto) : existente.getUsuariosAsignados();
+        Tarea actualizada = tareaService.guardarTarea(existente, asignados);
         sincronizarAsignaciones(actualizada);
         return actualizada;
     }
@@ -98,16 +127,15 @@ public class ApiTareaController {
         Tarea tarea = buscar(id);
         Usuarios usuario = usuarioActual();
         Proyecto proyecto = buscarProyecto(tarea.getIdProyecto());
-        if (!"ADMINISTRADOR".equals(usuario.getRol())
-                && !usuario.getId().equals(proyecto.getIdLider())
+        if (!com.proaula.spring.synergy.Security.ApiAcceso.gestiona(proyecto, usuario)
                 && !tarea.getUsuariosAsignados().contains(usuario.getId())) {
             throw new AccessDeniedException("No puedes actualizar esta tarea");
         }
         String estado = body.get("estado");
-        if (estado == null || estado.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El estado es obligatorio");
+        if (estado == null || !ESTADOS.contains(estado.trim().toUpperCase())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Estado no válido. Usa PENDIENTE, EN_PROGRESO, COMPLETADA o CANCELADA.");
         }
-        tareaService.cambiarEstado(id, estado.toUpperCase());
+        tareaService.cambiarEstado(id, estado.trim().toUpperCase());
         return buscar(id);
     }
 
@@ -118,6 +146,21 @@ public class ApiTareaController {
         exigirLiderDelProyecto(buscarProyecto(tarea.getIdProyecto()));
         tareaService.eliminar(id);
         return ResponseEntity.noContent().build();
+    }
+
+    private static final java.util.Set<String> ESTADOS = java.util.Set.of("PENDIENTE", "EN_PROGRESO", "COMPLETADA", "CANCELADA");
+
+    /** Solo se pueden asignar voluntarios inscritos en el proyecto. */
+    private static List<String> soloIntegrantes(List<String> ids, Proyecto proyecto) {
+        List<String> resultado = new ArrayList<>();
+        if (ids != null) {
+            for (String uid : ids) {
+                if (uid != null && proyecto.getParticipantes().contains(uid) && !resultado.contains(uid)) {
+                    resultado.add(uid);
+                }
+            }
+        }
+        return resultado;
     }
 
     private void sincronizarAsignaciones(Tarea tarea) {
@@ -145,15 +188,10 @@ public class ApiTareaController {
     }
 
     private Usuarios usuarioActual() {
-        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if (principal instanceof Usuarios usuario) return usuario;
-        throw new AccessDeniedException("No hay un usuario autenticado");
+        return com.proaula.spring.synergy.Security.ApiAcceso.usuarioActual();
     }
 
     private void exigirLiderDelProyecto(Proyecto proyecto) {
-        Usuarios usuario = usuarioActual();
-        if (!"ADMINISTRADOR".equals(usuario.getRol()) && !usuario.getId().equals(proyecto.getIdLider())) {
-            throw new AccessDeniedException("Solo el líder del proyecto puede gestionar sus tareas");
-        }
+        com.proaula.spring.synergy.Security.ApiAcceso.exigirGestion(proyecto, "Solo el líder del proyecto puede gestionar sus tareas");
     }
 }

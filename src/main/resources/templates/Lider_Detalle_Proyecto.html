@@ -30,6 +30,12 @@
             <a th:href="@{/tareas/asignar/{id}(id=${proyecto.id})}" class="btn btn-primary btn-sm"><i class="fa-solid fa-plus"></i> Nueva tarea</a>
             <a th:href="@{/proyectos/{id}/comentarios(id=${proyecto.id})}" class="btn btn-info btn-sm"><i class="fa-regular fa-comments"></i> Comentarios</a>
             <a th:href="@{/lider/proyecto/{id}/editar(id=${proyecto.id})}" class="btn btn-warning btn-sm"><i class="fa-solid fa-pen"></i> Editar</a>
+            <a th:href="@{/lider/proyecto/{id}/reporte(id=${proyecto.id})}" class="btn btn-secondary btn-sm"><i class="fa-regular fa-file-pdf"></i> Reporte</a>
+            <form th:action="@{/lider/proyecto/{id}/duplicar(id=${proyecto.id})}" method="post" class="inline-form">
+              <button type="submit" class="btn btn-secondary btn-sm"
+                      data-confirm="Se creará un proyecto nuevo con los mismos datos y tareas (sin voluntarios), empezando hoy. ¿Continuar?"
+                      data-confirm-ok="Usar como plantilla"><i class="fa-regular fa-copy"></i> Usar como plantilla</button>
+            </form>
           </div>
         </nav>
         <div class="page-heading">
@@ -84,7 +90,75 @@
       </form>
       <div class="progress-track mt-2"><div class="progress-fill" th:style="'--w:' + ${progreso} + '%'"></div></div>
 
-      <h2 class="section-heading"><i class="fa-solid fa-users"></i> Integrantes del equipo
+      <!-- ===================== TABLERO ===================== -->
+      <h2 class="section-heading" id="tablero"><i class="fa-solid fa-table-columns"></i> Tablero de tareas
+        <span class="count" th:text="${#lists.size(tareas)}">0</span>
+        <a th:href="@{/tareas/asignar/{id}(id=${proyecto.id})}" class="btn btn-primary btn-sm push-end"><i class="fa-solid fa-plus"></i> Nueva tarea</a></h2>
+
+      <div th:if="${#lists.isEmpty(tareas)}" class="empty-state">
+        <div class="empty-state-icon has-img"><img src="../static/img/icons/tareas.png" th:src="@{/img/icons/tareas.png}" alt="" class=""></div>
+        <h3>Sin tareas</h3>
+        <p>Asigna la primera tarea a tu equipo: el modelo de riesgo necesita tareas para predecir.</p>
+        <a th:href="@{/tareas/asignar/{id}(id=${proyecto.id})}" class="btn btn-primary mt-2"><i class="fa-solid fa-plus"></i> Crear la primera tarea</a>
+      </div>
+
+      <div th:if="${!#lists.isEmpty(tareas)}" class="kanban" data-kanban>
+        <p class="kanban-ayuda cell-muted"><i class="fa-solid fa-hand-pointer"></i> Arrastra una tarjeta a otra columna (o usa el selector de cada tarjeta) para cambiar su estado.</p>
+        <p class="alert alert-error kanban-alerta" hidden></p>
+        <div class="kanban-cols">
+          <section th:each="col : ${tablero}" class="kanban-col" th:attr="data-estado=${col.key}"
+                   th:classappend="'col-' + ${#strings.toLowerCase(col.key)}">
+            <header><span th:text="${nombresEstado[col.key]}">Pendiente</span> <span class="count" th:text="${#lists.size(col.value)}">0</span></header>
+            <div class="kanban-items">
+              <article th:each="t : ${col.value}" class="kanban-card" draggable="true"
+                       th:attr="data-id=${t.id},data-url=@{/lider/tareas/{tid}/estado(tid=${t.id})}">
+                <strong th:text="${t.titulo}">Tarea</strong>
+                <span class="kanban-fecha" th:if="${t.fechaEntrega != null}"
+                      th:classappend="${col.key != 'COMPLETADA' and col.key != 'CANCELADA' and t.fechaEntrega.isBefore(hoy)} ? 'is-late'">
+                  <i class="fa-regular fa-clock"></i> <span th:text="${#temporals.format(t.fechaEntrega, 'dd/MM/yyyy')}">fecha</span></span>
+                <div class="avatar-stack">
+                  <th:block th:each="i : ${integrantes}">
+                    <span th:if="${#lists.contains(t.usuariosAsignados, i.id)}" class="avatar avatar-sm" th:title="${i.nombre}" th:text="${i.iniciales}">AB</span>
+                  </th:block>
+                </div>
+                <!-- Sin JavaScript (o en el celular): selector + botón -->
+                <form th:action="@{/lider/tareas/{tid}/estado(tid=${t.id})}" method="post" class="kanban-form">
+                  <select name="estado" aria-label="Estado de la tarea">
+                    <option th:each="e : ${nombresEstado}" th:value="${e.key}" th:text="${e.value}" th:selected="${e.key == col.key}">Estado</option>
+                  </select>
+                  <button type="submit" class="btn btn-secondary btn-xs" aria-label="Guardar estado"><i class="fa-solid fa-check"></i></button>
+                </form>
+              </article>
+              <p th:if="${#lists.isEmpty(col.value)}" class="kanban-vacio">Sin tareas</p>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <!-- ===================== CALENDARIO ===================== -->
+      <h2 class="section-heading"><i class="fa-regular fa-calendar"></i> Calendario de entregas</h2>
+      <div class="calendario">
+        <div class="calendario-head">
+          <a class="btn btn-secondary btn-icon btn-sm" th:href="@{/lider/proyecto/{id}/detalle(id=${proyecto.id},mes=${calendario.anterior})}" aria-label="Mes anterior"><i class="fa-solid fa-chevron-left"></i></a>
+          <strong th:text="${calendario.titulo}">Octubre 2026</strong>
+          <a class="btn btn-secondary btn-icon btn-sm" th:href="@{/lider/proyecto/{id}/detalle(id=${proyecto.id},mes=${calendario.siguiente})}" aria-label="Mes siguiente"><i class="fa-solid fa-chevron-right"></i></a>
+        </div>
+        <div class="calendario-grid" role="grid">
+          <span class="calendario-dow" th:each="d : ${diasSemana}" th:text="${d}">Lun</span>
+          <th:block th:each="semana : ${calendario.semanas}">
+            <div th:each="dia : ${semana}" class="calendario-dia"
+                 th:classappend="${(dia.delMes ? '' : 'is-otro ') + (dia.hoy ? 'is-hoy ' : '') + (#lists.isEmpty(dia.eventos) ? '' : 'has-eventos')}">
+              <span class="calendario-num" th:text="${dia.numero}">1</span>
+              <span th:each="t : ${dia.eventos}" class="calendario-evento"
+                    th:classappend="${#strings.toUpperCase(t.estado) == 'COMPLETADA'} ? 'is-hecha' : ''"
+                    th:title="${t.titulo}" th:text="${t.titulo}">Tarea</span>
+            </div>
+          </th:block>
+        </div>
+      </div>
+
+      <!-- ===================== EQUIPO ===================== -->
+      <h2 class="section-heading"><i class="fa-solid fa-users"></i> Equipo
         <span class="count" th:text="${#lists.size(integrantes)}">0</span></h2>
       <div class="cluster">
         <div th:if="${#lists.isEmpty(integrantes)}" class="text-subtle"><i class="fa-regular fa-user"></i> Sin integrantes aún.</div>
@@ -92,43 +166,52 @@
           <span class="avatar avatar-sm" th:text="${i.iniciales}">AB</span>
           <span class="chip-body">
             <span class="chip-title" th:text="${i.nombre}">Nombre</span>
-            <span class="chip-sub" th:text="${i.id == proyecto.idLider} ? 'Líder' : 'Voluntario'">Voluntario</span>
+            <span class="chip-sub" th:if="${i.id == proyecto.idLider}">Líder</span>
+            <span class="chip-sub" th:if="${i.id != proyecto.idLider}"
+                  th:text="${#sets.contains(activosIds, i.id)} ? 'Voluntario · ha participado' : 'Voluntario · sin participar'">Voluntario</span>
           </span>
         </div>
       </div>
 
-      <h2 class="section-heading"><i class="fa-solid fa-list-check"></i> Tareas del proyecto
-        <span class="count" th:text="${#lists.size(tareas)}">0</span></h2>
+      <div class="team-tools">
+        <!-- Mensaje a todo el equipo -->
+        <form th:action="@{/lider/proyecto/{id}/mensaje(id=${proyecto.id})}" method="post" class="side-card">
+          <h3><i class="fa-regular fa-paper-plane"></i> Mensaje al equipo</h3>
+          <textarea name="texto" rows="3" maxlength="500" required placeholder="Ej: Este sábado nos vemos a las 7 a. m. en la playa."></textarea>
+          <button type="submit" class="btn btn-primary btn-sm"><i class="fa-regular fa-paper-plane"></i> Enviar a los voluntarios</button>
+          <small class="cell-muted">Les llega como notificación dentro de Synergy.</small>
+        </form>
 
-      <div th:if="${#lists.isEmpty(tareas)}" class="empty-state">
-        <div class="empty-state-icon has-img"><img src="../static/img/icons/tareas.png" th:src="@{/img/icons/tareas.png}" alt="" class=""></div>
-        <h3>Sin tareas</h3>
-        <p>Asigna la primera tarea a tu equipo.</p>
-        <a th:href="@{/tareas/asignar/{id}(id=${proyecto.id})}" class="btn btn-primary mt-2"><i class="fa-solid fa-plus"></i> Nueva tarea</a>
-      </div>
+        <!-- Voluntarios inactivos -->
+        <div class="side-card">
+          <h3><i class="fa-solid fa-user-clock"></i> Inscritos que no han participado
+            <span class="count" th:text="${#lists.size(inactivos)}">0</span></h3>
+          <p th:if="${#lists.isEmpty(inactivos)}" class="cell-muted mini-empty"><i class="fa-regular fa-face-smile"></i> Todos los voluntarios han participado.</p>
+          <ul class="mini-list" th:unless="${#lists.isEmpty(inactivos)}">
+            <li th:each="u, st : ${inactivos}" th:if="${st.index < 6}">
+              <div><strong th:text="${u.nombre}">Nombre</strong><span th:text="${u.correo}">correo</span></div>
+            </li>
+          </ul>
+          <form th:unless="${#lists.isEmpty(inactivos)}" th:action="@{/lider/proyecto/{id}/recordar(id=${proyecto.id})}" method="post">
+            <button type="submit" class="btn btn-secondary btn-sm"><i class="fa-regular fa-bell"></i> Enviarles un recordatorio</button>
+          </form>
+        </div>
 
-      <div th:if="${!#lists.isEmpty(tareas)}" class="table-wrap">
-        <table class="table">
-          <thead><tr><th>Tarea</th><th>Entrega</th><th>Asignado a</th><th>Estado</th></tr></thead>
-          <tbody>
-            <tr th:each="t : ${tareas}">
-              <td><span class="cell-strong" th:text="${t.titulo}">Título</span><br><small th:text="${t.descripcion}">Descripción</small></td>
-              <td><span class="meta" style="margin:0"><span><i class="fa-regular fa-clock"></i> <span th:text="${t.fechaEntrega != null ? #temporals.format(t.fechaEntrega, 'dd/MM/yyyy') : '-'}">-</span></span></span></td>
-              <td>
-                <div th:if="${#lists.isEmpty(t.usuariosAsignados)}" class="text-subtle">–</div>
-                <div class="avatar-stack">
-                  <th:block th:each="i : ${integrantes}">
-                    <span th:if="${#lists.contains(t.usuariosAsignados, i.id)}" class="avatar avatar-sm" th:title="${i.nombre}" th:text="${i.iniciales}">AB</span>
-                  </th:block>
-                </div>
-              </td>
-              <td>
-                <span class="badge" th:text="${t.estado}"
-                      th:classappend="${#strings.toUpperCase(t.estado) == 'COMPLETADA'} ? 'badge-success' : (${#strings.toUpperCase(t.estado) == 'EN_PROGRESO'} ? 'badge-info' : (${#strings.toUpperCase(t.estado) == 'CANCELADA'} ? 'badge-danger' : 'badge-warning'))">PENDIENTE</span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <!-- Voluntarios recomendados -->
+        <div class="side-card" th:if="${proyecto.estado == 'ACTIVO'}">
+          <h3><i class="fa-solid fa-wand-magic-sparkles"></i> Voluntarios recomendados</h3>
+          <p class="cell-muted" style="margin:0">Han participado en proyectos de <strong th:text="${proyecto.categoria ?: 'esta categoría'}">categoría</strong> y aún no están en este.</p>
+          <p th:if="${#lists.isEmpty(recomendados)}" class="cell-muted mini-empty">No hay recomendaciones por ahora.</p>
+          <ul class="mini-list" th:unless="${#lists.isEmpty(recomendados)}">
+            <li th:each="r : ${recomendados}">
+              <div><strong th:text="${r.usuario.nombre}">Nombre</strong>
+                <span th:text="${r.proyectosCategoria} + (${r.proyectosCategoria == 1} ? ' proyecto similar' : ' proyectos similares')">2 proyectos</span></div>
+              <form th:action="@{/lider/proyecto/{id}/invitar/{uid}(id=${proyecto.id},uid=${r.usuario.id})}" method="post" class="inline-form">
+                <button type="submit" class="btn btn-secondary btn-xs"><i class="fa-solid fa-envelope-open-text"></i> Invitar</button>
+              </form>
+            </li>
+          </ul>
+        </div>
       </div>
 
     </section>

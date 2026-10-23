@@ -59,12 +59,12 @@
         <div class="form-grid">
           <div class="field span-2">
             <label th:for="nombre"><i class="fa-solid fa-signature"></i> Nombre del proyecto</label>
-            <input type="text" th:field="*{nombre}" placeholder="Nombre del proyecto" required />
+            <input type="text" th:field="*{nombre}" minlength="5" maxlength="120" placeholder="Nombre del proyecto" required />
           </div>
 
           <div class="field span-2">
             <label th:for="descripcion"><i class="fa-solid fa-align-left"></i> Descripción</label>
-            <textarea th:field="*{descripcion}" placeholder="Descripción del proyecto..." rows="4" required></textarea>
+            <textarea th:field="*{descripcion}" maxlength="2000" placeholder="Descripción del proyecto..." rows="4" required></textarea>
           </div>
 
           <div class="field">
@@ -79,6 +79,7 @@
 
           <div class="field">
             <label th:for="categoria"><i class="fa-solid fa-leaf"></i> Categoría</label>
+            <small th:if="${proyecto.categoria == null}" class="field-hint is-warning"><i class="fa-solid fa-triangle-exclamation"></i> Este proyecto no tiene categoría: elige una para poder guardar.</small>
             <select th:field="*{categoria}" required>
               <option value="">Selecciona…</option>
               <option th:each="c : ${categorias}" th:value="${c}" th:text="${c}">Categoría</option>

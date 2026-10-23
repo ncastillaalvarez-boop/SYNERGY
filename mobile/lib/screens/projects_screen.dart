@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/auth_session.dart';
 import '../models/proyecto.dart';
+import '../services/offline_cache.dart';
 import '../services/project_service.dart';
 import '../utils/api_exception.dart';
 import '../widgets/app_loading.dart';
@@ -81,13 +82,33 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
             final projects = snapshot.data ?? [];
             final visible = projects.where((project) {
               final normalized = _query.toLowerCase();
-              return project.nombre.toLowerCase().contains(normalized) || project.descripcion.toLowerCase().contains(normalized);
+              return project.nombre.toLowerCase().contains(normalized) ||
+                  project.descripcion.toLowerCase().contains(normalized) ||
+                  (project.codigo ?? '').toLowerCase().contains(normalized);
             }).toList();
+            if (widget.session.isLeader || widget.session.isAdmin) {
+              // Prioridad: primero los de riesgo alto
+              const orden = {'Alto': 0, 'Medio': 1, 'Bajo': 2};
+              visible.sort((a, b) => (orden[a.nivelRiesgo] ?? 3).compareTo(orden[b.nivelRiesgo] ?? 3));
+            }
             return RefreshIndicator(
               onRefresh: _reload,
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
                 children: [
+                  if (OfflineCache.ultimaLecturaDesdeCache)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Material(
+                        color: Colors.amber.withValues(alpha: .15),
+                        borderRadius: BorderRadius.circular(12),
+                        child: const ListTile(
+                          leading: Icon(Icons.cloud_off_outlined, color: Colors.amber),
+                          title: Text('Sin conexión'),
+                          subtitle: Text('Estás viendo la última copia guardada. Desliza hacia abajo para actualizar.'),
+                        ),
+                      ),
+                    ),
                   TextField(
                     onChanged: (value) => setState(() => _query = value),
                     decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'Buscar por nombre o tema'),
@@ -98,7 +119,11 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                   else
                     ...visible.map((project) => Padding(
                           padding: const EdgeInsets.only(bottom: 12),
-                          child: ProjectCard(project: project, onTap: () => _openDetail(project)),
+                          child: ProjectCard(
+                            project: project,
+                            showRisk: widget.session.isLeader || widget.session.isAdmin,
+                            onTap: () => _openDetail(project),
+                          ),
                         )),
                 ],
               ),

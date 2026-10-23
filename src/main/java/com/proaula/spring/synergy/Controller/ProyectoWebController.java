@@ -1,9 +1,6 @@
 package com.proaula.spring.synergy.Controller;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -14,7 +11,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.proaula.spring.synergy.Model.Catalogos;
@@ -44,6 +40,9 @@ public class ProyectoWebController {
     @Autowired
     private HistorialService historialService;
 
+    @Autowired
+    private com.proaula.spring.synergy.Service.ValidacionService validacionService;
+
     // ==============================
     // MENÚ DE PROYECTOS DEL PARTICIPANTE
     // ==============================
@@ -71,17 +70,19 @@ public class ProyectoWebController {
 
     @PostMapping("/guardar")
     public String guardarProyecto(@ModelAttribute Proyecto proyecto,
-                                  @RequestParam(value = "archivo", required = false) MultipartFile archivo,
                                   HttpSession session,
+                                  Model model,
                                   RedirectAttributes ra) {
         Usuarios usuario = SesionUtil.usuario(session);
         if (usuario == null) {
             return "redirect:/login";
         }
-        if (proyecto.getFechaInicio() != null && proyecto.getFechaFin() != null
-                && proyecto.getFechaFin().isBefore(proyecto.getFechaInicio())) {
-            ra.addFlashAttribute("error", "La fecha de fin no puede ser anterior a la de inicio");
-            return "redirect:/proyectos/registro";
+        proyecto.setCategoria(LiderController.deCatalogo(proyecto.getCategoria(), Catalogos.CATEGORIAS));
+        String error = validacionService.validarProyecto(proyecto, null);
+        if (error != null) {
+            model.addAttribute("proyecto", proyecto);
+            model.addAttribute("error", error);
+            return "registro_proyectos";
         }
 
         proyecto.setId(null);
@@ -96,7 +97,7 @@ public class ProyectoWebController {
 
         try {
             // El proponente pasa a ser LÍDER cuando el administrador aprueba el proyecto
-            Proyecto guardado = proyectoService.guardar(proyecto, archivo);
+            Proyecto guardado = proyectoService.guardar(proyecto, null);
             historialService.registrarAccion("CREAR", "PROYECTO", "Proyecto propuesto: " + guardado.getNombre(), usuario.getCorreo());
 
             // Refrescar la sesión por si el rol cambió a LIDER

@@ -39,8 +39,14 @@ public class ApiParticipacionController {
         return participacionService.listarProyectosPorUsuario(usuarioActual().getId());
     }
 
+    /** Participantes de un proyecto: solo sus integrantes (antes cualquier usuario). */
     @GetMapping("/proyecto/{proyectoId}")
     public List<Participacion> participantes(@PathVariable String proyectoId) {
+        Proyecto proyecto = proyectoService.buscarPorId(proyectoId);
+        if (proyecto == null) {
+            throw new org.springframework.web.server.ResponseStatusException(HttpStatus.NOT_FOUND, "Proyecto no encontrado");
+        }
+        com.proaula.spring.synergy.Security.ApiAcceso.exigirIntegrante(proyecto, "Solo los integrantes ven la lista de participantes");
         return participacionService.listarParticipantes(proyectoId);
     }
 
@@ -54,7 +60,13 @@ public class ApiParticipacionController {
         if (proyectoService.buscarPorId(proyectoId) == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("mensaje", "Proyecto no encontrado"));
         }
-        boolean creado = participacionService.inscribirUsuario(proyectoId, usuarioActual().getId());
+        boolean creado;
+        try {
+            creado = participacionService.inscribirUsuario(proyectoId, usuarioActual().getId());
+        } catch (RuntimeException e) {
+            // p. ej. "Este proyecto no está recibiendo voluntarios en este momento"
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", e.getMessage(), "mensaje", e.getMessage()));
+        }
         return ResponseEntity.status(creado ? HttpStatus.CREATED : HttpStatus.OK)
                 .body(Map.of("inscrito", creado, "mensaje", creado ? "Participación creada" : "Ya estabas inscrito"));
     }

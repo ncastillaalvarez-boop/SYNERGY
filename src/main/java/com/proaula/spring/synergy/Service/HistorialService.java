@@ -1,12 +1,34 @@
 package com.proaula.spring.synergy.Service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
+
+import com.proaula.spring.synergy.Model.RegistroAuditoria;
+
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
+/**
+ * Historial de acciones con dos estructuras:
+ *  - una PILA en memoria (deshacer / rehacer) que muestra la página /historial;
+ *  - el registro de AUDITORÍA en MongoDB (colección "auditoria"), que no se pierde al
+ *    reiniciar y no se puede borrar desde la interfaz (página /admin/auditoria).
+ */
 @Service
 public class HistorialService {
+
+    private static final Logger log = LoggerFactory.getLogger(HistorialService.class);
+    /** Acciones que se cargan en la pila al arrancar. */
+    private static final int CARGAR_AL_INICIAR = 200;
+
+    @Autowired(required = false)
+    private MongoTemplate mongoTemplate;
     
     // Clase para representar una acción en el historial
     public static class AccionHistorial {
@@ -18,11 +40,15 @@ public class HistorialService {
         private Map<String, Object> datosAnteriores;
         
         public AccionHistorial(String tipo, String entidad, String descripcion, String usuario) {
+            this(tipo, entidad, descripcion, usuario, LocalDateTime.now());
+        }
+
+        public AccionHistorial(String tipo, String entidad, String descripcion, String usuario, LocalDateTime fecha) {
             this.tipo = tipo;
             this.entidad = entidad;
             this.descripcion = descripcion;
             this.usuario = usuario;
-            this.fecha = LocalDateTime.now();
+            this.fecha = fecha;
             this.datosAnteriores = new HashMap<>();
         }
         
@@ -59,13 +85,44 @@ public class HistorialService {
     // Pila para rehacer
     private final Stack<AccionHistorial> pilaDeshacer = new Stack<>();
     
+    /** Al arrancar, la pila se llena con las últimas acciones guardadas en la auditoría. */
+    @jakarta.annotation.PostConstruct
+    void cargarDesdeAuditoria() {
+        if (mongoTemplate == null) {
+            return;
+        }
+        try {
+            Query q = new Query().with(Sort.by(Sort.Direction.DESC, "fecha")).limit(CARGAR_AL_INICIAR);
+            List<RegistroAuditoria> ultimos = new ArrayList<>(mongoTemplate.find(q, RegistroAuditoria.class));
+            Collections.reverse(ultimos);
+            for (RegistroAuditoria r : ultimos) {
+                pilaAcciones.push(new AccionHistorial(r.getTipo(), r.getEntidad(), r.getDescripcion(), r.getUsuario(),
+                        r.getFecha() != null ? r.getFecha() : LocalDateTime.now()));
+            }
+        } catch (RuntimeException e) {
+            log.warn("No se pudo cargar el historial guardado: {}", e.getMessage());
+        }
+    }
+
     // Registrar acción
-    public void registrarAccion(String tipo, String entidad, String descripcion, String usuario) {
+    public synchronized void registrarAccion(String tipo, String entidad, String descripcion, String usuario) {
         AccionHistorial accion = new AccionHistorial(tipo, entidad, descripcion, usuario);
         pilaAcciones.push(accion);
         pilaDeshacer.clear(); // Limpiar historial de rehacer
-        
-        System.out.println(accion.getIcono() + " Acción registrada: " + descripcion);
+        guardarAuditoria(accion);
+        log.info("Acción registrada: {} {} - {} ({})", tipo, entidad, descripcion, usuario);
+    }
+
+    private void guardarAuditoria(AccionHistorial a) {
+        if (mongoTemplate == null) {
+            return;
+        }
+        try {
+            mongoTemplate.insert(new RegistroAuditoria(a.getTipo(), a.getEntidad(), a.getDescripcion(), a.getUsuario(), a.getFecha()));
+        } catch (RuntimeException e) {
+            // La auditoría nunca debe impedir la acción del usuario
+            log.warn("No se pudo guardar la auditoría: {}", e.getMessage());
+        }
     }
     
     // Registrar con datos anteriores (para deshacer)
@@ -75,8 +132,7 @@ public class HistorialService {
         accion.datosAnteriores = datosAnteriores;
         pilaAcciones.push(accion);
         pilaDeshacer.clear();
-        
-        System.out.println(accion.getIcono() + " Acción con datos registrada: " + descripcion);
+        guardarAuditoria(accion);
     }
     
     // Deshacer última acción
@@ -84,10 +140,10 @@ public class HistorialService {
         if (!pilaAcciones.isEmpty()) {
             AccionHistorial accion = pilaAcciones.pop();
             pilaDeshacer.push(accion);
-            System.out.println("↩️ Deshaciendo: " + accion.getDescripcion());
+            log.info("Deshaciendo: {}", accion.getDescripcion());
             return accion;
         }
-        System.out.println("⚠️ No hay acciones para deshacer");
+        log.info("No hay acciones para deshacer");
         return null;
     }
     
@@ -96,10 +152,10 @@ public class HistorialService {
         if (!pilaDeshacer.isEmpty()) {
             AccionHistorial accion = pilaDeshacer.pop();
             pilaAcciones.push(accion);
-            System.out.println("↪️ Rehaciendo: " + accion.getDescripcion());
+            log.info("Rehaciendo: {}", accion.getDescripcion());
             return accion;
         }
-        System.out.println("⚠️ No hay acciones para rehacer");
+        log.info("No hay acciones para rehacer");
         return null;
     }
     
@@ -139,7 +195,7 @@ public class HistorialService {
     public void limpiarHistorial() {
         pilaAcciones.clear();
         pilaDeshacer.clear();
-        System.out.println("🗑️ Historial limpiado");
+        log.info("Pila del historial limpiada (la auditoría en MongoDB se conserva)");
     }
     
     // Contar acciones

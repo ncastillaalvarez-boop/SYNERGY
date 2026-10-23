@@ -22,12 +22,23 @@ public class EntregaTareaServiceImpl implements EntregaTareaService {
     }
 
     public void guardarEntrega(String idTarea, String idUsuario, MultipartFile archivo) throws IOException {
+        if (archivo == null || archivo.isEmpty()) {
+            throw new IllegalArgumentException("Selecciona un archivo para entregar.");
+        }
+        if (archivo.getSize() > com.proaula.spring.synergy.Service.ValidadorArchivos.MAX_BYTES) {
+            throw new IllegalArgumentException("El archivo supera el máximo de 10 MB.");
+        }
+        byte[] datos = archivo.getBytes();
+        String nombre = com.proaula.spring.synergy.Service.ValidadorArchivos.nombreSeguro(archivo.getOriginalFilename());
+        // Tipo, tamaño y contenido real del archivo (lanza IllegalArgumentException con el motivo)
+        com.proaula.spring.synergy.Service.ValidadorArchivos.validar(nombre, datos);
+
         EntregaTarea entrega = new EntregaTarea();
         entrega.setIdTarea(idTarea);
         entrega.setIdUsuario(idUsuario);
-        entrega.setNombreArchivo(archivo.getOriginalFilename());
-        entrega.setTipoArchivo(archivo.getContentType());
-        entrega.setDatos(archivo.getBytes());
+        entrega.setNombreArchivo(nombre);
+        entrega.setTipoArchivo(com.proaula.spring.synergy.Service.ValidadorArchivos.tipoMime(nombre));
+        entrega.setDatos(datos);
 
         entregaTareaRepository.save(entrega);
     }

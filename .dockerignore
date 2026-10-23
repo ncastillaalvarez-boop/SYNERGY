@@ -1,0 +1,10 @@
+target/
+mobile/
+docs/
+respaldos/
+.git/
+.vscode/
+.idea/
+src/main/resources/application-secrets.properties
+.env
+.github/

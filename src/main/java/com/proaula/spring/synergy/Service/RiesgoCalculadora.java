@@ -144,6 +144,69 @@ public final class RiesgoCalculadora {
                 actividades, total, vencidas, categoria);
     }
 
+    /**
+     * Fecha en que terminaría el proyecto si sigue al ritmo actual (tareas completadas por día
+     * desde que empezó). null si todavía no hay con qué estimar (sin tareas o sin ninguna completada).
+     * Si ya no quedan tareas pendientes, devuelve la fecha de corte.
+     */
+    public static LocalDate estimarFin(LocalDate inicio, List<TareaInfo> tareas, LocalDate corte) {
+        if (inicio == null || tareas == null || corte == null) {
+            return null;
+        }
+        int hechas = 0;
+        int pendientes = 0;
+        for (TareaInfo t : tareas) {
+            if (t.cancelada()) {
+                continue;
+            }
+            if (t.completada() != null && !t.completada().isAfter(corte)) {
+                hechas++;
+            } else {
+                pendientes++;
+            }
+        }
+        if (pendientes == 0) {
+            return hechas > 0 ? corte : null;
+        }
+        long transcurridos = ChronoUnit.DAYS.between(inicio, corte);
+        if (hechas == 0 || transcurridos < 7) {
+            return null; // muy pronto o sin avance: la estimación no tendría sentido
+        }
+        double porDia = hechas / (double) transcurridos;
+        long faltan = (long) Math.ceil(pendientes / porDia);
+        return corte.plusDays(Math.min(faltan, 3L * 365));
+    }
+
+    /**
+     * Simulador "¿qué pasa si...?": indicadores que tendría el proyecto si se completaran
+     * {@code completar} tareas pendientes (primero las vencidas), si {@code activar} voluntarios
+     * inscritos que no han participado empezaran a hacerlo y si se sumaran {@code nuevos}
+     * voluntarios activos.
+     */
+    public static Indicadores simular(Indicadores i, int completar, int activar, int nuevos) {
+        completar = Math.max(0, completar);
+        activar = Math.max(0, activar);
+        nuevos = Math.max(0, nuevos);
+
+        int total = i.totalTareas();
+        int pendientes = (int) Math.round(i.pctTareasPendientes() * total);
+        int quedan = Math.max(0, pendientes - completar);
+        int vencidas = Math.max(0, i.tareasVencidas() - completar);
+        double pct = total == 0 ? i.pctTareasPendientes() : quedan / (double) total;
+        double real = 1.0 - pct;
+        int retraso = vencidas == 0 ? 0 : i.diasRetraso();
+
+        int equipo = i.participantes();
+        int activos = (int) Math.round(i.tasaParticipacion() * equipo);
+        activos = Math.min(equipo, activos + activar) + nuevos;
+        int equipoNuevo = equipo + nuevos;
+        double tasa = equipoNuevo == 0 ? 0.0 : Math.min(1.0, activos / (double) equipoNuevo);
+
+        return new Indicadores(retraso, redondear(pct), equipoNuevo, redondear(tasa), i.duracionDias(),
+                redondear(real), i.avanceEsperado(), redondear(real - i.avanceEsperado()),
+                i.actividades() + activar + nuevos, total, vencidas, i.categoria());
+    }
+
     /** Nivel de riesgo según las reglas de la propuesta (se usa para etiquetar el dataset). */
     public static String nivelPorReglas(Indicadores i) {
         if (i.diasRetraso() > 15 || i.pctTareasPendientes() > 0.50 || i.tasaParticipacion() < 0.40) {

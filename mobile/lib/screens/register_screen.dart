@@ -4,6 +4,7 @@ import '../models/auth_session.dart';
 import '../models/usuario.dart';
 import '../services/auth_service.dart';
 import '../utils/api_exception.dart';
+import '../utils/password_policy.dart';
 import '../widgets/gradient_button.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -86,8 +87,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       TextFormField(
                         controller: _password,
                         obscureText: true,
-                        decoration: const InputDecoration(labelText: 'Contraseña', prefixIcon: Icon(Icons.lock_outline)),
-                        validator: (value) => value == null || value.length < 6 ? 'Mínimo 6 caracteres' : null,
+                        decoration: const InputDecoration(labelText: 'Contraseña', prefixIcon: Icon(Icons.lock_outline), helperText: PasswordPolicy.descripcion),
+                        validator: PasswordPolicy.validar,
                       ),
                       const SizedBox(height: 14),
                       SwitchListTile.adaptive(

@@ -52,6 +52,9 @@ public class TareaWebController {
     @Autowired
     private HistorialService historialService;
 
+    @Autowired
+    private com.proaula.spring.synergy.Service.NotificacionService notificaciones;
+
     private Proyecto proyectoDelLider(String idProyecto, HttpSession session) {
         Usuarios usuario = SesionUtil.usuario(session);
         if (!SesionUtil.esLider(usuario)) {
@@ -110,17 +113,21 @@ public class TareaWebController {
             return "redirect:/login";
         }
 
-        if (titulo == null || titulo.isBlank()) {
-            ra.addFlashAttribute("error", "La tarea necesita un título");
-            return "redirect:/tareas/asignar/" + proyectoId;
-        }
-
         LocalDate fecha;
         try {
             fecha = LocalDate.parse(fechaEntregaStr);
         } catch (DateTimeParseException | NullPointerException e) {
             ra.addFlashAttribute("error", "Fecha de entrega no válida");
             return "redirect:/tareas/asignar/" + proyectoId;
+        }
+        // Título, fecha no pasada y dentro de las fechas del proyecto
+        String error = com.proaula.spring.synergy.Service.ValidacionService.validarTarea(titulo, fecha, proyecto, true);
+        if (error != null) {
+            ra.addFlashAttribute("error", error);
+            return "redirect:/tareas/asignar/" + proyectoId;
+        }
+        if (descripcion != null && descripcion.length() > 2000) {
+            descripcion = descripcion.substring(0, 2000);
         }
 
         // Solo se pueden asignar integrantes del proyecto
@@ -150,6 +157,9 @@ public class TareaWebController {
 
         Usuarios lider = SesionUtil.usuario(session);
         historialService.registrarAccion("CREAR", "TAREA", "Tarea creada: " + tarea.getTitulo(), lider.getCorreo());
+        notificaciones.notificarVarios(asignados, "TAREA", "Nueva tarea: " + tarea.getTitulo(),
+                proyecto.getNombre() + " · vence el " + fecha.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")),
+                "/tareas/buzon");
         ra.addFlashAttribute("mensaje", "Tarea '" + tarea.getTitulo() + "' asignada");
         return "redirect:/tareas/asignar/" + proyectoId;
     }

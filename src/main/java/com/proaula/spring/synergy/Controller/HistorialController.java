@@ -79,15 +79,22 @@ public class HistorialController {
         return "redirect:/historial";
     }
 
+    // Antes estos dos endpoints JSON no pedían sesión: cualquiera veía quién hizo qué.
     @GetMapping("/ultimas/{cantidad}")
     @ResponseBody
-    public List<AccionHistorial> obtenerUltimas(@PathVariable int cantidad) {
-        return historialService.obtenerUltimasAcciones(cantidad);
+    public org.springframework.http.ResponseEntity<List<AccionHistorial>> obtenerUltimas(@PathVariable int cantidad, HttpSession session) {
+        if (noEsAdmin(session)) {
+            return org.springframework.http.ResponseEntity.status(403).build();
+        }
+        return org.springframework.http.ResponseEntity.ok(historialService.obtenerUltimasAcciones(Math.max(0, Math.min(cantidad, 500))));
     }
 
     @GetMapping("/tipo/{tipo}")
     @ResponseBody
-    public List<AccionHistorial> filtrarPorTipo(@PathVariable String tipo) {
-        return historialService.filtrarPorTipo(tipo);
+    public org.springframework.http.ResponseEntity<List<AccionHistorial>> filtrarPorTipo(@PathVariable String tipo, HttpSession session) {
+        if (noEsAdmin(session)) {
+            return org.springframework.http.ResponseEntity.status(403).build();
+        }
+        return org.springframework.http.ResponseEntity.ok(historialService.filtrarPorTipo(tipo));
     }
 }

@@ -31,6 +31,14 @@
     </div>
   </div>
 
+  <!-- Búsqueda global: proyectos (y usuarios para el administrador) -->
+  <form th:if="${usuarioActual != null}" class="sidebar-search" method="get" role="search"
+        th:action="${rolActual == 'ADMINISTRADOR'} ? @{/admin/proyectos} : (${rolActual == 'LIDER'} ? @{/lider/tareas/asignar} : @{/proyectos/participar})">
+    <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+    <input type="search" name="q" maxlength="80" aria-label="Buscar"
+           th:placeholder="${rolActual == 'ADMINISTRADOR'} ? 'Buscar proyectos…' : (${rolActual == 'LIDER'} ? 'Buscar en mis proyectos…' : 'Buscar proyectos…')">
+  </form>
+
   <nav class="sidebar-nav">
 
     <!-- ===== ADMINISTRADOR ===== -->
@@ -42,8 +50,11 @@
       <a th:href="@{/admin/usuarios}" class="sidebar-link" th:classappend="${activo == 'admin-usuarios'} ? 'is-active'">
         <img th:src="@{/img/icons/comunidad.png}" alt=""> Usuarios
       </a>
+      <a th:href="@{/admin/modelo}" class="sidebar-link" th:classappend="${activo == 'admin-modelo'} ? 'is-active'">
+        <img th:src="@{/img/icons/meta-semanal.png}" alt=""> Modelo de riesgo
+      </a>
       <a th:href="@{/historial}" class="sidebar-link" th:classappend="${activo == 'historial'} ? 'is-active'">
-        <img th:src="@{/img/icons/progreso.png}" alt=""> Historial
+        <img th:src="@{/img/icons/progreso.png}" alt=""> Auditoría
       </a>
       <a th:href="@{/jerarquia}" class="sidebar-link" th:classappend="${activo == 'jerarquia'} ? 'is-active'">
         <img th:src="@{/img/icons/reforestacion.png}" alt=""> Jerarquía
@@ -93,6 +104,12 @@
     <!-- ===== COMÚN ===== -->
     <th:block th:if="${usuarioActual != null}">
       <span class="sidebar-label">Cuenta</span>
+      <a th:href="@{/notificaciones}" class="sidebar-link" th:classappend="${activo == 'notificaciones'} ? 'is-active'">
+        <img th:src="@{/img/icons/notificaciones.png}" alt=""> Notificaciones
+        <span th:if="${notificacionesNoLeidas != null and notificacionesNoLeidas > 0}" class="sidebar-badge"
+              th:text="${notificacionesNoLeidas > 99 ? '99+' : notificacionesNoLeidas}"
+              th:attr="aria-label=${notificacionesNoLeidas} + ' sin leer'">3</span>
+      </a>
       <a th:href="@{/usuario/credenciales}" class="sidebar-link" th:classappend="${activo == 'perfil'} ? 'is-active'">
         <img th:src="@{/img/icons/perfil.png}" alt=""> Mi perfil
       </a>
@@ -134,10 +151,17 @@
   <a th:href="@{/}" class="mini-brand">
     <span class="mini-brand-mark"><img th:src="@{/img/logo-mark.png}" alt=""></span><span>Synergy</span>
   </a>
-  <button type="button" class="btn btn-secondary btn-icon" data-theme-toggle aria-label="Cambiar tema">
-    <i class="fa-solid fa-moon theme-icon-dark"></i>
-    <i class="fa-solid fa-sun theme-icon-light"></i>
-  </button>
+  <div class="topbar-actions">
+    <a th:if="${usuarioActual != null}" th:href="@{/notificaciones}" class="btn btn-secondary btn-icon topbar-bell" aria-label="Notificaciones">
+      <i class="fa-regular fa-bell"></i>
+      <span th:if="${notificacionesNoLeidas != null and notificacionesNoLeidas > 0}" class="bell-dot"
+            th:text="${notificacionesNoLeidas > 9 ? '9+' : notificacionesNoLeidas}">1</span>
+    </a>
+    <button type="button" class="btn btn-secondary btn-icon" data-theme-toggle aria-label="Cambiar tema">
+      <i class="fa-solid fa-moon theme-icon-dark"></i>
+      <i class="fa-solid fa-sun theme-icon-light"></i>
+    </button>
+  </div>
 </header>
 
 </body>

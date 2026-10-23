@@ -26,6 +26,9 @@ public class ParticipacionServiceImpl implements ParticipacionService {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
+    @Autowired(required = false)
+    private com.proaula.spring.synergy.Service.NotificacionService notificaciones;
+
     public boolean inscribirUsuario(String proyectoId, String usuarioId) {
         
         // Validar que usuario y proyecto existan
@@ -66,6 +69,10 @@ public class ParticipacionServiceImpl implements ParticipacionService {
         usuario.addProyecto(proyectoId);
         usuarioRepository.save(usuario);
 
+        if (notificaciones != null) {
+            notificaciones.notificar(proyecto.getIdLider(), "VOLUNTARIO", "Nuevo voluntario en " + proyecto.getNombre(),
+                    usuario.getNombre() + " se inscribió en tu proyecto.", "/lider/usuarios?proyecto=" + proyecto.getId());
+        }
         return true; // INSCRIPCIÓN EXITOSA
     }
 

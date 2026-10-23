@@ -10,6 +10,11 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.index.Indexed;
 
 @Document(collection = "tareas")
+// Tareas de un proyecto por estado (avance de los paneles) y por fecha de entrega (por vencer)
+@org.springframework.data.mongodb.core.index.CompoundIndexes({
+    @org.springframework.data.mongodb.core.index.CompoundIndex(name = "proyecto_estado", def = "{'idProyecto': 1, 'estado': 1}"),
+    @org.springframework.data.mongodb.core.index.CompoundIndex(name = "proyecto_entrega", def = "{'idProyecto': 1, 'fechaEntrega': 1}")
+})
 public class Tarea {
 
     @Id

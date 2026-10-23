@@ -1,0 +1,57 @@
+# =====================================================================
+#  Synergy + MongoDB con un solo comando (necesita Docker Desktop):
+#     docker compose up --build
+#  La primera vez tarda varios minutos (descarga Maven, Java y MongoDB
+#  y genera los datos de prueba). Luego abrir http://localhost:8080
+#     admin@synergy.com / Admin123*
+#
+#  Configuración opcional: copiar .env.example como .env y llenarlo
+#  (Docker Compose lee .env solo; ese archivo NO se sube a GitHub).
+#
+#  Apagar:             docker compose down
+#  Apagar y BORRAR la base de datos del contenedor:  docker compose down -v
+# =====================================================================
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - mongo-datos:/data/db
+    # Para verla con MongoDB Compass: mongodb://localhost:27018
+    # (27018 para no chocar con el MongoDB que ya tengas instalado en 27017)
+    ports:
+      - "27018:27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      # Base de datos del contenedor. Para usar el MongoDB de tu PC (con tus datos actuales):
+      #   MONGODB_URI=mongodb://host.docker.internal:27017/synergy   (en .env)
+      MONGODB_URI: ${MONGODB_URI:-mongodb://mongo:27017/synergy}
+      # "default" = con cuentas demo y datos de prueba; "prod" = base vacía
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-default}
+      # Cambiar en producción (mínimo 64 caracteres al azar)
+      JWT_SECRET: ${JWT_SECRET:-cambia_esta_clave_por_una_larga_y_aleatoria_de_al_menos_64_caracteres_2026}
+      # Inicio de sesión con Google (opcional). Sin esto, el resto de la app funciona igual.
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-configura-google-client-id}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-configura-google-client-secret}
+      # Primer administrador cuando se usa el perfil prod (base vacía)
+      SYNERGY_ADMIN_CORREO: ${SYNERGY_ADMIN_CORREO:-}
+      SYNERGY_ADMIN_CLAVE: ${SYNERGY_ADMIN_CLAVE:-}
+      # En http://localhost la cookie de sesión no puede ser "solo HTTPS" (si no, el login no entra).
+      # Poner true solo cuando la app esté detrás de HTTPS.
+      SERVER_SERVLET_SESSION_COOKIE_SECURE: ${COOKIE_SOLO_HTTPS:-false}
+
+volumes:
+  mongo-datos:

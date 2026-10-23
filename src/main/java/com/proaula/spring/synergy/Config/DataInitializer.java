@@ -114,6 +114,13 @@ public class DataInitializer implements ApplicationRunner {
     @Value("${synergy.datos.carpeta-respaldos:respaldos}")
     private String carpetaRespaldos;
 
+    /** Primer administrador en producción (sin cuentas demo): variables SYNERGY_ADMIN_CORREO y SYNERGY_ADMIN_CLAVE. */
+    @Value("${synergy.admin.correo:${SYNERGY_ADMIN_CORREO:}}")
+    private String adminInicialCorreo;
+
+    @Value("${synergy.admin.clave:${SYNERGY_ADMIN_CLAVE:}}")
+    private String adminInicialClave;
+
     private final MongoTemplate mongoTemplate;
     private final MongoIndexConfig indices;
     private final GeneradorDatos generador;
@@ -153,17 +160,18 @@ public class DataInitializer implements ApplicationRunner {
         // 2. Índices
         indices.crearIndices();
 
-        if (!demoHabilitado) {
-            asignarCodigosFaltantes();
-            return;
-        }
-
-        // 3. Privilegios y roles
+        // 3. Privilegios y roles (también en producción)
         if (privilegioRepository.count() == 0) {
             crearPrivilegios();
         }
         if (rolRepository.count() == 0) {
             crearRoles();
+        }
+
+        if (!demoHabilitado) {
+            crearAdministradorInicial();
+            asignarCodigosFaltantes();
+            return;
         }
 
         // 4. Cuentas de prueba
@@ -201,6 +209,27 @@ public class DataInitializer implements ApplicationRunner {
             """, usuarioRepository.count(), proyectoRepository.count(),
                 ADMIN_CORREO, ADMIN_CLAVE, LIDER_CORREO, LIDER_CLAVE, VOLUNTARIO_CORREO, VOLUNTARIO_CLAVE,
                 GeneradorDatos.CLAVE_GENERADOS);
+    }
+
+    /**
+     * Sin cuentas demo (perfil prod) la base empieza sin administrador. Si se definieron
+     * SYNERGY_ADMIN_CORREO y SYNERGY_ADMIN_CLAVE y no existe ningún administrador, se crea uno.
+     */
+    private void crearAdministradorInicial() {
+        if (mongoTemplate.exists(Query.query(Criteria.where("rol").is("ADMINISTRADOR")), Usuarios.class)) {
+            return;
+        }
+        if (adminInicialCorreo == null || adminInicialCorreo.isBlank() || adminInicialClave == null || adminInicialClave.isBlank()) {
+            log.warn("No hay ningún administrador. Define SYNERGY_ADMIN_CORREO y SYNERGY_ADMIN_CLAVE para crear el primero.");
+            return;
+        }
+        String problema = com.proaula.spring.synergy.Security.PoliticaContrasena.validar(adminInicialClave);
+        if (problema != null) {
+            log.warn("No se creó el administrador inicial: {}", problema);
+            return;
+        }
+        asegurarUsuario("Administrador", adminInicialCorreo.trim().toLowerCase(), adminInicialClave, "ADMINISTRADOR");
+        log.info("Administrador inicial creado: {}", adminInicialCorreo.trim().toLowerCase());
     }
 
     // =====================================================================

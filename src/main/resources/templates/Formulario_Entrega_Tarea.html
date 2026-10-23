@@ -61,16 +61,17 @@
       </div>
 
       <!-- FORMULARIO -->
-      <form th:action="@{/tareas/entregar/{id}(id=${tarea.id})}"
+      <form th:action="@{/tareas/entregar/{id}(id=${tarea.id},_csrf=${_csrf != null ? _csrf.token : null})}"
             method="post"
             enctype="multipart/form-data"
             class="stack" data-loading>
 
         <label class="file-drop" for="archivo">
-          <input type="file" id="archivo" name="archivo" required>
+          <input type="file" id="archivo" name="archivo" required
+                 accept=".pdf,.png,.jpg,.jpeg,.gif,.webp,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.odt,.ods,.odp,.txt,.csv,.zip">
           <span class="file-drop-icon"><i class="fa-solid fa-cloud-arrow-up"></i></span>
           <span class="file-drop-title">Selecciona un archivo o arrástralo aquí</span>
-          <span class="file-drop-name">PDF, imágenes, documentos…</span>
+          <span class="file-drop-name">PDF, imágenes, Office, TXT, CSV o ZIP · máximo 10 MB</span>
         </label>
 
         <div class="form-actions">

@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:http/http.dart' as http;
 
+import '../models/auth_session.dart';
 import '../utils/api_exception.dart';
 import '../utils/app_config.dart';
 import 'session_store.dart';
@@ -19,7 +20,8 @@ class ApiClient {
   Uri _uri(String path) => Uri.parse('${AppConfig.apiBaseUrl}$path');
 
   /// Login y registro no deben enviar un token viejo guardado en el teléfono.
-  bool _esPublica(String path) => path.startsWith('/auth/login') || path.startsWith('/auth/registrar');
+  bool _esPublica(String path) =>
+      path.startsWith('/auth/login') || path.startsWith('/auth/registrar') || path.startsWith('/auth/refresh');
 
   Future<dynamic> get(String path) => _send(path, (headers) => _client.get(_uri(path), headers: headers));
 
@@ -58,8 +60,35 @@ class ApiClient {
   }
 
   Future<dynamic> _send(String path, Future<http.Response> Function(Map<String, String> headers) llamada) async {
-    final headers = await _headers(path);
-    return _conRed(() async => _handle(await llamada(headers).timeout(AppConfig.requestTimeout)));
+    return _conRed(() async {
+      var response = await llamada(await _headers(path)).timeout(AppConfig.requestTimeout);
+      // Token de acceso vencido: se renueva una vez con el refresh token y se repite la petición
+      if (response.statusCode == 401 && !_esPublica(path) && await _renovarToken()) {
+        response = await llamada(await _headers(path)).timeout(AppConfig.requestTimeout);
+      }
+      return _handle(response);
+    });
+  }
+
+  /// Pide un token nuevo. Devuelve false si no hay refresh token o ya venció (hay que iniciar sesión).
+  Future<bool> _renovarToken() async {
+    final session = await _sessionStore.read();
+    final refresh = session?.refreshToken;
+    if (session == null || refresh == null || refresh.isEmpty) return false;
+    try {
+      final r = await _client
+          .post(_uri('/auth/refresh'),
+              headers: {'Content-Type': 'application/json; charset=UTF-8', 'Accept': 'application/json'},
+              body: jsonEncode({'refreshToken': refresh}))
+          .timeout(AppConfig.requestTimeout);
+      if (r.statusCode != 200) return false;
+      final nueva = AuthSession.fromJson(Map<String, dynamic>.from(jsonDecode(utf8.decode(r.bodyBytes)) as Map));
+      if (nueva.token.isEmpty) return false;
+      await _sessionStore.save(nueva);
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   /// Convierte los fallos de red (servidor apagado, IP equivocada, sin Wi-Fi) en un mensaje claro.

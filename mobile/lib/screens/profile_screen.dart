@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/password_policy.dart';
 
 import '../models/auth_session.dart';
 import '../providers/locale_provider.dart';
@@ -265,7 +266,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                             ),
                             validator: (value) =>
-                                value == null || value.length < 6 ? 'Mínimo 6 caracteres' : null,
+                                PasswordPolicy.validar(value),
                           ),
                           const SizedBox(height: 12),
                           TextFormField(
@@ -282,7 +283,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                             ),
                             validator: (value) =>
-                                value == null || value.length < 6 ? 'Mínimo 6 caracteres' : null,
+                                PasswordPolicy.validar(value),
                           ),
                           const SizedBox(height: 16),
                           FilledButton.icon(

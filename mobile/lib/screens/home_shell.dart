@@ -7,7 +7,9 @@ import '../services/auth_service.dart';
 import '../utils/app_config.dart';
 import '../utils/app_localizations.dart';
 import '../widgets/server_dialog.dart';
+import '../services/notification_api.dart';
 import 'admin_users_screen.dart';
+import 'notifications_screen.dart';
 import 'profile_screen.dart';
 import 'projects_screen.dart';
 import 'tasks_screen.dart';
@@ -32,6 +34,23 @@ class HomeShell extends StatefulWidget {
 
 class _HomeShellState extends State<HomeShell> {
   var _index = 0;
+  var _noLeidas = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _contarNoLeidas();
+  }
+
+  /// Número de la campana. Si no hay conexión simplemente queda en 0.
+  Future<void> _contarNoLeidas() async {
+    try {
+      final r = await NotificationApi().listar();
+      if (mounted) setState(() => _noLeidas = r.noLeidas);
+    } catch (_) {
+      // sin conexión: no se muestra el número
+    }
+  }
 
   Future<void> _logout() async {
     try {
@@ -241,6 +260,18 @@ class _HomeShellState extends State<HomeShell> {
       appBar: AppBar(
         title: Text('Synergy'),
         actions: [
+          IconButton(
+            icon: Badge(
+              isLabelVisible: _noLeidas > 0,
+              label: Text(_noLeidas > 9 ? '9+' : '$_noLeidas'),
+              child: const Icon(Icons.notifications_none),
+            ),
+            tooltip: 'Notificaciones',
+            onPressed: () async {
+              await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NotificationsScreen()));
+              _contarNoLeidas();
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.settings_outlined),
             tooltip: 'Configuración',

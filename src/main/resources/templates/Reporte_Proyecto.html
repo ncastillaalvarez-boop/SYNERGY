@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title th:text="'Reporte ' + ${proyecto.nombre} + ' – Synergy'">Reporte – Synergy</title>
+  <link rel="icon" type="image/png" href="../static/img/logo-mark.png" th:href="@{/img/logo-mark.png}">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <link rel="stylesheet" href="../static/css/documento.css" th:href="@{/css/documento.css}">
+</head>
+<body class="doc">
+  <nav class="doc-toolbar no-print">
+    <a th:href="${volverA}" class="doc-btn"><i class="fa-solid fa-arrow-left"></i> Volver</a>
+    <button type="button" class="doc-btn doc-btn-primary" data-print><i class="fa-solid fa-print"></i> Imprimir o guardar como PDF</button>
+  </nav>
+
+  <article class="doc-page">
+    <header class="doc-header">
+      <img th:src="@{/img/logo.png}" src="../static/img/logo.png" alt="Synergy" class="doc-logo">
+      <div>
+        <h1 th:text="${proyecto.nombre}">Proyecto</h1>
+        <p class="doc-sub">
+          <span th:text="${proyecto.codigo}">SYN-0001</span> ·
+          <span th:text="${proyecto.categoria ?: 'Sin categoría'}">Categoría</span> ·
+          <span th:text="${proyecto.ubicacion ?: 'Sin barrio'}">Barrio</span>
+        </p>
+      </div>
+    </header>
+
+    <dl class="doc-datos">
+      <div><dt>Líder</dt><dd th:text="${nombreLider}">Nombre</dd></div>
+      <div><dt>Estado</dt><dd th:text="${proyecto.estadoEtiqueta}">Activo</dd></div>
+      <div><dt>Fechas</dt><dd th:text="${proyecto.fechaInicio != null ? #temporals.format(proyecto.fechaInicio, 'dd/MM/yyyy') : '-'} + ' a ' + ${proyecto.fechaFin != null ? #temporals.format(proyecto.fechaFin, 'dd/MM/yyyy') : '-'}">fechas</dd></div>
+      <div><dt>Generado</dt><dd th:text="${#temporals.format(generado, 'dd/MM/yyyy HH:mm')}">fecha</dd></div>
+    </dl>
+
+    <p class="doc-desc" th:text="${proyecto.descripcion}">Descripción</p>
+
+    <section class="doc-cifras">
+      <div><strong th:text="${progreso} + ' %'">0 %</strong><span>de avance (<span th:text="${tareasHechas} + ' de ' + ${#lists.size(tareas)}">0 de 0</span> tareas)</span></div>
+      <div><strong th:text="${voluntarios}">0</strong><span>voluntarios inscritos</span></div>
+      <div><strong th:text="${participacion} + ' %'">0 %</strong><span>de los voluntarios participó</span></div>
+      <div><strong th:text="${totalEntregas}">0</strong><span>entregas (<span th:text="${entregasAprobadas}">0</span> aprobadas)</span></div>
+    </section>
+
+    <section class="doc-seccion" th:if="${proyecto.estado == 'ACTIVO'}">
+      <h2>Riesgo según el modelo predictivo</h2>
+      <p>
+        Nivel: <strong th:text="${proyecto.nivelRiesgo ?: 'Sin datos'}">Medio</strong>
+        <span th:if="${proyecto.probabilidadRiesgo != null}" th:text="'(' + ${#numbers.formatDecimal(proyecto.probabilidadRiesgo * 100, 1, 0)} + ' % de probabilidad)'">(70 %)</span>
+        <span th:if="${historialRiesgo != null and historialRiesgo.cambio != null}" th:text="'· ' + ${historialRiesgo.cambio}">· Subió</span>
+      </p>
+      <p th:if="${proyecto.riesgoFactor != null}">Lo que más influye: <span th:text="${proyecto.riesgoFactor}">factor</span>.</p>
+      <ul th:if="${proyecto.riesgoMotivos != null}"><li th:each="m : ${proyecto.riesgoMotivos}" th:text="${m}">motivo</li></ul>
+      <p th:if="${proyecto.riesgoSugerencia != null}">Sugerencia: <span th:text="${proyecto.riesgoSugerencia}">sugerencia</span></p>
+      <p th:if="${proyecto.fechaEstimadaFin != null}" th:text="'Al ritmo actual terminaría el ' + ${#temporals.format(proyecto.fechaEstimadaFin, 'dd/MM/yyyy')} + '.'">Fecha estimada</p>
+    </section>
+
+    <section class="doc-seccion">
+      <h2>Tareas</h2>
+      <p th:if="${#lists.isEmpty(tareas)}">El proyecto no tiene tareas.</p>
+      <table th:unless="${#lists.isEmpty(tareas)}">
+        <thead><tr><th>Tarea</th><th>Entrega</th><th>Estado</th></tr></thead>
+        <tbody>
+          <tr th:each="t : ${tareas}">
+            <td th:text="${t.titulo}">Tarea</td>
+            <td th:text="${t.fechaEntrega != null ? #temporals.format(t.fechaEntrega, 'dd/MM/yyyy') : '-'}">fecha</td>
+            <td th:text="${t.estado}">PENDIENTE</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="doc-seccion">
+      <h2>Participación del equipo</h2>
+      <p th:if="${#lists.isEmpty(integrantes)}">Sin integrantes.</p>
+      <table th:unless="${#lists.isEmpty(integrantes)}">
+        <thead><tr><th>Integrante</th><th>Rol</th><th>Entregas</th><th>Participó</th></tr></thead>
+        <tbody>
+          <tr th:each="i : ${integrantes}">
+            <td th:text="${i.nombre}">Nombre</td>
+            <td th:text="${i.id == proyecto.idLider} ? 'Líder' : 'Voluntario'">Voluntario</td>
+            <td th:text="${entregasPorUsuario[i.id] ?: 0}">0</td>
+            <td th:text="${i.id == proyecto.idLider} ? '-' : (${#sets.contains(activosIds, i.id)} ? 'Sí' : 'No')">Sí</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <footer class="doc-footer">Reporte generado por Synergy · Plataforma de voluntariado ambiental de Cartagena</footer>
+  </article>
+
+  <script src="../static/js/script.js" th:src="@{/js/script.js}"></script>
+</body>
+</html>

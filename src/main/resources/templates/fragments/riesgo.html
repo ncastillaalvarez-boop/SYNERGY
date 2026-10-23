@@ -3,21 +3,71 @@
 <!--
   Resultado del modelo predictivo de riesgo de un proyecto activo.
   Uso: <div th:replace="~{fragments/riesgo :: panel(${proyecto})}"></div>
+  Si el modelo trae "historialRiesgo" (RiesgoProyectoService.historial) se dibuja la mini gráfica.
 -->
 <body>
 <section th:fragment="panel(p)" th:if="${p != null and p.estado == 'ACTIVO'}" class="riesgo-panel" aria-label="Riesgo del proyecto">
-  <h3><i class="fa-solid fa-traffic-light"></i> Riesgo de no cumplir los objetivos
-    <span class="riesgo-chip" th:classappend="${p.riesgoClase}" th:text="${p.nivelRiesgo ?: 'Sin datos'}">Medio</span>
-    <small th:if="${p.probabilidadRiesgo != null}" class="cell-muted"
-           th:text="'(' + ${#numbers.formatDecimal(p.probabilidadRiesgo * 100, 1, 0)} + ' % de probabilidad)'">(70 %)</small>
-  </h3>
-  <ul th:if="${p.riesgoMotivos != null and !#lists.isEmpty(p.riesgoMotivos)}">
-    <li th:each="m : ${p.riesgoMotivos}" th:text="${m}">Motivo</li>
-  </ul>
-  <p th:if="${p.riesgoSugerencia != null}" class="riesgo-sugerencia"><i class="fa-solid fa-lightbulb"></i><span th:text="${p.riesgoSugerencia}">Sugerencia</span></p>
-  <p th:if="${p.riesgoActualizado == null}" class="cell-muted">Se calculará en el próximo recálculo del modelo.</p>
-  <p th:if="${p.riesgoActualizado != null}" class="cell-muted"
-     th:text="'Calculado por el modelo predictivo el ' + ${#temporals.format(p.riesgoActualizado, 'dd/MM/yyyy HH:mm')}">Calculado...</p>
+  <div class="riesgo-panel-grid">
+    <div class="riesgo-panel-main">
+      <h3><i class="fa-solid fa-traffic-light"></i> Riesgo de no cumplir los objetivos
+        <span class="riesgo-chip" th:classappend="${p.riesgoClase}" th:text="${p.nivelRiesgo ?: 'Sin datos'}">Medio</span>
+        <small th:if="${p.probabilidadRiesgo != null}" class="cell-muted"
+               th:text="'(' + ${#numbers.formatDecimal(p.probabilidadRiesgo * 100, 1, 0)} + ' % de probabilidad)'">(70 %)</small>
+      </h3>
+
+      <p th:if="${p.riesgoFactor != null}" class="riesgo-factor">
+        <i class="fa-solid fa-magnifying-glass-chart"></i>
+        <span>Lo que más influye: <strong th:text="${p.riesgoFactor}">el atraso</strong></span>
+      </p>
+
+      <ul th:if="${p.riesgoMotivos != null and !#lists.isEmpty(p.riesgoMotivos)}">
+        <li th:each="m : ${p.riesgoMotivos}" th:text="${m}">Motivo</li>
+      </ul>
+      <p th:if="${p.riesgoSugerencia != null}" class="riesgo-sugerencia"><i class="fa-solid fa-lightbulb"></i><span th:text="${p.riesgoSugerencia}">Sugerencia</span></p>
+
+      <p th:if="${p.fechaEstimadaFin != null}" class="riesgo-estimado"
+         th:classappend="${p.diasAtrasoEstimado > 0} ? 'is-late'">
+        <i class="fa-regular fa-calendar-check"></i>
+        <span th:if="${p.diasAtrasoEstimado > 0}"
+              th:text="'Al ritmo actual terminaría el ' + ${#temporals.format(p.fechaEstimadaFin, 'dd/MM/yyyy')} + ', ' + ${p.diasAtrasoEstimado} + ' días después de la fecha de fin.'">Fecha estimada</span>
+        <span th:unless="${p.diasAtrasoEstimado > 0}"
+              th:text="'Al ritmo actual terminaría el ' + ${#temporals.format(p.fechaEstimadaFin, 'dd/MM/yyyy')} + ', a tiempo.'">A tiempo</span>
+      </p>
+
+      <p th:if="${p.riesgoActualizado == null}" class="cell-muted">Se calculará en el próximo recálculo del modelo.</p>
+      <p th:if="${p.riesgoActualizado != null}" class="cell-muted riesgo-pie"
+         th:text="'Modelo predictivo v' + ${p.modeloVersion ?: '1.0'} + ' · calculado el ' + ${#temporals.format(p.riesgoActualizado, 'dd/MM/yyyy HH:mm')}">Calculado...</p>
+    </div>
+
+    <!-- Mini gráfica: cómo ha cambiado el riesgo (últimas semanas) -->
+    <div class="riesgo-historia" th:if="${historialRiesgo != null and !historialRiesgo.vacio}">
+      <span class="riesgo-historia-titulo">Últimas semanas</span>
+      <svg viewBox="0 0 160 40" class="sparkline" role="img"
+           th:attr="aria-label=${historialRiesgo.cambio}">
+        <line x1="0" y1="20" x2="160" y2="20" class="sparkline-guia"/>
+        <polyline th:attr="points=${historialRiesgo.polilinea}" class="sparkline-linea" fill="none"/>
+      </svg>
+      <span class="riesgo-historia-cambio" th:text="${historialRiesgo.cambio}">Subió de Medio a Alto hace 3 días</span>
+    </div>
+  </div>
+
+  <!-- Simulador "¿qué pasa si...?" -->
+  <details class="simulador" th:if="${p.nivelRiesgo != null}" th:attr="data-simulador=@{/riesgo/{id}/simular(id=${p.id})}">
+    <summary><i class="fa-solid fa-sliders"></i> ¿Qué pasa si…? Simula acciones y mira cómo cambia el riesgo</summary>
+    <div class="simulador-cuerpo">
+      <label>Completar tareas pendientes
+        <input type="number" name="completar" min="0" max="500" value="0" inputmode="numeric">
+      </label>
+      <label>Voluntarios inactivos que empiezan a participar
+        <input type="number" name="activar" min="0" max="500" value="0" inputmode="numeric">
+      </label>
+      <label>Voluntarios nuevos (que participan)
+        <input type="number" name="nuevos" min="0" max="50" value="0" inputmode="numeric">
+      </label>
+      <button type="button" class="btn btn-primary btn-sm" data-simular><i class="fa-solid fa-play"></i> Simular</button>
+      <output class="simulador-resultado" aria-live="polite"></output>
+    </div>
+  </details>
 </section>
 </body>
 </html>

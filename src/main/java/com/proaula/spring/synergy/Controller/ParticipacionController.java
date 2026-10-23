@@ -38,16 +38,37 @@ public class ParticipacionController {
         return "Participacion_Proyecto_Salir";
     }
 
+    @Autowired
+    private com.proaula.spring.synergy.Service.ProyectoService proyectoService;
+
+    /** Lista de participantes: solo el líder del proyecto o el administrador. */
     @GetMapping("/listar/{proyectoId}")
     public ResponseEntity<List<Participacion>> listar(@PathVariable String proyectoId, HttpSession session) {
-        if (SesionUtil.usuario(session) == null) {
+        Usuarios usuario = SesionUtil.usuario(session);
+        if (usuario == null) {
             return ResponseEntity.status(401).build();
+        }
+        Proyecto proyecto = proyectoService.buscarPorId(proyectoId);
+        if (proyecto == null) {
+            return ResponseEntity.notFound().build();
+        }
+        if (!SesionUtil.esAdmin(usuario) && !usuario.getId().equals(proyecto.getIdLider())) {
+            return ResponseEntity.status(403).build();
         }
         return ResponseEntity.ok(participacionService.listarParticipantes(proyectoId));
     }
 
+    /** Antes se podía consultar con cualquier usuarioId; ahora solo el propio (o el administrador). */
     @GetMapping("/inscrito/{proyectoId}/{usuarioId}")
-    public ResponseEntity<Boolean> estaInscrito(@PathVariable String proyectoId, @PathVariable String usuarioId) {
+    public ResponseEntity<Boolean> estaInscrito(@PathVariable String proyectoId, @PathVariable String usuarioId,
+                                                HttpSession session) {
+        Usuarios usuario = SesionUtil.usuario(session);
+        if (usuario == null) {
+            return ResponseEntity.status(401).build();
+        }
+        if (!usuario.getId().equals(usuarioId) && !SesionUtil.esAdmin(usuario)) {
+            return ResponseEntity.status(403).build();
+        }
         return ResponseEntity.ok(participacionService.yaInscrito(proyectoId, usuarioId));
     }
 }

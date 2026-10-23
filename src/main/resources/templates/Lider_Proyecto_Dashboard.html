@@ -56,49 +56,101 @@
           <span class="stat-value" th:text="${totalTareas}">0</span><span class="stat-label">Tareas asignadas</span></div>
         <div class="stat-card" style="--i:2"><img src="../static/img/icons/meta-semanal.png" th:src="@{/img/icons/meta-semanal.png}" alt="" class="stat-icon">
           <span class="stat-value" th:text="${tareasPendientes}">0</span><span class="stat-label">Tareas pendientes</span></div>
-        <div class="stat-card" style="--i:3"><img src="../static/img/icons/reporte-fotografico.png" th:src="@{/img/icons/reporte-fotografico.png}" alt="" class="stat-icon">
-          <span class="stat-value" th:text="${entregasRecibidas}">0</span><span class="stat-label">Entregas recibidas</span></div>
+        <a class="stat-card stat-link" style="--i:3" th:href="@{/lider/tareas/recibidas(estado='ENTREGADO')}"
+           title="Ver las entregas que esperan tu revisión">
+          <img src="../static/img/icons/reporte-fotografico.png" th:src="@{/img/icons/reporte-fotografico.png}" alt="" class="stat-icon">
+          <span class="stat-value" th:text="${entregasPorRevisar}">0</span>
+          <span class="stat-label">Entregas por revisar <small th:text="'de ' + ${entregasRecibidas}">de 0</small></span></a>
       </div>
 
-      <!-- AVANCE -->
-      <div class="overview" th:if="${totalProyectos > 0}">
-        <div class="donut-card">
-          <div class="donut" th:style="'--p:' + ${porcentajeGlobal}">
-            <div class="donut-value"><strong th:text="${porcentajeGlobal} + '%'">0%</strong><span>tareas completadas</span></div>
-          </div>
-          <ul class="legend">
-            <li><span><i class="dot" style="background:#10B981"></i> Activos</span><strong th:text="${porEstado['ACTIVO']}">0</strong></li>
-            <li><span><i class="dot" style="background:#FBBF24"></i> Pendientes de aprobación</span><strong th:text="${porEstado['PENDIENTE']}">0</strong></li>
-            <li><span><i class="dot" style="background:#60A5FA"></i> Completados</span><strong th:text="${porEstado['COMPLETADO']}">0</strong></li>
-            <li><span><i class="dot" style="background:#F87171"></i> Cancelados</span><strong th:text="${porEstado['CANCELADO']}">0</strong></li>
-          </ul>
-        </div>
-        <div class="progress-list">
-          <h2 class="section-heading" style="margin:0 0 4px"><i class="fa-solid fa-chart-line"></i> Avance por proyecto</h2>
-          <div class="progress-item" th:each="p : ${proyectos}">
-            <div class="progress-head">
-              <strong th:text="${p.nombre}">Proyecto</strong>
-              <span th:text="${progresos[p.id]} + '%'">0%</span>
+      <!-- AVANCE: dos columnas de la misma altura -->
+      <div class="overview overview-v2" th:if="${totalProyectos > 0}">
+        <div class="overview-side">
+          <div class="donut-card">
+            <div class="donut" th:style="'--p:' + ${porcentajeGlobal}">
+              <div class="donut-value"><strong th:text="${porcentajeGlobal} + '%'">0%</strong><span>tareas completadas</span></div>
             </div>
-            <div class="progress-track"><div class="progress-fill" th:style="'--w:' + ${progresos[p.id]} + '%'"></div></div>
+            <ul class="legend">
+              <li><span><i class="dot" style="background:#10B981"></i> Activos</span><strong th:text="${porEstado['ACTIVO']}">0</strong></li>
+              <li><span><i class="dot" style="background:#FBBF24"></i> Pendientes de aprobación</span><strong th:text="${porEstado['PENDIENTE']}">0</strong></li>
+              <li><span><i class="dot" style="background:#60A5FA"></i> Completados</span><strong th:text="${porEstado['COMPLETADO']}">0</strong></li>
+              <li><span><i class="dot" style="background:#F87171"></i> Cancelados</span><strong th:text="${porEstado['CANCELADO']}">0</strong></li>
+            </ul>
+          </div>
+
+          <div class="side-card" th:if="${porEstado['ACTIVO'] > 0}">
+            <h3><i class="fa-solid fa-shield-halved"></i> Riesgo de tus proyectos activos</h3>
+            <div class="riesgo-resumen">
+              <a th:each="n : ${riesgoLider}" class="riesgo-cuenta"
+                 th:classappend="${n.key == 'Sin datos'} ? 'riesgo-ninguno' : 'riesgo-' + ${#strings.toLowerCase(n.key)}"
+                 th:href="@{/lider/tareas/asignar}">
+                <strong th:text="${n.value}">0</strong><span th:text="${n.key}">Alto</span>
+              </a>
+            </div>
+          </div>
+
+          <div class="side-card">
+            <h3><i class="fa-regular fa-clock"></i> Por vencer (7 días)
+              <span class="count" th:text="${totalPorVencer}">0</span></h3>
+            <ul class="mini-list" th:if="${!#lists.isEmpty(tareasPorVencer)}">
+              <li th:each="t : ${tareasPorVencer}">
+                <div>
+                  <strong th:text="${t.titulo}">Tarea</strong>
+                  <span th:text="${nombresProyecto[t.idProyecto]}">Proyecto</span>
+                </div>
+                <span class="badge" th:classappend="${t.fechaEntrega.isBefore(hoy)} ? 'badge-danger' : 'badge-warning'"
+                      th:text="${t.fechaEntrega.isBefore(hoy)} ? 'Vencida ' + ${#temporals.format(t.fechaEntrega, 'dd/MM')} : ${#temporals.format(t.fechaEntrega, 'dd/MM')}">dd/MM</span>
+              </li>
+            </ul>
+            <p th:if="${#lists.isEmpty(tareasPorVencer)}" class="cell-muted mini-empty">
+              <i class="fa-regular fa-face-smile"></i> Nada vence esta semana.</p>
           </div>
         </div>
-      </div>
 
-      <!-- TAREAS POR VENCER -->
-      <h2 class="section-heading"><i class="fa-regular fa-clock"></i> Tareas vencidas y por vencer (7 días)
-        <span class="count" th:text="${#lists.size(tareasPorVencer)}">0</span></h2>
-      <ul class="deadline-list" th:if="${!#lists.isEmpty(tareasPorVencer)}">
-        <li th:each="t : ${tareasPorVencer}">
-          <div class="deadline-info">
-            <strong th:text="${t.titulo}">Tarea</strong>
-            <span th:text="${nombresProyecto[t.idProyecto]}">Proyecto</span>
+        <div class="progress-list progress-list-v2">
+          <div class="progress-list-head">
+            <h2 class="section-heading" style="margin:0"><i class="fa-solid fa-chart-line"></i> Avance por proyecto</h2>
+            <nav class="segmented" aria-label="Filtrar proyectos">
+              <a th:href="@{/lider/dashboard(vista='activos')}" th:classappend="${vista == 'activos'} ? 'is-active'">Activos</a>
+              <a th:href="@{/lider/dashboard(vista='completados')}" th:classappend="${vista == 'completados'} ? 'is-active'">Completados</a>
+              <a th:href="@{/lider/dashboard(vista='todos')}" th:classappend="${vista == 'todos'} ? 'is-active'">Todos</a>
+            </nav>
           </div>
-          <span class="badge" th:classappend="${t.fechaEntrega.isBefore(hoy)} ? 'badge-danger' : 'badge-warning'"
-                th:text="${t.fechaEntrega.isBefore(hoy)} ? 'Vencida el ' + ${#temporals.format(t.fechaEntrega, 'dd/MM')} : 'Vence el ' + ${#temporals.format(t.fechaEntrega, 'dd/MM')}">Vence</span>
-        </li>
-      </ul>
-      <p th:if="${#lists.isEmpty(tareasPorVencer)}" class="cell-muted" style="margin:0 0 24px">No hay tareas vencidas ni por vencer esta semana.</p>
+          <p class="cell-muted progress-hint" th:if="${vista == 'activos'}">
+            Ordenados por riesgo: arriba los que necesitan atención. La marca <span class="marca-ejemplo"></span> indica dónde deberían ir según las fechas.</p>
+
+          <div class="progress-scroll">
+            <a class="progress-item progress-item-v2" th:each="a : ${avances}"
+               th:href="@{/lider/proyecto/{id}/detalle(id=${a.proyecto.id})}">
+              <div class="progress-head">
+                <strong th:text="${a.proyecto.nombre}">Proyecto</strong>
+                <span th:if="${a.sinTareas}" class="sin-tareas">Sin tareas</span>
+                <span th:unless="${a.sinTareas}" th:text="${a.hechas} + '/' + ${a.total} + ' tareas · ' + ${a.porcentaje} + '%'">3/6 tareas · 50%</span>
+              </div>
+              <div class="progress-sub">
+                <span th:if="${a.proyecto.codigo != null}" th:text="${a.proyecto.codigo}">SYN-0001</span>
+                <span th:text="${a.proyecto.fechaInicio != null ? #temporals.format(a.proyecto.fechaInicio, 'dd MMM yy') : '¿?'} + ' → ' + ${a.proyecto.fechaFin != null ? #temporals.format(a.proyecto.fechaFin, 'dd MMM yy') : '¿?'}">fechas</span>
+                <span th:if="${a.proyecto.estado != 'ACTIVO'}" th:text="${a.proyecto.estadoEtiqueta}">Estado</span>
+                <span th:if="${a.proyecto.estado == 'ACTIVO'}" class="riesgo-chip riesgo-chip-sm" th:classappend="${a.proyecto.riesgoClase}"
+                      th:text="${a.proyecto.nivelRiesgo != null ? a.proyecto.nivelRiesgo : 'Sin datos'}">Bajo</span>
+                <span th:if="${a.atrasado}" class="atrasado"><i class="fa-solid fa-triangle-exclamation"></i> atrasado</span>
+              </div>
+              <div class="progress-track progress-track-v2" th:unless="${a.sinTareas}">
+                <div class="progress-fill" th:classappend="${a.atrasado} ? 'fill-medio'" th:style="'--w:' + ${a.porcentaje} + '%'"></div>
+                <span th:if="${a.proyecto.estado == 'ACTIVO'}" class="progress-marca" th:style="'left:' + ${a.proyecto.avanceEsperadoPct} + '%'"
+                      th:title="'Según las fechas debería ir en ' + ${a.proyecto.avanceEsperadoPct} + '%'"></span>
+              </div>
+            </a>
+            <div th:if="${#lists.isEmpty(avances)}" class="empty-mini">
+              <i class="fa-regular fa-folder-open"></i>
+              <span th:text="${vista == 'completados'} ? 'Aún no tienes proyectos completados.' : 'No tienes proyectos activos.'">Vacío</span>
+            </div>
+          </div>
+          <a th:if="${!verTodos and totalLista > #lists.size(avances)}" class="btn btn-secondary btn-sm progress-more"
+             th:href="@{/lider/dashboard(vista=${vista},todos=true)}"
+             th:text="'Ver los ' + ${totalLista} + ' proyectos'">Ver todos</a>
+        </div>
+      </div>
 
       <!-- ACCESOS -->
       <h2 class="section-heading"><i class="fa-solid fa-bolt"></i> Accesos rápidos</h2>

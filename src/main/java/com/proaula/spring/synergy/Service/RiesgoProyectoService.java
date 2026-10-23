@@ -27,6 +27,7 @@ import org.springframework.stereotype.Service;
 import com.proaula.spring.synergy.Model.Catalogos;
 import com.proaula.spring.synergy.Model.Comentario;
 import com.proaula.spring.synergy.Model.EntregaTarea;
+import com.proaula.spring.synergy.Model.HistorialRiesgo;
 import com.proaula.spring.synergy.Model.Proyecto;
 import com.proaula.spring.synergy.Model.Tarea;
 import com.proaula.spring.synergy.Service.RiesgoCalculadora.ActividadInfo;
@@ -54,14 +55,28 @@ public class RiesgoProyectoService implements ApplicationRunner {
     private static final int MIN_TAREAS_DATASET = 4;
 
     private final MongoTemplate mongoTemplate;
+    private final NotificacionService notificaciones;
 
-    public RiesgoProyectoService(MongoTemplate mongoTemplate) {
+    public RiesgoProyectoService(MongoTemplate mongoTemplate, NotificacionService notificaciones) {
         this.mongoTemplate = mongoTemplate;
+        this.notificaciones = notificaciones;
     }
 
     /** Resultado para un proyecto. nivel == null: todavía no hay datos para predecir. */
     public record Evaluacion(String nivel, double probabilidad, double puntaje, double[] probabilidades,
-                             Indicadores indicadores, List<String> motivos, String sugerencia) {
+                             Indicadores indicadores, List<String> motivos, String sugerencia,
+                             String factor, LocalDate fechaEstimadaFin) {
+
+        Evaluacion conFechaEstimada(LocalDate fecha) {
+            return new Evaluacion(nivel, probabilidad, puntaje, probabilidades, indicadores, motivos, sugerencia, factor, fecha);
+        }
+    }
+
+    /** Historial para la mini gráfica: puntos (fecha, nivel, puntaje) y el último cambio en palabras. */
+    public record ResumenHistorial(List<HistorialRiesgo> puntos, String cambio, String polilinea) {
+        public boolean isVacio() {
+            return puntos == null || puntos.size() < 2;
+        }
     }
 
     /** Fila del dataset de entrenamiento. */
@@ -232,7 +247,7 @@ public class RiesgoProyectoService implements ApplicationRunner {
         // Proyecto que apenas empieza y aún no tiene tareas: no hay con qué predecir
         if (i.totalTareas() == 0 && i.avanceEsperado() < 0.10) {
             return new Evaluacion(null, 0, 0, new double[3], i, List.of("Proyecto recién iniciado, aún sin tareas"),
-                    "Crear y asignar las primeras tareas del proyecto.");
+                    "Crear y asignar las primeras tareas del proyecto.", null, null);
         }
         double[] prob = ModeloRiesgo.score(i.vector());
         int mejor = 0;
@@ -242,19 +257,210 @@ public class RiesgoProyectoService implements ApplicationRunner {
             }
         }
         String nivel = RiesgoCalculadora.NIVELES.get(mejor);
-        double puntaje = prob[2] + 0.5 * prob[1];
+        double puntaje = puntaje(prob);
         return new Evaluacion(nivel, prob[mejor], puntaje, prob, i, RiesgoCalculadora.motivos(i),
-                RiesgoCalculadora.sugerencia(nivel, i));
+                RiesgoCalculadora.sugerencia(nivel, i), "Bajo".equals(nivel) ? null : factorPrincipal(i, puntaje), null);
+    }
+
+    /** P(Alto) + 0,5·P(Medio): un solo número de 0 a 1 para ordenar por prioridad. */
+    static double puntaje(double[] prob) {
+        return prob[2] + 0.5 * prob[1];
+    }
+
+    private static double puntaje(Indicadores i) {
+        return puntaje(ModeloRiesgo.score(i.vector()));
+    }
+
+    /**
+     * Explicación de la predicción: se "arregla" una cosa a la vez (el atraso, el avance, la
+     * participación) y se mide cuánto baja el riesgo según el MISMO modelo. Lo que más lo baja es
+     * lo que más está influyendo. Devuelve null si ningún cambio lo baja de forma apreciable.
+     */
+    public static String factorPrincipal(Indicadores i, double puntajeBase) {
+        String mejor = null;
+        double mayorBaja = 0.05;
+
+        if (i.diasRetraso() > 0 || i.tareasVencidas() > 0) {
+            Indicadores sin = new Indicadores(0, i.pctTareasPendientes(), i.participantes(), i.tasaParticipacion(),
+                    i.duracionDias(), i.avanceReal(), i.avanceEsperado(), i.brechaAvance(), i.actividades(),
+                    i.totalTareas(), 0, i.categoria());
+            double baja = puntajeBase - puntaje(sin);
+            if (baja > mayorBaja) {
+                mayorBaja = baja;
+                mejor = i.tareasVencidas() == 1
+                        ? "una tarea vencida hace " + i.diasRetraso() + " días"
+                        : i.tareasVencidas() + " tareas vencidas (la más atrasada, " + i.diasRetraso() + " días)";
+            }
+        }
+        if (i.brechaAvance() < 0 && i.totalTareas() > 0) {
+            double pct = Math.max(0, Math.min(1, 1 - i.avanceEsperado()));
+            Indicadores alDia = new Indicadores(i.diasRetraso(), pct, i.participantes(), i.tasaParticipacion(),
+                    i.duracionDias(), 1 - pct, i.avanceEsperado(), 0, i.actividades(), i.totalTareas(),
+                    i.tareasVencidas(), i.categoria());
+            double baja = puntajeBase - puntaje(alDia);
+            if (baja > mayorBaja) {
+                mayorBaja = baja;
+                mejor = "el avance: va " + Math.round(-i.brechaAvance() * 100) + " puntos por debajo de lo esperado";
+            }
+        }
+        if (i.participantes() > 0 && i.tasaParticipacion() < 1.0) {
+            Indicadores todos = new Indicadores(i.diasRetraso(), i.pctTareasPendientes(), i.participantes(), 1.0,
+                    i.duracionDias(), i.avanceReal(), i.avanceEsperado(), i.brechaAvance(),
+                    Math.max(i.actividades(), i.participantes() * 2), i.totalTareas(), i.tareasVencidas(), i.categoria());
+            double baja = puntajeBase - puntaje(todos);
+            if (baja > mayorBaja) {
+                mayorBaja = baja;
+                mejor = "la participación: solo " + Math.round(i.tasaParticipacion() * 100) + " % de los voluntarios ha participado";
+            }
+        }
+        if (i.participantes() == 0) {
+            Indicadores conEquipo = new Indicadores(i.diasRetraso(), i.pctTareasPendientes(), 5, 1.0, i.duracionDias(),
+                    i.avanceReal(), i.avanceEsperado(), i.brechaAvance(), Math.max(i.actividades(), 10), i.totalTareas(),
+                    i.tareasVencidas(), i.categoria());
+            double baja = puntajeBase - puntaje(conEquipo);
+            if (baja > mayorBaja) {
+                mejor = "que no tiene voluntarios inscritos";
+            }
+        }
+        return mejor;
     }
 
     public Evaluacion evaluar(Proyecto p) {
         Datos d = cargar(List.of(p.getId()));
-        return predecir(indicadores(p, d, corteActual(p)));
+        return evaluar(p, d);
+    }
+
+    private static Evaluacion evaluar(Proyecto p, Datos d) {
+        LocalDate corte = corteActual(p);
+        return predecir(indicadores(p, d, corte))
+                .conFechaEstimada(RiesgoCalculadora.estimarFin(p.getFechaInicio(), d.tareasDe(p.getId()), corte));
+    }
+
+    /** Simulador para el líder: cómo cambiaría el riesgo con algunas acciones. */
+    public Map<String, Object> simular(Proyecto p, int completar, int activar, int nuevos) {
+        Datos d = cargar(List.of(p.getId()));
+        Indicadores actual = indicadores(p, d, corteActual(p));
+        Evaluacion antes = predecir(actual);
+        Evaluacion despues = predecir(RiesgoCalculadora.simular(actual, completar, activar, nuevos));
+        Map<String, Object> r = new java.util.LinkedHashMap<>();
+        r.put("antes", resumen(antes));
+        r.put("despues", resumen(despues));
+        int pendientes = (int) Math.round(actual.pctTareasPendientes() * actual.totalTareas());
+        int activos = (int) Math.round(actual.tasaParticipacion() * actual.participantes());
+        r.put("maxCompletar", pendientes);
+        r.put("maxActivar", Math.max(0, actual.participantes() - activos));
+        return r;
+    }
+
+    private static Map<String, Object> resumen(Evaluacion e) {
+        Map<String, Object> m = new java.util.LinkedHashMap<>();
+        m.put("nivel", e.nivel());
+        m.put("puntaje", Math.round(e.puntaje() * 1000) / 1000.0);
+        double[] p = e.probabilidades();
+        m.put("probabilidades", Map.of("Bajo", Math.round(p[0] * 1000) / 1000.0, "Medio", Math.round(p[1] * 1000) / 1000.0,
+                "Alto", Math.round(p[2] * 1000) / 1000.0));
+        m.put("factor", e.factor());
+        return m;
     }
 
     private static LocalDate corteActual(Proyecto p) {
         LocalDate hoy = LocalDate.now();
         return p.getFechaFin() != null && p.getFechaFin().isBefore(hoy) ? p.getFechaFin() : hoy;
+    }
+
+    // =====================================================================
+    // HISTORIAL Y AVISOS
+    // =====================================================================
+
+    /** Semanas hacia atrás que se reconstruyen la primera vez que se calcula un proyecto. */
+    private static final int SEMANAS_RECONSTRUIR = 8;
+
+    /** Riesgo de los últimos {@code dias} días de un proyecto (del más antiguo al más reciente). */
+    public ResumenHistorial historial(String idProyecto, int dias) {
+        Query q = Query.query(Criteria.where("idProyecto").is(idProyecto).and("fecha").gte(LocalDate.now().minusDays(dias)))
+                .with(org.springframework.data.domain.Sort.by("fecha"));
+        List<HistorialRiesgo> puntos = mongoTemplate.find(q, HistorialRiesgo.class);
+        return resumirHistorial(puntos, LocalDate.now());
+    }
+
+    /** Texto del último cambio de nivel y puntos de la mini gráfica (160 x 40). Sin base de datos. */
+    public static ResumenHistorial resumirHistorial(List<HistorialRiesgo> puntos, LocalDate hoy) {
+        if (puntos == null || puntos.isEmpty()) {
+            return new ResumenHistorial(List.of(), null, "");
+        }
+        String cambio = null;
+        HistorialRiesgo ultimo = puntos.get(puntos.size() - 1);
+        for (int k = puntos.size() - 2; k >= 0; k--) {
+            HistorialRiesgo anterior = puntos.get(k);
+            if (anterior.getNivel() != null && !anterior.getNivel().equals(ultimo.getNivel())) {
+                // el cambio ocurrió en el punto siguiente al último con otro nivel
+                LocalDate fechaCambio = puntos.get(k + 1).getFecha();
+                long dias = java.time.temporal.ChronoUnit.DAYS.between(fechaCambio, hoy);
+                boolean sube = RiesgoCalculadora.NIVELES.indexOf(ultimo.getNivel()) > RiesgoCalculadora.NIVELES.indexOf(anterior.getNivel());
+                cambio = (sube ? "Subió" : "Bajó") + " de " + anterior.getNivel() + " a " + ultimo.getNivel() + " "
+                        + (dias <= 0 ? "hoy" : dias == 1 ? "ayer" : "hace " + dias + " días");
+                break;
+            }
+        }
+        if (cambio == null && puntos.size() > 1) {
+            long dias = java.time.temporal.ChronoUnit.DAYS.between(puntos.get(0).getFecha(), hoy);
+            cambio = "Se mantiene en " + ultimo.getNivel() + " desde hace " + dias + " días";
+        }
+        StringBuilder poli = new StringBuilder();
+        int n = puntos.size();
+        for (int k = 0; k < n; k++) {
+            double x = n == 1 ? 80 : 4 + k * (152.0 / (n - 1));
+            double y = 36 - Math.max(0, Math.min(1, puntos.get(k).getPuntaje())) * 32;
+            poli.append(String.format(Locale.ROOT, "%.1f,%.1f ", x, y));
+        }
+        return new ResumenHistorial(puntos, cambio, poli.toString().trim());
+    }
+
+    private static boolean pasoAAlto(String antes, String ahora) {
+        return "Alto".equals(ahora) && ("Bajo".equals(antes) || "Medio".equals(antes));
+    }
+
+    private void avisarRiesgoAlto(Proyecto p, Evaluacion e) {
+        String detalle = e.factor() != null ? "Lo que más influye: " + e.factor() + ". " : "";
+        notificaciones.notificar(p.getIdLider(), "RIESGO", "Riesgo alto: " + p.getNombre(),
+                detalle + (e.sugerencia() != null ? e.sugerencia() : ""), "/lider/proyecto/" + p.getId() + "/detalle");
+    }
+
+    /** Guarda el punto de hoy y, si el proyecto no tenía historial, reconstruye las semanas anteriores. */
+    private void guardarHistorial(List<HistorialRiesgo> hoy, List<Proyecto> sinHistorial, Datos d) {
+        if (!hoy.isEmpty()) {
+            BulkOperations bulk = mongoTemplate.bulkOps(BulkOperations.BulkMode.UNORDERED, HistorialRiesgo.class);
+            for (HistorialRiesgo h : hoy) {
+                bulk.upsert(Query.query(Criteria.where("idProyecto").is(h.getIdProyecto()).and("fecha").is(h.getFecha())),
+                        new Update().set("nivel", h.getNivel()).set("puntaje", h.getPuntaje()));
+            }
+            bulk.execute();
+        }
+        List<HistorialRiesgo> pasado = new ArrayList<>();
+        LocalDate fecha = LocalDate.now();
+        for (Proyecto p : sinHistorial) {
+            for (int semana = 1; semana <= SEMANAS_RECONSTRUIR; semana++) {
+                LocalDate corte = fecha.minusWeeks(semana);
+                if (corte.isBefore(p.getFechaInicio())) {
+                    break;
+                }
+                try {
+                    Evaluacion e = predecir(indicadores(p, d, corte));
+                    if (e.nivel() != null) {
+                        pasado.add(new HistorialRiesgo(p.getId(), corte, e.nivel(), redondear(e.puntaje())));
+                    }
+                } catch (RuntimeException ex) {
+                    break;
+                }
+            }
+        }
+        for (int desde = 0; desde < pasado.size(); desde += LOTE) {
+            mongoTemplate.insert(pasado.subList(desde, Math.min(desde + LOTE, pasado.size())), HistorialRiesgo.class);
+        }
+    }
+
+    private static double redondear(double v) {
+        return Math.round(v * 1000) / 1000.0;
     }
 
     /** Tamaño de cada lote de escritura en MongoDB. */
@@ -283,6 +489,12 @@ public class RiesgoProyectoService implements ApplicationRunner {
             int n = 0;
             int sinFechas = 0;
             int fallidos = 0;
+            LocalDate hoy = LocalDate.now();
+            List<HistorialRiesgo> puntosHoy = new ArrayList<>();
+            java.util.Set<String> conHistorial = new java.util.HashSet<>(
+                    mongoTemplate.findDistinct(new Query(), "idProyecto", HistorialRiesgo.class, String.class));
+            List<Proyecto> sinHistorial = new ArrayList<>();
+            List<Proyecto> nuevosAltos = new ArrayList<>();
             for (Proyecto p : activos) {
                 if (p.getId() == null || p.getFechaInicio() == null || p.getFechaFin() == null) {
                     sinFechas++;
@@ -290,7 +502,18 @@ public class RiesgoProyectoService implements ApplicationRunner {
                 }
                 Update u;
                 try {
-                    u = actualizacion(predecir(indicadores(p, d, corteActual(p))));
+                    Evaluacion e = evaluar(p, d);
+                    u = actualizacion(e);
+                    if (e.nivel() != null) {
+                        puntosHoy.add(new HistorialRiesgo(p.getId(), hoy, e.nivel(), redondear(e.puntaje())));
+                    }
+                    if (!conHistorial.contains(p.getId())) {
+                        sinHistorial.add(p);
+                    }
+                    if (pasoAAlto(p.getNivelRiesgo(), e.nivel())) {
+                        avisarRiesgoAlto(p, e);
+                        nuevosAltos.add(p);
+                    }
                 } catch (RuntimeException e) {
                     if (fallidos++ == 0) {
                         log.error("Error calculando el riesgo del proyecto {} ({})", p.getId(), p.getNombre(), e);
@@ -311,9 +534,22 @@ public class RiesgoProyectoService implements ApplicationRunner {
             if (bulk != null) {
                 bulk.execute();
             }
+            try {
+                guardarHistorial(puntosHoy, sinHistorial, d);
+            } catch (RuntimeException e) {
+                log.warn("No se pudo guardar el historial de riesgo: {}", e.toString());
+            }
+            if (!nuevosAltos.isEmpty()) {
+                notificaciones.notificarAdministradores("RIESGO",
+                        nuevosAltos.size() == 1 ? "Un proyecto pasó a riesgo alto" : nuevosAltos.size() + " proyectos pasaron a riesgo alto",
+                        nuevosAltos.size() == 1 ? nuevosAltos.get(0).getNombre()
+                                : "Revisa la lista ordenada por riesgo para priorizar el seguimiento.",
+                        "/admin/proyectos?estado=ACTIVO&riesgo=Alto&orden=riesgo");
+            }
             mongoTemplate.updateMulti(Query.query(Criteria.where("estado").ne("ACTIVO").and("nivelRiesgo").exists(true)),
                     new Update().unset("nivelRiesgo").unset("probabilidadRiesgo").unset("puntajeRiesgo")
-                            .unset("riesgoMotivos").unset("riesgoSugerencia").unset("riesgoActualizado"), Proyecto.class);
+                            .unset("riesgoMotivos").unset("riesgoSugerencia").unset("riesgoActualizado")
+                            .unset("riesgoFactor").unset("fechaEstimadaFin"), Proyecto.class);
             log.info("Riesgo recalculado para {} de {} proyectos activos en {} ms (sin fechas: {}, con error: {})",
                     n, activos.size(), System.currentTimeMillis() - inicio, sinFechas, fallidos);
             ultimoError = fallidos > 0 ? fallidos + " proyectos no se pudieron calcular (ver la consola)." : null;
@@ -332,7 +568,17 @@ public class RiesgoProyectoService implements ApplicationRunner {
             if (p == null || !"ACTIVO".equals(p.getEstado()) || p.getFechaInicio() == null || p.getFechaFin() == null) {
                 return;
             }
-            mongoTemplate.updateFirst(Query.query(Criteria.where("_id").is(p.getId())), actualizacion(evaluar(p)), Proyecto.class);
+            Evaluacion e = evaluar(p);
+            mongoTemplate.updateFirst(Query.query(Criteria.where("_id").is(p.getId())), actualizacion(e), Proyecto.class);
+            if (e.nivel() != null) {
+                mongoTemplate.upsert(Query.query(Criteria.where("idProyecto").is(p.getId()).and("fecha").is(LocalDate.now())),
+                        new Update().set("nivel", e.nivel()).set("puntaje", redondear(e.puntaje())), HistorialRiesgo.class);
+            }
+            if (pasoAAlto(p.getNivelRiesgo(), e.nivel())) {
+                avisarRiesgoAlto(p, e);
+                notificaciones.notificarAdministradores("RIESGO", "Un proyecto pasó a riesgo alto", p.getNombre(),
+                        "/admin/proyecto/" + p.getId());
+            }
         } catch (RuntimeException e) {
             log.warn("No se pudo recalcular el riesgo del proyecto {}: {}", idProyecto, e.getMessage());
         }
@@ -342,7 +588,18 @@ public class RiesgoProyectoService implements ApplicationRunner {
         Update u = new Update()
                 .set("riesgoMotivos", e.motivos())
                 .set("riesgoSugerencia", e.sugerencia())
-                .set("riesgoActualizado", LocalDateTime.now());
+                .set("riesgoActualizado", LocalDateTime.now())
+                .set("modeloVersion", ModeloInfo.VERSION);
+        if (e.factor() != null) {
+            u.set("riesgoFactor", e.factor());
+        } else {
+            u.unset("riesgoFactor");
+        }
+        if (e.fechaEstimadaFin() != null) {
+            u.set("fechaEstimadaFin", e.fechaEstimadaFin());
+        } else {
+            u.unset("fechaEstimadaFin");
+        }
         if (e.nivel() == null) {
             u.unset("nivelRiesgo").unset("probabilidadRiesgo").set("puntajeRiesgo", 0.0);
         } else {

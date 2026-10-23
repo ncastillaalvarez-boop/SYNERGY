@@ -54,7 +54,7 @@
           <div class="form-grid">
             <div class="field span-2">
               <label for="titulo"><i class="fa-solid fa-heading"></i> Título de la tarea</label>
-              <input type="text" id="titulo" name="titulo" maxlength="120" placeholder="Ej: Jornada de recolección en el sector norte" required>
+              <input type="text" id="titulo" name="titulo" minlength="3" maxlength="120" placeholder="Ej: Jornada de recolección en el sector norte" required>
             </div>
             <div class="field span-2">
               <label for="descripcion"><i class="fa-solid fa-align-left"></i> Descripción</label>
@@ -62,7 +62,7 @@
             </div>
             <div class="field">
               <label for="fechaEntrega"><i class="fa-regular fa-calendar"></i> Fecha de entrega</label>
-              <input type="date" id="fechaEntrega" name="fechaEntrega" th:min="${hoy}" required>
+              <input type="date" id="fechaEntrega" name="fechaEntrega" th:min="${proyecto.fechaInicio != null and proyecto.fechaInicio.isAfter(hoy) ? proyecto.fechaInicio : hoy}" th:max="${proyecto.fechaFin}" required>
             </div>
           </div>
 

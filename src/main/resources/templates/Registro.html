@@ -59,7 +59,7 @@
 
         <div class="float-field">
           <i class="fa-solid fa-lock field-icon"></i>
-          <input type="password" th:field="*{contrasena}" placeholder=" " autocomplete="new-password" required>
+          <input type="password" th:field="*{contrasena}" placeholder=" " autocomplete="new-password" required minlength="8" maxlength="72" data-fortaleza>
           <label th:for="contrasena">Contraseña</label>
           <button type="button" class="toggle-pass" aria-label="Mostrar contraseña"><i class="fa-regular fa-eye"></i></button>
         </div>

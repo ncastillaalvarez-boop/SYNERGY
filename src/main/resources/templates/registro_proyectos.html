@@ -47,15 +47,15 @@
         <span th:text="${mensajeExito}"></span>
       </div>
 
-      <form th:action="@{/proyectos/guardar}" th:object="${proyecto}" method="post" enctype="multipart/form-data" data-loading>
+      <form th:action="@{/proyectos/guardar}" th:object="${proyecto}" method="post" data-loading>
         <div class="form-grid">
           <div class="field span-2">
             <label th:for="nombre"><i class="fa-solid fa-signature"></i> Nombre</label>
-            <input type="text" th:field="*{nombre}" maxlength="120" placeholder="Ej: Limpieza de playas" required>
+            <input type="text" th:field="*{nombre}" minlength="5" maxlength="120" placeholder="Ej: Limpieza de playas" required>
           </div>
           <div class="field span-2">
             <label th:for="descripcion"><i class="fa-solid fa-align-left"></i> Descripción</label>
-            <textarea th:field="*{descripcion}" placeholder="Describe el objetivo del proyecto..." required></textarea>
+            <textarea th:field="*{descripcion}" maxlength="2000" placeholder="Describe el objetivo del proyecto..." required></textarea>
           </div>
           <div class="field">
             <label th:for="fechaInicio"><i class="fa-regular fa-calendar"></i> Fecha inicio</label>

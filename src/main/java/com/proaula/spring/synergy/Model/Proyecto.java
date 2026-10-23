@@ -10,6 +10,12 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.index.Indexed;
 
 @Document(collection = "proyectos")
+@org.springframework.data.mongodb.core.index.CompoundIndexes({
+    // Panel del administrador: conteos por estado y nivel de riesgo, y orden por prioridad
+    @org.springframework.data.mongodb.core.index.CompoundIndex(name = "estado_riesgo", def = "{'estado': 1, 'nivelRiesgo': 1}"),
+    @org.springframework.data.mongodb.core.index.CompoundIndex(name = "estado_puntaje", def = "{'estado': 1, 'puntajeRiesgo': -1}"),
+    @org.springframework.data.mongodb.core.index.CompoundIndex(name = "estado_creacion", def = "{'estado': 1, 'fechaCreacion': -1}")
+})
 public class Proyecto {
 
     @Id
@@ -63,6 +69,14 @@ public class Proyecto {
     private List<String> riesgoMotivos = new ArrayList<>();
     private String riesgoSugerencia;
     private LocalDateTime riesgoActualizado;
+    /** Variable que más pesa en la predicción, en palabras ("el atraso de 12 días en las tareas"). */
+    private String riesgoFactor;
+    /** Versión del modelo que hizo la predicción (ver Service/ModeloInfo). */
+    private String modeloVersion;
+    /** Fecha en que terminaría el proyecto si sigue al ritmo actual de tareas completadas (null = no se puede estimar). */
+    private LocalDate fechaEstimadaFin;
+    /** Cuándo el administrador aprobó la propuesta (para el tiempo promedio de aprobación). */
+    private LocalDateTime fechaAprobacion;
 
     public Proyecto() {
         this.fechaCreacion = LocalDateTime.now();
@@ -265,6 +279,33 @@ public class Proyecto {
     public void setRiesgoSugerencia(String riesgoSugerencia) { this.riesgoSugerencia = riesgoSugerencia; }
     public LocalDateTime getRiesgoActualizado() { return riesgoActualizado; }
     public void setRiesgoActualizado(LocalDateTime riesgoActualizado) { this.riesgoActualizado = riesgoActualizado; }
+
+    public String getRiesgoFactor() { return riesgoFactor; }
+    public void setRiesgoFactor(String riesgoFactor) { this.riesgoFactor = riesgoFactor; }
+    public String getModeloVersion() { return modeloVersion; }
+    public void setModeloVersion(String modeloVersion) { this.modeloVersion = modeloVersion; }
+    public LocalDateTime getFechaAprobacion() { return fechaAprobacion; }
+    public void setFechaAprobacion(LocalDateTime fechaAprobacion) { this.fechaAprobacion = fechaAprobacion; }
+    public LocalDate getFechaEstimadaFin() { return fechaEstimadaFin; }
+    public void setFechaEstimadaFin(LocalDate fechaEstimadaFin) { this.fechaEstimadaFin = fechaEstimadaFin; }
+
+    /** Días de atraso estimados respecto a la fecha de fin (0 si va a tiempo o no hay estimación). */
+    public long getDiasAtrasoEstimado() {
+        if (fechaEstimadaFin == null || fechaFin == null || !fechaEstimadaFin.isAfter(fechaFin)) {
+            return 0;
+        }
+        return java.time.temporal.ChronoUnit.DAYS.between(fechaFin, fechaEstimadaFin);
+    }
+
+    /** % del tiempo del proyecto que ya pasó (0-100), para la marca "dónde debería ir" de las barras. */
+    public int getAvanceEsperadoPct() {
+        if (fechaInicio == null || fechaFin == null) {
+            return 0;
+        }
+        long total = Math.max(1, java.time.temporal.ChronoUnit.DAYS.between(fechaInicio, fechaFin));
+        long pasado = java.time.temporal.ChronoUnit.DAYS.between(fechaInicio, LocalDate.now());
+        return (int) Math.max(0, Math.min(100, Math.round(pasado * 100.0 / total)));
+    }
 
     /** Clase CSS del semáforo: riesgo-bajo / riesgo-medio / riesgo-alto / riesgo-ninguno. */
     public String getRiesgoClase() {

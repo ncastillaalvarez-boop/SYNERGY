@@ -1534,3 +1534,14 @@ body {
 .theme-transition *::after {
   transition: background-color 0.35s ease, border-color 0.35s ease, color 0.35s ease !important;
 }
+
+/* Indicador de fortaleza de contraseña (script.js) */
+.fortaleza { display: grid; gap: 6px; margin: -4px 0 12px; font-size: 0.78rem; color: var(--text-muted); }
+.fortaleza-barra { height: 5px; border-radius: 99px; background: rgba(148, 163, 184, 0.2); overflow: hidden; }
+.fortaleza-barra span { display: block; height: 100%; width: 0; background: #EF4444; transition: width .25s ease, background .25s ease; }
+.fortaleza[data-nivel="2"] .fortaleza-barra span, .fortaleza[data-nivel="3"] .fortaleza-barra span { background: #F59E0B; }
+.fortaleza[data-nivel="4"] .fortaleza-barra span { background: #10B981; }
+.fortaleza ul { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 0; padding: 0; list-style: none; }
+.fortaleza li::before { content: "○ "; }
+.fortaleza li.ok { color: #10B981; }
+.fortaleza li.ok::before { content: "✓ "; }

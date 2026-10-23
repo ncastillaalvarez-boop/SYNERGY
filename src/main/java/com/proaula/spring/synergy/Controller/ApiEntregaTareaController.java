@@ -33,12 +33,14 @@ public class ApiEntregaTareaController {
     private final EntregaTareaService entregaService;
     private final TareaService tareaService;
     private final ProyectoService proyectoService;
+    private final com.proaula.spring.synergy.Service.NotificacionService notificaciones;
 
     public ApiEntregaTareaController(EntregaTareaService entregaService, TareaService tareaService,
-            ProyectoService proyectoService) {
+            ProyectoService proyectoService, com.proaula.spring.synergy.Service.NotificacionService notificaciones) {
         this.entregaService = entregaService;
         this.tareaService = tareaService;
         this.proyectoService = proyectoService;
+        this.notificaciones = notificaciones;
     }
 
     @GetMapping("/tarea/{tareaId}")
@@ -55,6 +57,11 @@ public class ApiEntregaTareaController {
         if (archivo.isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Debes seleccionar un archivo");
         entregaService.guardarEntrega(tareaId, usuarioActual().getId(), archivo);
         tareaService.cambiarEstado(tareaId, "COMPLETADA");
+        Proyecto proyecto = proyectoService.buscarPorId(tarea.getIdProyecto());
+        if (proyecto != null) {
+            notificaciones.notificar(proyecto.getIdLider(), "ENTREGA", "Nueva entrega: " + tarea.getTitulo(),
+                    usuarioActual().getNombre() + " entregó una evidencia en " + proyecto.getNombre(), "/lider/tareas/recibidas");
+        }
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
@@ -67,7 +74,7 @@ public class ApiEntregaTareaController {
     private void validarAccesoTarea(Tarea tarea, boolean esEntrega) {
         Usuarios usuario = usuarioActual();
         Proyecto proyecto = proyectoService.buscarPorId(tarea.getIdProyecto());
-        boolean esAdministrador = "ADMINISTRADOR".equals(usuario.getRol());
+        boolean esAdministrador = com.proaula.spring.synergy.Security.ApiAcceso.esAdmin(usuario);
         boolean esLider = proyecto != null && usuario.getId().equals(proyecto.getIdLider());
         boolean estaAsignado = tarea.getUsuariosAsignados().contains(usuario.getId());
         if ((esEntrega && !estaAsignado && !esAdministrador) || (!esEntrega && !estaAsignado && !esLider && !esAdministrador)) {

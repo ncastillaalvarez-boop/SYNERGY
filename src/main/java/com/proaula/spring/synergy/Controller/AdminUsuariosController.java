@@ -48,22 +48,24 @@ public class AdminUsuariosController {
     }
 
     @PostMapping
-    public ResponseEntity<Usuarios> crearUsuario(@RequestBody Usuarios usuario) {
+    public ResponseEntity<?> crearUsuario(@RequestBody Usuarios usuario) {
         try {
             Usuarios usuarioCreado = usuarioService.crearUsuario(usuario);
             return ResponseEntity.status(HttpStatus.CREATED).body(usuarioCreado);
         } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(java.util.Map.of("message", String.valueOf(e.getMessage())));
         }
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Usuarios> actualizarUsuario(@PathVariable String id, @RequestBody Usuarios usuario) {
+    public ResponseEntity<?> actualizarUsuario(@PathVariable String id, @RequestBody Usuarios usuario) {
         try {
             Usuarios usuarioActualizado = usuarioService.actualizarUsuario(id, usuario);
             return ResponseEntity.ok(usuarioActualizado);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(java.util.Map.of("message", e.getMessage()));
         } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(java.util.Map.of("message", "Usuario no encontrado"));
         }
     }
 

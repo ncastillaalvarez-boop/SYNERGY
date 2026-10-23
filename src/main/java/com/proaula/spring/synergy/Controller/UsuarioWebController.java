@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import com.proaula.spring.synergy.Model.Proyecto;
 import com.proaula.spring.synergy.Model.Tarea;
 import com.proaula.spring.synergy.Model.Usuarios;
 import com.proaula.spring.synergy.Repository.EntregaTareaRepository;
@@ -31,7 +30,8 @@ import jakarta.servlet.http.HttpSession;
 @Controller
 public class UsuarioWebController {
 
-    private static final int MIN_CONTRASENA = 6;
+    @Autowired
+    private com.proaula.spring.synergy.Security.IntentosLoginService intentosLogin;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -91,6 +91,7 @@ public class UsuarioWebController {
                             @RequestParam(required = false) String confirmarContrasena,
                             @RequestParam(required = false) String volver,
                             HttpSession session,
+                            jakarta.servlet.http.HttpServletRequest request,
                             Model model) {
 
         // Solo se permite registrarse como LIDER o PARTICIPANTE (nunca ADMINISTRADOR)
@@ -104,8 +105,10 @@ public class UsuarioWebController {
         String error = null;
         if (nombre.isEmpty() || correo.isEmpty()) {
             error = "Completa tu nombre y tu correo.";
-        } else if (contrasena.length() < MIN_CONTRASENA) {
-            error = "La contraseña debe tener al menos " + MIN_CONTRASENA + " caracteres.";
+        } else if (nombre.length() > 80 || correo.length() > 120 || !correo.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")) {
+            error = "Revisa tu nombre y tu correo.";
+        } else if (com.proaula.spring.synergy.Security.PoliticaContrasena.validar(contrasena) != null) {
+            error = com.proaula.spring.synergy.Security.PoliticaContrasena.validar(contrasena);
         } else if (!contrasena.equals(confirmarContrasena)) {
             error = "Las contraseñas no coinciden.";
         } else if (usuarioService.buscarPorCorreo(correo) != null) {
@@ -132,6 +135,8 @@ public class UsuarioWebController {
 
         historialService.registrarAccion("CREAR", "USUARIO", "Nuevo registro: " + correo + " (" + rol + ")", correo);
 
+        // Nuevo id de sesión al autenticarse (evita la fijación de sesión)
+        request.changeSessionId();
         SesionUtil.iniciar(session, nuevo);
         // Si venía de la lista de proyectos, vuelve allí (ya con sesión puede inscribirse)
         return "redirect:" + SesionUtil.destinoTrasEntrar(session, nuevo, volver);
@@ -157,7 +162,15 @@ public class UsuarioWebController {
     public String procesarLogin(@RequestParam String correo,
                                 @RequestParam String contrasena,
                                 HttpSession session,
+                                jakarta.servlet.http.HttpServletRequest request,
                                 Model model) {
+
+        String correoNormalizado = correo == null ? "" : correo.trim().toLowerCase();
+        model.addAttribute("correo", correo == null ? "" : correo.trim());
+        if (intentosLogin.estaBloqueado(correoNormalizado)) {
+            model.addAttribute("error", intentosLogin.mensajeBloqueo(correoNormalizado));
+            return "Login";
+        }
 
         Usuarios usuario = usuarioService.buscarPorCorreo(correo == null ? "" : correo.trim().toLowerCase());
         if (usuario == null) {
@@ -167,9 +180,12 @@ public class UsuarioWebController {
 
         if (usuario == null || usuario.getContrasena() == null
                 || !passwordEncoder.matches(contrasena, usuario.getContrasena())) {
-            model.addAttribute("error", "Correo o contraseña incorrectos");
+            boolean bloqueado = intentosLogin.registrarFallo(correoNormalizado);
+            model.addAttribute("error", bloqueado ? intentosLogin.mensajeBloqueo(correoNormalizado)
+                    : "Correo o contraseña incorrectos");
             return "Login";
         }
+        intentosLogin.registrarExito(correoNormalizado);
 
         if (!usuario.isEnabled()) {
             model.addAttribute("error", "Tu cuenta está inactiva. Contacta al administrador.");
@@ -184,6 +200,8 @@ public class UsuarioWebController {
 
         usuario.setUltimoAcceso(LocalDateTime.now());
         usuario = usuarioService.guardarUsuario(usuario);
+        // Nuevo id de sesión al autenticarse (evita la fijación de sesión)
+        request.changeSessionId();
         SesionUtil.iniciar(session, usuario);
         return "redirect:" + SesionUtil.destinoTrasEntrar(session, usuario, null);
     }
@@ -212,8 +230,14 @@ public class UsuarioWebController {
     // ============================================
     // DASHBOARD DEL PARTICIPANTE
     // ============================================
+    @Autowired
+    private com.proaula.spring.synergy.Service.PanelVoluntarioService panelVoluntario;
+
+    @Autowired
+    private org.springframework.data.mongodb.core.MongoTemplate mongoTemplate;
+
     @GetMapping("/dashboard")
-    public String dashboard(HttpSession session, Model model) {
+    public String dashboard(@RequestParam(required = false) String mes, HttpSession session, Model model) {
         Usuarios usuario = SesionUtil.usuario(session);
         if (usuario == null) {
             return "redirect:/login";
@@ -222,14 +246,19 @@ public class UsuarioWebController {
             return "redirect:" + SesionUtil.panelPorRol(usuario);
         }
 
-        List<Tarea> tareas = tareaService.obtenerTareasPorUsuario(usuario.getId());
-        long pendientes = tareas.stream().filter(t -> !"COMPLETADA".equalsIgnoreCase(t.getEstado())).count();
-
+        com.proaula.spring.synergy.Service.PanelVoluntarioService.Panel panel = panelVoluntario.preparar(usuario);
         model.addAttribute("usuario", usuario);
-        model.addAttribute("totalTareas", tareas.size());
-        model.addAttribute("tareasPendientes", pendientes);
-        model.addAttribute("tareasCompletadas", tareas.size() - pendientes);
-        model.addAttribute("totalProyectos", usuario.getProyectos() == null ? 0 : usuario.getProyectos().size());
+        model.addAttribute("panel", panel);
+        model.addAttribute("totalTareas", panel.totalTareas());
+        model.addAttribute("tareasPendientes", panel.totalTareas() - panel.tareasCompletadas());
+        model.addAttribute("tareasCompletadas", panel.tareasCompletadas());
+        model.addAttribute("totalProyectos", panel.proyectos());
+        // Línea de tiempo del mes con las fechas de entrega de sus tareas abiertas
+        model.addAttribute("calendario", com.proaula.spring.synergy.Dto.Calendario.de(
+                com.proaula.spring.synergy.Dto.Calendario.leerMes(mes, java.time.LocalDate.now()),
+                panel.todasAbiertas(), Tarea::getFechaEntrega));
+        model.addAttribute("diasSemana", com.proaula.spring.synergy.Dto.Calendario.diasSemana());
+        model.addAttribute("hoy", java.time.LocalDate.now());
         return "dashboard_Usuario";
     }
 
@@ -250,8 +279,11 @@ public class UsuarioWebController {
 
         List<Tarea> tareas = tareaService.obtenerTareasPorUsuario(usuario.getId());
 
-        // Tareas que este usuario ya entregó (para mostrar "Entregada")
-        Set<String> entregadas = entregaTareaRepository.findByIdUsuario(usuario.getId()).stream()
+        // Tareas que este usuario ya entregó (para mostrar "Entregada"); sin descargar los archivos
+        org.springframework.data.mongodb.core.query.Query qe = org.springframework.data.mongodb.core.query.Query.query(
+                org.springframework.data.mongodb.core.query.Criteria.where("idUsuario").is(usuario.getId()));
+        qe.fields().include("idTarea");
+        Set<String> entregadas = mongoTemplate.find(qe, com.proaula.spring.synergy.Model.EntregaTarea.class).stream()
                 .map(e -> e.getIdTarea())
                 .collect(Collectors.toSet());
 
@@ -315,11 +347,13 @@ public class UsuarioWebController {
                 ra.addFlashAttribute("error", "Las contraseñas nuevas no coinciden");
                 return "redirect:/usuario/credenciales";
             }
-            if (contrasenaNueva.length() < MIN_CONTRASENA) {
-                ra.addFlashAttribute("error", "La contraseña debe tener al menos " + MIN_CONTRASENA + " caracteres");
+            String problema = com.proaula.spring.synergy.Security.PoliticaContrasena.validar(contrasenaNueva);
+            if (problema != null) {
+                ra.addFlashAttribute("error", problema);
                 return "redirect:/usuario/credenciales";
             }
             usuario.setContrasena(passwordEncoder.encode(contrasenaNueva));
+            usuario.setUltimaCambioContrasena(LocalDateTime.now());
             if (esGoogle) {
                 usuario.setProveedor("GOOGLE+LOCAL");
             }

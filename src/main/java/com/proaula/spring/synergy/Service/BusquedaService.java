@@ -67,6 +67,12 @@ public class BusquedaService {
         if (tiene(f.getUbicacion())) {
             condiciones.add(Criteria.where("ubicacion").is(f.getUbicacion()));
         }
+        if (f.getDesde() != null) {
+            condiciones.add(Criteria.where("fechaCreacion").gte(f.getDesde().atStartOfDay()));
+        }
+        if (f.getHasta() != null) {
+            condiciones.add(Criteria.where("fechaCreacion").lt(f.getHasta().plusDays(1).atStartOfDay()));
+        }
         if (tiene(f.getRiesgo()) && RiesgoCalculadora.NIVELES.contains(f.getRiesgo())) {
             condiciones.add(Criteria.where("nivelRiesgo").is(f.getRiesgo()));
         }
@@ -146,6 +152,7 @@ public class BusquedaService {
             // Prioridad del modelo predictivo: primero los de mayor riesgo
             case "riesgo" -> Sort.by(Sort.Order.desc("puntajeRiesgo"), Sort.Order.asc("fechaFin"));
             case "nombre" -> Sort.by(Sort.Direction.ASC, "nombre");
+            case "antiguos" -> Sort.by(Sort.Direction.ASC, "fechaCreacion");
             case "inicio" -> Sort.by(Sort.Direction.ASC, "fechaInicio");
             case "fin" -> Sort.by(Sort.Direction.ASC, "fechaFin");
             default -> Sort.by(Sort.Direction.DESC, "fechaCreacion").and(Sort.by(Sort.Direction.DESC, "_id"));

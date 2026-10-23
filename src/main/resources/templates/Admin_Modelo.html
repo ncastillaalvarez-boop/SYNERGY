@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>try{var t=localStorage.getItem('synergy-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
+  <title>Modelo de riesgo – Synergy</title>
+  <link rel="icon" type="image/png" href="../static/img/logo-mark.png" th:href="@{/img/logo-mark.png}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <link rel="stylesheet" href="../static/css/core.css" th:href="@{/css/core.css}">
+  <link rel="stylesheet" href="../static/css/dashboard.css" th:href="@{/css/dashboard.css}">
+</head>
+<body>
+  <div class="bg-ambient" aria-hidden="true"></div>
+
+<div class="app-shell">
+  <div th:replace="~{fragments/sidebar :: sidebar('admin-modelo')}"></div>
+  <div class="app-main">
+  <div th:replace="~{fragments/sidebar :: topbar}"></div>
+
+  <main class="app-container">
+    <section class="app-card">
+      <header class="page-header">
+        <nav class="page-toolbar">
+          <div class="toolbar-group">
+            <a th:href="@{/admin/modelo/dataset.csv}" class="btn btn-secondary btn-sm"><i class="fa-solid fa-file-csv"></i> Dataset CSV</a>
+            <a th:href="@{/admin/modelo/dataset.arff}" class="btn btn-secondary btn-sm"><i class="fa-solid fa-file-code"></i> ARFF (Weka)</a>
+            <form th:action="@{/admin/modelo/recalcular}" method="post" class="inline-form">
+              <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-rotate"></i> Recalcular ahora</button>
+            </form>
+          </div>
+        </nav>
+        <div class="page-heading">
+          <span class="page-icon has-img"><img src="../static/img/icons/meta-semanal.png" th:src="@{/img/icons/meta-semanal.png}" alt=""></span>
+          <div>
+            <h1 class="page-title">Modelo predictivo de riesgo</h1>
+            <p class="page-subtitle">Predice si un proyecto activo puede no cumplir sus objetivos (Bajo, Medio o Alto) con lo que ha pasado hasta hoy.</p>
+          </div>
+        </div>
+      </header>
+
+      <div th:if="${ultimoError != null}" class="alert alert-error"><i class="fa-solid fa-circle-exclamation"></i>
+        <span th:text="'Último recálculo con problemas: ' + ${ultimoError}">error</span></div>
+
+      <div class="stats-grid">
+        <div class="stat-card"><span class="stat-value" th:text="'v' + ${ficha.version}">v1.0</span><span class="stat-label">Versión en uso</span></div>
+        <div class="stat-card"><span class="stat-value" th:text="${#numbers.formatDecimal(ficha.exactitud * 100, 1, 0)} + ' %'">67 %</span><span class="stat-label">Exactitud en prueba</span></div>
+        <div class="stat-card"><span class="stat-value" th:text="${#numbers.formatDecimal(ficha.f1cv, 1, 3)}">0,670</span>
+          <span class="stat-label" th:text="'F1 macro (validación cruzada ± ' + ${#numbers.formatDecimal(ficha.f1cvDesv, 1, 3)} + ')'">F1</span></div>
+        <div class="stat-card"><span class="stat-value" th:text="${porRiesgo['Alto']}">0</span><span class="stat-label">Proyectos activos en riesgo alto</span></div>
+      </div>
+
+      <div class="modelo-grid">
+        <section class="side-card">
+          <h3><i class="fa-solid fa-id-card"></i> Ficha</h3>
+          <dl class="ficha">
+            <dt>Algoritmo</dt><dd th:text="${ficha.algoritmo}">Árbol</dd>
+            <dt>Entrenado</dt><dd th:text="${ficha.fecha}">2026-10-21</dd>
+            <dt>Datos</dt><dd th:text="${ficha.dataset}">600 proyectos</dd>
+            <dt>Exportación</dt><dd th:text="${ficha.exportacion}">m2cgen</dd>
+            <dt>Último cálculo</dt><dd th:text="${ultimoCalculo != null ? #temporals.format(ultimoCalculo, 'dd/MM/yyyy HH:mm') : 'Aún no en esta ejecución'}">fecha</dd>
+            <dt>Variables</dt><dd><span th:each="v, st : ${variables}" th:text="${v} + (${st.last} ? ' y categoría' : ', ')">var</span></dd>
+          </dl>
+          <p class="cell-muted">Se recalcula al arrancar, cada noche y cada vez que cambian las tareas de un proyecto.
+            Las variables se miden a la mitad de los proyectos terminados y la etiqueta es cómo terminaron, para que el modelo prediga y no copie la regla.</p>
+        </section>
+
+        <section class="side-card">
+          <h3><i class="fa-solid fa-table-cells"></i> Matriz de confusión (150 proyectos de prueba)</h3>
+          <div class="table-wrap">
+            <table class="table matriz">
+              <thead>
+                <tr><th>Real \ Predicho</th><th th:each="c : ${clases}" th:text="${c}">Bajo</th><th>Precisión</th><th>Recall</th></tr>
+              </thead>
+              <tbody>
+                <tr th:each="f : ${matriz}">
+                  <th th:text="${f.clase}">Bajo</th>
+                  <td th:each="c : ${f.celdas}" th:classappend="${c.acierto} ? 'is-acierto' : ''"
+                      th:style="'--a:' + ${c.pct / 100.0}">
+                    <strong th:text="${c.n}">20</strong> <small th:text="${c.pct} + ' %'">49 %</small></td>
+                  <td th:text="${f.precision} + ' %'">69 %</td>
+                  <td th:text="${f.recall} + ' %'">49 %</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="cell-muted">La diagonal son los aciertos. Lo más importante es que casi no confunde un proyecto de riesgo alto con uno bajo.</p>
+        </section>
+
+        <section class="side-card">
+          <h3><i class="fa-solid fa-scale-balanced"></i> Modelos comparados en Colab</h3>
+          <div class="table-wrap"><table class="table">
+            <thead><tr><th>Modelo</th><th>F1 macro (CV)</th><th>Exactitud prueba</th></tr></thead>
+            <tbody><tr th:each="m : ${comparacion}"><td th:text="${m[0]}">Árbol</td><td th:text="${m[1]}">0,670</td><td th:text="${m[2]}">0,667</td></tr></tbody>
+          </table></div>
+          <p class="cell-muted">Se eligió el árbol porque se puede explicar regla por regla y se exporta a Java sin librerías.
+            Cuando haya proyectos reales terminados: descargar el CSV, volver a correr el notebook (docs/modelo-predictivo), reemplazar ModeloRiesgo.java y actualizar ModeloInfo.java.</p>
+        </section>
+      </div>
+    </section>
+  </main>
+  </div>
+</div>
+
+  <script src="../static/js/script.js" th:src="@{/js/script.js}"></script>
+</body>
+</html>
