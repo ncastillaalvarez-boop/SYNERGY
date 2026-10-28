@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, kReleaseMode;
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Configuración de la app.
@@ -16,13 +16,19 @@ class AppConfig {
   /// flutter run --dart-define=API_BASE_URL=http://192.168.1.10:8080/api
   static const String _apiBaseUrlCompilada = String.fromEnvironment('API_BASE_URL');
 
-  /// Emulador de Android: 10.0.2.2 (es el PC). Navegador (flutter run -d edge): localhost.
-  static String get defaultApiBaseUrl => _apiBaseUrlCompilada.isNotEmpty
-      ? _apiBaseUrlCompilada
-      : (kIsWeb ? 'http://localhost:8080/api' : 'http://10.0.2.2:8080/api');
+  /// Servidor publicado en Render (lo usa el APK de la Expoferia).
+  static const String servidorPublicado = 'https://synergy-expoferia.onrender.com/api';
 
-  /// Tiempo máximo de espera de cada petición.
-  static const Duration requestTimeout = Duration(seconds: 15);
+  /// APK de release: el servidor de Render. En desarrollo: el PC
+  /// (emulador de Android: 10.0.2.2; navegador con flutter run -d edge: localhost).
+  static String get defaultApiBaseUrl {
+    if (_apiBaseUrlCompilada.isNotEmpty) return _apiBaseUrlCompilada;
+    if (kReleaseMode) return servidorPublicado;
+    return kIsWeb ? 'http://localhost:8080/api' : 'http://10.0.2.2:8080/api';
+  }
+
+  /// Tiempo máximo de espera de cada petición (Render gratis tarda en despertar).
+  static const Duration requestTimeout = Duration(seconds: 40);
 
   static const String _prefsKey = 'synergy_api_base_url';
   static String _apiBaseUrl = defaultApiBaseUrl;
