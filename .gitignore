@@ -40,3 +40,6 @@ respaldos/
 
 ### Variables de Docker (claves) ###
 .env
+
+### Pendón de la Expoferia (imágenes pesadas, se entregan por FERRUM) ###
+Expoferia_Pendon/

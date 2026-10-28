@@ -13,6 +13,10 @@ void main() {
       expect(AppConfig.normalizar('http://192.168.1.10:9090/api/'), 'http://192.168.1.10:9090/api');
     });
 
+    test('un dominio sin protocolo usa https (servidor en Render)', () {
+      expect(AppConfig.normalizar('synergy-expoferia.onrender.com'), 'https://synergy-expoferia.onrender.com/api');
+    });
+
     test('un valor vacío vuelve a la dirección por defecto', () {
       expect(AppConfig.normalizar('  '), AppConfig.defaultApiBaseUrl);
     });

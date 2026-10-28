@@ -18,4 +18,6 @@ RUN useradd --system --create-home synergy
 USER synergy
 COPY --from=build /app/target/*.jar synergy.jar
 EXPOSE 8080
-ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75", "-jar", "synergy.jar"]
+# Opciones de la JVM: se pueden cambiar con la variable JAVA_OPTS (Render usa valores para 512 MB)
+ENV JAVA_OPTS="-XX:MaxRAMPercentage=75"
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar synergy.jar"]

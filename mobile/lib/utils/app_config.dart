@@ -52,11 +52,17 @@ class AppConfig {
     return url;
   }
 
-  /// Completa lo que falte: http://, el puerto 8080 y la ruta /api.
+  /// Completa lo que falte: el protocolo, el puerto y la ruta /api.
+  /// Sin protocolo: una IP o localhost usan http://...:8080 (servidor en el PC);
+  /// un dominio (por ejemplo synergy-expoferia.onrender.com) usa https://.
   static String normalizar(String value) {
     var url = value.trim();
     if (url.isEmpty) return defaultApiBaseUrl;
-    if (!url.startsWith('http://') && !url.startsWith('https://')) url = 'http://$url';
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      final host = url.split(RegExp(r'[:/]')).first;
+      final esLocal = host == 'localhost' || RegExp(r'^\d{1,3}(\.\d{1,3}){3}$').hasMatch(host);
+      url = '${esLocal ? 'http' : 'https'}://$url';
+    }
     while (url.endsWith('/')) {
       url = url.substring(0, url.length - 1);
     }

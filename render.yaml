@@ -1,0 +1,63 @@
+# =====================================================================
+#  Despliegue de Synergy en Render (Blueprint)
+#  Guía paso a paso: docs/DESPLIEGUE_RENDER.md
+#
+#  Render lee este archivo, construye el Dockerfile y publica la app en
+#  https://<name>.onrender.com. La base de datos va en MongoDB Atlas (gratis).
+#  Las variables con "sync: false" las pide Render al crear el Blueprint:
+#  NUNCA escribas aquí claves reales (este archivo sí se sube a GitHub).
+# =====================================================================
+services:
+  - type: web
+    name: synergy-expoferia
+    runtime: docker
+    plan: free
+    region: virginia          # la región más cercana a Colombia
+    branch: main
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /login
+    autoDeployTrigger: commit # cada git push a main vuelve a desplegar
+    envVars:
+      # ---------- Claves (Render las pide al crear; no van en GitHub) ----------
+      - key: MONGODB_URI
+        sync: false           # mongodb+srv://usuario:clave@cluster0.xxxxx.mongodb.net/synergy?retryWrites=true&w=majority
+      - key: JWT_SECRET
+        sync: false           # 64 caracteres al azar (ver la guía)
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+
+      # ---------- Perfil: cuentas demo + datos de prueba para la Expoferia ----------
+      - key: SPRING_PROFILES_ACTIVE
+        value: default
+      # Menos datos generados que en local: el plan gratis tiene 512 MB de RAM
+      # y Atlas gratis 512 MB de disco. Se generan solo la primera vez.
+      - key: SYNERGY_DATOS_MINIMO_PROYECTOS
+        value: "150"
+      - key: SYNERGY_DATOS_USUARIOS
+        value: "400"
+      - key: SYNERGY_DATOS_PROYECTOS
+        value: "400"
+      - key: SYNERGY_DATOS_TAREAS
+        value: "1200"
+      - key: SYNERGY_DATOS_COMENTARIOS
+        value: "300"
+      - key: SYNERGY_DATOS_HISTORIAL_RIESGO
+        value: "300"
+
+      # ---------- Detrás del proxy HTTPS de Render ----------
+      # Respeta X-Forwarded-Proto: sin esto Google devuelve redirect_uri_mismatch (http vs https)
+      - key: SERVER_FORWARD_HEADERS_STRATEGY
+        value: framework
+      - key: SERVER_SERVLET_SESSION_COOKIE_SECURE
+        value: "true"
+
+      # ---------- Ajustes para 512 MB de RAM ----------
+      - key: JAVA_OPTS
+        value: "-XX:MaxRAMPercentage=65 -XX:+UseSerialGC -Xss512k -XX:MaxMetaspaceSize=160m -XX:TieredStopAtLevel=1"
+      - key: SERVER_TOMCAT_THREADS_MAX
+        value: "40"
+      - key: SPRING_THYMELEAF_CACHE
+        value: "true"

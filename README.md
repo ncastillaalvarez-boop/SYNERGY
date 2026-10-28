@@ -201,6 +201,8 @@ docker compose down -v           # apagar y borrar la base del contenedor
 - El login con Google necesita `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET` en `.env` (no se copian las claves de `application-secrets.properties` a la imagen).
 - Si después de cambiar código no ves los cambios: `docker compose up --build` otra vez.
 
+**Publicar en internet (Render + MongoDB Atlas, gratis):** el repositorio trae `render.yaml`. Guía paso a paso en [`docs/DESPLIEGUE_RENDER.md`](docs/DESPLIEGUE_RENDER.md).
+
 **Pruebas automáticas** (JUnit, sin base de datos): `mvnw test`. Cubren el modelo de riesgo (variables, reglas, predicción, historial, simulador), validaciones de proyectos/tareas/archivos, contraseñas, bloqueo por intentos, redirecciones seguras y exportación a CSV. GitHub Actions (`.github/workflows/ci.yml`) las corre en cada *push* junto con `flutter analyze`, `flutter test` y el APK de depuración.
 
 **Documentación de la API:** <http://localhost:8080/swagger-ui.html> (springdoc).
